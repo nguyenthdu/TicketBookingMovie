@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -69,5 +70,26 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 	public UserDTO getUserByPhone(String phone) {
 		User user = userRepository.findByPhone(phone).orElseThrow(() -> new ErrorMessage("Not found user with phone: " + phone, HttpStatus.NOT_FOUND));
 		return modelMapper.map(user, UserDTO.class);
+	}
+	
+	@Override
+	public void deleteUser(Long id) {
+		//xoa sẽ chuyển trạng thái user thành false
+		Optional<User> user = userRepository.findById(id);
+		user.get().setEnabled(false);
+		userRepository.save(user.get());
+		
+	}
+	
+	@Override
+	public UserDTO updateUser(UserDTO userDTO) {
+		Optional<User> user = userRepository.findById(userDTO.getId());
+		user.get().setUsername(userDTO.getUsername());
+		user.get().setGender(userDTO.isGender());
+		user.get().setBirthday(userDTO.getBirthday());
+		user.get().setPhone(userDTO.getPhone());
+		user.get().setRoles(userDTO.getRoles());
+		userRepository.save(user.get());
+		return modelMapper.map(user.get(), UserDTO.class);
 	}
 }

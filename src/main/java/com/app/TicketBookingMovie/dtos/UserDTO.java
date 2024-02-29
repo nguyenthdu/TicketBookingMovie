@@ -16,6 +16,6 @@ public class UserDTO {
 	private LocalDate birthday;
 	private String phone;
 	private Set<Role> roles;
-	private boolean status;
+	private boolean enabled;
 	private LocalDate createdDate;
 }

@@ -13,7 +13,8 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(
-		name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "username"), @UniqueConstraint(columnNames = "email")}
+		name = "users", uniqueConstraints = {
+		 @UniqueConstraint(columnNames = "email"), @UniqueConstraint(columnNames = "phone"), @UniqueConstraint(columnNames = "code")}
 )
 public class User {
 	@Id
@@ -39,7 +40,7 @@ public class User {
 	private String password;
 	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-	private Set<Role> roles = new HashSet<>();
+	private Set<Role> roles =  new HashSet<>();
 	private boolean enabled = true;
 	@Column(name = "created_date")
 	private LocalDate createdDate = LocalDate.now();

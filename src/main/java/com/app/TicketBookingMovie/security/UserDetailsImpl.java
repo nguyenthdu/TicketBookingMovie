@@ -37,6 +37,8 @@ public class UserDetailsImpl implements UserDetails {
 		return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.isGender(), user.getBirthday(), user.getPhone(), user.getPassword(), authorities);
 	}
 	
+	
+	
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return authorities;

@@ -1,6 +1,6 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.LoginDTO;
+import com.app.TicketBookingMovie.dtos.SigninDTO;
 import com.app.TicketBookingMovie.dtos.SignupDTO;
 import com.app.TicketBookingMovie.exception.MessageResponse;
 import com.app.TicketBookingMovie.exception.TokenRefreshException;
@@ -52,8 +52,8 @@ public class AuthController {
 	JwtUtils jwtUtils;
 	
 	@PostMapping("/signin")
-	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginDTO loginDTO) {
-		Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword()));
+	public ResponseEntity<?> authenticateUser(@Valid @RequestBody SigninDTO signinDTO) {
+		Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(signinDTO.getEmail(), signinDTO.getPassword()));
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 		ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
@@ -74,32 +74,70 @@ public class AuthController {
 		}
 		// Create new user's account
 		User user = new User(signUpDTO.getCode(), signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
-		Set<String> strRoles = signUpDTO.getRoles();
+		// Set default role as ROLE_USER
+		Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
 		Set<Role> roles = new HashSet<>();
-		if(strRoles == null) {
-			Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-			roles.add(userRole);
-		} else {
-			strRoles.forEach(role -> {
-				switch (role) {
-					case "admin":
-						Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-						roles.add(adminRole);
-						break;
-					case "mod":
-						Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-						roles.add(modRole);
-						break;
-					default:
-						Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-						roles.add(userRole);
-				}
-			});
-		}
+		roles.add(userRole);
 		user.setRoles(roles);
 		userRepository.save(user);
 		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
 	}
+	@PostMapping("/signup/admin")
+	public ResponseEntity<?> registerAdmin(@Valid @RequestBody SignupDTO signUpDTO) {
+		if(userRepository.existsByUsername(signUpDTO.getUsername())) {
+			return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+		}
+		if(userRepository.existsByEmail(signUpDTO.getEmail())) {
+			return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+		}
+		// Create new user's account
+		User user = new User(signUpDTO.getCode(), signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
+		// Set default role as ROLE_USER
+		Role userRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+		Set<Role> roles = new HashSet<>();
+		roles.add(userRole);
+		user.setRoles(roles);
+		userRepository.save(user);
+		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+	}
+	
+//	@PostMapping("/signup")
+//	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupDTO signUpDTO) {
+//		if(userRepository.existsByUsername(signUpDTO.getUsername())) {
+//			return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+//		}
+//		if(userRepository.existsByEmail(signUpDTO.getEmail())) {
+//			return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+//		}
+//		// Create new user's account
+//		User user = new User(signUpDTO.getCode(), signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
+//		Set<String> strRoles = signUpDTO.getRoles();
+//		Set<Role> roles = new HashSet<>();
+//		if(strRoles == null) {
+//			Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//			roles.add(userRole);
+//		} else {
+//			strRoles.forEach(role -> {
+//				switch (role) {
+//					case "admin":
+//						Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//						roles.add(adminRole);
+//						break;
+//					case "mod":
+//						Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//						roles.add(modRole);
+//						break;
+//					default:
+//						Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//						roles.add(userRole);
+//				}
+//			});
+//		}
+//		user.setRoles(roles);
+//		userRepository.save(user);
+//		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+//	}
+//
 	
 	@PostMapping("/signout")
 	public ResponseEntity<?> logoutUser() {
