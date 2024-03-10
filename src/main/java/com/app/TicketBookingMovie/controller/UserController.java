@@ -1,7 +1,8 @@
 package com.app.TicketBookingMovie.controller;
 
+import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
 import com.app.TicketBookingMovie.dtos.UserDTO;
-import com.app.TicketBookingMovie.exception.MessageResponse;
+import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.models.User;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.JwtUtils;
@@ -10,13 +11,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -31,12 +33,18 @@ public class UserController {
 	private final UserService userService;
 	
 	@GetMapping
-	public List<UserDTO> getAllUsers() {
-		return userService.getAllUsers();
+	public ResponseEntity<PageResponse<UserDTO>> getAllUsers(@RequestParam(defaultValue = "0") Integer page, @RequestParam(defaultValue = "2") Integer size, @RequestParam(required = false) String phone, @RequestParam(required = false) Long code, @RequestParam(required = false) String email) {
+		PageResponse<UserDTO> userPageResponse = new PageResponse<>();
+		userPageResponse.setContent(userService.getAllUsers(page, size, phone, code, email));
+		userPageResponse.setTotalElements(userRepository.count());
+		userPageResponse.setTotalPages((int) Math.ceil((double) userRepository.count() / size));
+		userPageResponse.setCurrentPage(page);
+		userPageResponse.setPageSize(size);
+		return ResponseEntity.ok().body(userPageResponse);
 	}
 	
 	@GetMapping("/code")
-	public ResponseEntity<UserDTO> getUserByCode(@RequestParam("code") Integer code) {
+	public ResponseEntity<UserDTO> getUserByCode(@RequestParam("code") Long code) {
 		UserDTO userDTO = userService.getUserByCode(code);
 		return ResponseEntity.ok().body(userDTO);
 	}
@@ -80,20 +88,16 @@ public class UserController {
 			userDTO.setCreatedDate(user.getCreatedDate());
 			return ResponseEntity.ok(userDTO);
 		}
-		return ResponseEntity.badRequest().body(new MessageResponse("Error: Invalid JWT token"));
+		return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 	}
 	
 	//TODO: Cập nhật thông tin của user đang đăng nhập theo token vào cookie
 	@PutMapping("/profile")
-	public ResponseEntity<?> updateUserProfile(@RequestParam("username") String username,
-//			@RequestParam("email") String email,
-			@RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone, HttpServletRequest request) {
+	public ResponseEntity<?> updateUserProfile(@RequestParam("username") String username, @RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone, HttpServletRequest request) {
 		String jwt = jwtUtils.getJwtFromCookies(request);
 		if(jwt != null && jwtUtils.validateJwtToken(jwt)) {
 			String currentEmail = jwtUtils.getEmailFromJwtToken(jwt);
 			User user = userRepository.findByEmail(currentEmail).orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + currentEmail));
-			
-			
 			user.setUsername(username);
 			user.setGender(gender);
 			user.setBirthday(birthday);
@@ -114,14 +118,14 @@ public class UserController {
 			updatedUserDTO.setCreatedDate(user.getCreatedDate());
 			return ResponseEntity.ok(updatedUserDTO);
 		}
-		return ResponseEntity.badRequest().body(new MessageResponse("Error: Invalid JWT token"));
+		return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 	}
+	
 	//delete
 	@DeleteMapping()
 	public ResponseEntity<?> deleteUser(@RequestParam("id") Long id) {
 		userService.deleteUser(id);
-		return ResponseEntity.ok().body(new MessageResponse("User deleted successfully!"));
+		return ResponseEntity.ok().body(new MessageResponseDTO("User deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
 	}
 	//update user
-
 }

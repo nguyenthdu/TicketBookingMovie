@@ -21,7 +21,7 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	@Size(max = 10)
-	private Integer code;
+	private Long code;
 	@NotBlank(message = "Username is not blank")
 	@Size(min = 3, max = 20, message = "Username is not between 3 and 20 characters")
 	private String username;
@@ -45,8 +45,8 @@ public class User {
 	@Column(name = "created_date")
 	private LocalDate createdDate = LocalDate.now();
 	
-	public User(Integer code, String username, String email, boolean gender, LocalDate birthday, String phone, String password) {
-		this.code = code;
+	public User(String username, String email, boolean gender, LocalDate birthday, String phone, String password) {
+	
 		this.username = username;
 		this.email = email;
 		this.gender = gender;

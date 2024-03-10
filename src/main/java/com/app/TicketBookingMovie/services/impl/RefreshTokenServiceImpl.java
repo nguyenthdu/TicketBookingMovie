@@ -1,12 +1,13 @@
 package com.app.TicketBookingMovie.services.impl;
 
-import com.app.TicketBookingMovie.exception.TokenRefreshException;
+import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.RefreshToken;
 import com.app.TicketBookingMovie.repository.RefreshTokenRepository;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.services.RefreshTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +48,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 	public RefreshToken verifyExpiration(RefreshToken token) {
 		if(token.getExpiryDate().compareTo(Instant.now()) < 0) {
 			refreshTokenRepository.delete(token);
-			throw new TokenRefreshException(token.getToken(), "Refresh token was expired. Please make a new signin request");
+			throw new AppException("Refresh token was expired. Please make a new signin request", HttpStatus.FORBIDDEN);
 		}
 		return token;
 	}

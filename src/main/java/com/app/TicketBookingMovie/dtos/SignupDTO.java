@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.util.Set;
 @Data
 public class SignupDTO {
-	private Integer code;
 	private String username;
 	private String email;
 	private boolean gender;

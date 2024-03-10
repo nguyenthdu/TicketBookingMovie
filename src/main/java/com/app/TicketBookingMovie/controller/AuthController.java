@@ -1,9 +1,9 @@
 package com.app.TicketBookingMovie.controller;
 
+import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
 import com.app.TicketBookingMovie.dtos.SigninDTO;
 import com.app.TicketBookingMovie.dtos.SignupDTO;
-import com.app.TicketBookingMovie.exception.MessageResponse;
-import com.app.TicketBookingMovie.exception.TokenRefreshException;
+import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.ERole;
 import com.app.TicketBookingMovie.models.RefreshToken;
 import com.app.TicketBookingMovie.models.Role;
@@ -13,11 +13,13 @@ import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.security.UserDetailsImpl;
 import com.app.TicketBookingMovie.services.RefreshTokenService;
+import com.app.TicketBookingMovie.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -50,6 +53,8 @@ public class AuthController {
 	PasswordEncoder encoder;
 	@Autowired
 	JwtUtils jwtUtils;
+	@Autowired
+	UserService userService;
 	
 	@PostMapping("/signin")
 	public ResponseEntity<?> authenticateUser(@Valid @RequestBody SigninDTO signinDTO) {
@@ -61,83 +66,95 @@ public class AuthController {
 		RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 		ResponseCookie jwtRefreshCookie = jwtUtils.generateRefreshJwtCookie(refreshToken.getToken());
 		//		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString()).body(new UserInfoResponse(userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles));
-		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString()).body(new MessageResponse("You've been signed in!"));
+		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString()).body(new MessageResponseDTO("User signed in successfully!", HttpStatus.OK.value(), Instant.now().toString()));
 	}
 	
 	@PostMapping("/signup")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupDTO signUpDTO) {
 		if(userRepository.existsByUsername(signUpDTO.getUsername())) {
-			return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+			return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Username is already taken!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 		}
 		if(userRepository.existsByEmail(signUpDTO.getEmail())) {
-			return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+			return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Email is already in use!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+		}
+		if(userRepository.existsByPhone(signUpDTO.getPhone())) {
+			return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Phone is already in use!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 		}
 		// Create new user's account
-		User user = new User(signUpDTO.getCode(), signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
+		User user = new User(signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
 		// Set default role as ROLE_USER
+		user.setCode(userService.randomCode());
 		Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
 		Set<Role> roles = new HashSet<>();
 		roles.add(userRole);
 		user.setRoles(roles);
 		userRepository.save(user);
-		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+		return ResponseEntity.ok(new MessageResponseDTO("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
 	}
+
 	@PostMapping("/signup/admin")
 	public ResponseEntity<?> registerAdmin(@Valid @RequestBody SignupDTO signUpDTO) {
 		if(userRepository.existsByUsername(signUpDTO.getUsername())) {
-			return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+			return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Username is already taken!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 		}
 		if(userRepository.existsByEmail(signUpDTO.getEmail())) {
-			return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+			return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Email is already in use!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+		}
+		if(userRepository.existsByPhone(signUpDTO.getPhone())) {
+			return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Phone is already in use!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 		}
 		// Create new user's account
-		User user = new User(signUpDTO.getCode(), signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
+		User user = new User(signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
 		// Set default role as ROLE_USER
+		user.setCode(userService.randomCode());
 		Role userRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
 		Set<Role> roles = new HashSet<>();
 		roles.add(userRole);
 		user.setRoles(roles);
 		userRepository.save(user);
-		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+		return ResponseEntity.ok(new MessageResponseDTO("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
 	}
-	
-//	@PostMapping("/signup")
-//	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupDTO signUpDTO) {
-//		if(userRepository.existsByUsername(signUpDTO.getUsername())) {
-//			return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
-//		}
-//		if(userRepository.existsByEmail(signUpDTO.getEmail())) {
-//			return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
-//		}
-//		// Create new user's account
-//		User user = new User(signUpDTO.getCode(), signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
-//		Set<String> strRoles = signUpDTO.getRoles();
-//		Set<Role> roles = new HashSet<>();
-//		if(strRoles == null) {
-//			Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//			roles.add(userRole);
-//		} else {
-//			strRoles.forEach(role -> {
-//				switch (role) {
-//					case "admin":
-//						Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//						roles.add(adminRole);
-//						break;
-//					case "mod":
-//						Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//						roles.add(modRole);
-//						break;
-//					default:
-//						Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//						roles.add(userRole);
-//				}
-//			});
-//		}
-//		user.setRoles(roles);
-//		userRepository.save(user);
-//		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
-//	}
+	//
+//		@PostMapping("/signup")
+//		public ResponseEntity<?> registerUser(@Valid @RequestBody SignupDTO signUpDTO) {
+//			if(userRepository.existsByUsername(signUpDTO.getUsername())) {
+//				return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Username is already taken!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+//			}
+//			if(userRepository.existsByEmail(signUpDTO.getEmail())) {
+//				return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Email is already in use!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+//			}
+//			// Create new user's account
+//			User user = new User( signUpDTO.getUsername(), signUpDTO.getEmail(), signUpDTO.isGender(), signUpDTO.getBirthday(), signUpDTO.getPhone(), encoder.encode(signUpDTO.getPassword()));
+//			Long code = userService.randomCode();
+//			user.setCode(code);
 //
+//			Set<String> strRoles = signUpDTO.getRoles();
+//			Set<Role> roles = new HashSet<>();
+//			if(strRoles == null) {
+//				Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//				roles.add(userRole);
+//			} else {
+//				strRoles.forEach(role -> {
+//					switch (role) {
+//						case "admin":
+//							Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//							roles.add(adminRole);
+//							break;
+//						case "mod":
+//							Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//							roles.add(modRole);
+//							break;
+//						default:
+//							Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+//							roles.add(userRole);
+//					}
+//				});
+//			}
+//			user.setRoles(roles);
+//			userRepository.save(user);
+//			return ResponseEntity.ok(new MessageResponseDTO("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+//		}
+
 	
 	@PostMapping("/signout")
 	public ResponseEntity<?> logoutUser() {
@@ -148,7 +165,7 @@ public class AuthController {
 		}
 		ResponseCookie jwtCookie = jwtUtils.getCleanJwtCookie();
 		ResponseCookie jwtRefreshCookie = jwtUtils.getCleanJwtRefreshCookie();
-		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString()).body(new MessageResponse("You've been signed out!"));
+		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString()).body(new MessageResponseDTO("You've been signed out!", HttpStatus.OK.value(), Instant.now().toString()));
 	}
 	
 	@PostMapping("/refreshtoken")
@@ -157,9 +174,9 @@ public class AuthController {
 		if((refreshToken != null) && (refreshToken.length() > 0)) {
 			return refreshTokenService.findByToken(refreshToken).map(refreshTokenService::verifyExpiration).map(RefreshToken::getUser).map(user -> {
 				ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(user);
-				return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).body(new MessageResponse("Token is refreshed successfully!"));
-			}).orElseThrow(() -> new TokenRefreshException(refreshToken, "Refresh token is not in database!"));
+				return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).body(new MessageResponseDTO("Token is refreshed successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+			}).orElseThrow(() -> new AppException("Refresh token is not in database!", HttpStatus.BAD_REQUEST));
 		}
-		return ResponseEntity.badRequest().body(new MessageResponse("Error: Refresh token is required!"));
+		return ResponseEntity.badRequest().body(new MessageResponseDTO("Refresh token is not in cookies!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 	}
 }
