@@ -91,15 +91,17 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 	}
 	
 	@Override
-	public UserDTO updateUser(UserDTO userDTO) {
-		Optional<User> user = userRepository.findById(userDTO.getId());
-		user.get().setUsername(userDTO.getUsername());
-		user.get().setGender(userDTO.isGender());
-		user.get().setBirthday(userDTO.getBirthday());
-		user.get().setPhone(userDTO.getPhone());
-		user.get().setRoles(userDTO.getRoles());
-		userRepository.save(user.get());
-		return modelMapper.map(user.get(), UserDTO.class);
+	public UserDTO updateUser(Long id, UserDTO userDTO){
+		User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+		if(userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
+			throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
+		}
+		user.setUsername(userDTO.getUsername());
+		user.setGender(userDTO.isGender());
+		user.setBirthday(userDTO.getBirthday());
+		user.setPhone(userDTO.getPhone());
+		userRepository.save(user);
+		return modelMapper.map(user, UserDTO.class);
 	}
 	
 	@Override

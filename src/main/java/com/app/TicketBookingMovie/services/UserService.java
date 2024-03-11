@@ -15,7 +15,7 @@ public interface UserService {
   UserDTO getUserByEmail(String email);
   UserDTO getUserByPhone(String phone);
   void deleteUser(Long id);
-  UserDTO updateUser(UserDTO userDTO);
+  UserDTO updateUser( Long id, UserDTO userDTO);
 
   Long randomCode();
 	

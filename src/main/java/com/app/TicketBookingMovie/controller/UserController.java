@@ -2,12 +2,14 @@ package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
 import com.app.TicketBookingMovie.dtos.UserDTO;
+import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.models.User;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -30,6 +33,9 @@ public class UserController {
 	JwtUtils jwtUtils;
 	@Autowired
 	UserRepository userRepository;
+	@Autowired
+	PasswordEncoder encoder;
+	@Autowired
 	private final UserService userService;
 	
 	@GetMapping
@@ -92,7 +98,7 @@ public class UserController {
 	}
 	
 	//TODO: Cập nhật thông tin của user đang đăng nhập theo token vào cookie
-	@PutMapping("/profile")
+	@PutMapping()
 	public ResponseEntity<?> updateUserProfile(@RequestParam("username") String username, @RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone, HttpServletRequest request) {
 		String jwt = jwtUtils.getJwtFromCookies(request);
 		if(jwt != null && jwtUtils.validateJwtToken(jwt)) {
@@ -104,28 +110,45 @@ public class UserController {
 			user.setPhone(phone);
 			// Lưu lại thông tin đã cập nhật
 			userRepository.save(user);
-			// Trả về thông tin user sau khi cập nhật
-			UserDTO updatedUserDTO = new UserDTO();
-			updatedUserDTO.setId(user.getId());
-			updatedUserDTO.setCode(user.getCode());
-			updatedUserDTO.setUsername(user.getUsername());
-			updatedUserDTO.setEmail(user.getEmail());
-			updatedUserDTO.setGender(user.isGender());
-			updatedUserDTO.setBirthday(user.getBirthday());
-			updatedUserDTO.setPhone(user.getPhone());
-			updatedUserDTO.setRoles(user.getRoles());
-			updatedUserDTO.setEnabled(user.isEnabled());
-			updatedUserDTO.setCreatedDate(user.getCreatedDate());
-			return ResponseEntity.ok(updatedUserDTO);
+			return ResponseEntity.ok(new MessageResponseDTO("User updated successfully with email: " + currentEmail, HttpStatus.OK.value(), Instant.now().toString()));
 		}
 		return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+	}
+	
+	//update
+	@PutMapping("/{id}")
+	public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserDTO userDTO) {
+		try {
+			userService.updateUser(id, userDTO);
+			return ResponseEntity.ok(new MessageResponseDTO("User updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+		} catch (AppException e) {
+			return ResponseEntity.status(e.getStatus()).body(new MessageResponseDTO(e.getMessage(), e.getStatus(), Instant.now().toString()));
+		}
 	}
 	
 	//delete
 	@DeleteMapping()
 	public ResponseEntity<?> deleteUser(@RequestParam("id") Long id) {
 		userService.deleteUser(id);
-		return ResponseEntity.ok().body(new MessageResponseDTO("User deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
+		return ResponseEntity.ok().body(new MessageResponseDTO("User deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
 	}
-	//update user
+	
+	//update password
+	@PutMapping("/{id}/password")
+	public ResponseEntity<?> updateUserPassword(@PathVariable Long id, @RequestParam String oldPassword, @RequestParam String newPassword, @RequestParam String confirmPassword) {
+		try {
+			User user = userRepository.findById(id).orElseThrow(() -> new AppException("User not found with id: " + id, HttpStatus.NOT_FOUND));
+			if(!encoder.matches(oldPassword, user.getPassword())) {
+				return ResponseEntity.badRequest().body(new MessageResponseDTO("Old password is incorrect!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+			}
+			if(!newPassword.equals(confirmPassword)) {
+				return ResponseEntity.badRequest().body(new MessageResponseDTO("New password and confirm password do not match!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+			}
+			user.setPassword(encoder.encode(newPassword));
+			userRepository.save(user);
+			return ResponseEntity.ok(new MessageResponseDTO("Password updated successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+		} catch (AppException e) {
+			return ResponseEntity.status(e.getStatus()).body(new MessageResponseDTO(e.getMessage(), e.getStatus(), Instant.now().toString()));
+		}
+	}
 }
