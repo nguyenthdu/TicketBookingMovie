@@ -42,13 +42,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 	}
 	
 	@Override
-	public List<UserDTO> getAllUsers(Integer page, Integer size, String phone, Long code, String email) {
+	public List<UserDTO> getAllUsers(Integer page, Integer size, Long code,String username, String phone, String email) {
 		Pageable pageable = PageRequest.of(page, size);
 		Page<User> userPage;
-		if(phone != null && !phone.isEmpty()) {
+		if(code != null && code != 0) {
+			userPage = userRepository.findByCode(code, pageable);
+		} else if(username != null && !username.isEmpty()) {
+			userPage = userRepository.findByUsernameContaining(username, pageable);
+		} else if(phone != null && !phone.isEmpty()) {
 			userPage = userRepository.findByPhoneContaining(phone, pageable);
-		} else if(code != null) {
-			userPage = userRepository.findByCodeContaining(code, pageable);
 		} else if(email != null && !email.isEmpty()) {
 			userPage = userRepository.findByEmailContaining(email, pageable);
 		} else {

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.time.LocalDate;
 
+@CrossOrigin(origins = "*", maxAge = 3600)
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/users")
@@ -39,9 +40,9 @@ public class UserController {
 	private final UserService userService;
 	
 	@GetMapping
-	public ResponseEntity<PageResponse<UserDTO>> getAllUsers(@RequestParam(defaultValue = "0") Integer page, @RequestParam(defaultValue = "2") Integer size, @RequestParam(required = false) String phone, @RequestParam(required = false) Long code, @RequestParam(required = false) String email) {
+	public ResponseEntity<PageResponse<UserDTO>> getAllUsers(@RequestParam(defaultValue = "0", name = "page") Integer page, @RequestParam(defaultValue = "2", name = "size") Integer size, @RequestParam(required = false, name = "code") Long code, @RequestParam(required = false, name = "username") String username, @RequestParam(required = false, name = "phone") String phone, @RequestParam(required = false, name = "email") String email) {
 		PageResponse<UserDTO> userPageResponse = new PageResponse<>();
-		userPageResponse.setContent(userService.getAllUsers(page, size, phone, code, email));
+		userPageResponse.setContent(userService.getAllUsers(page, size, code, username, phone , email));
 		userPageResponse.setTotalElements(userRepository.count());
 		userPageResponse.setTotalPages((int) Math.ceil((double) userRepository.count() / size));
 		userPageResponse.setCurrentPage(page);
@@ -73,7 +74,7 @@ public class UserController {
 		return ResponseEntity.ok().body(userDTO);
 	}
 	
-	//TODO: Lấy thông tin của user đang đăng nhập theo token vào cookie
+	// TODO: Lấy thông tin của user đang đăng nhập theo token vào cookie
 	@GetMapping("/profile")
 	public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
 		String jwt = jwtUtils.getJwtFromCookies(request);
@@ -97,7 +98,7 @@ public class UserController {
 		return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 	}
 	
-	//TODO: Cập nhật thông tin của user đang đăng nhập theo token vào cookie
+	// TODO: Cập nhật thông tin của user đang đăng nhập theo token vào cookie
 	@PutMapping()
 	public ResponseEntity<?> updateUserProfile(@RequestParam("username") String username, @RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone, HttpServletRequest request) {
 		String jwt = jwtUtils.getJwtFromCookies(request);
@@ -115,7 +116,7 @@ public class UserController {
 		return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
 	}
 	
-	//update
+	// update
 	@PutMapping("/{id}")
 	public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserDTO userDTO) {
 		try {
@@ -126,14 +127,14 @@ public class UserController {
 		}
 	}
 	
-	//delete
+	// delete
 	@DeleteMapping()
 	public ResponseEntity<?> deleteUser(@RequestParam("id") Long id) {
 		userService.deleteUser(id);
 		return ResponseEntity.ok().body(new MessageResponseDTO("User deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
 	}
 	
-	//update password
+	// update password
 	@PutMapping("/{id}/password")
 	public ResponseEntity<?> updateUserPassword(@PathVariable Long id, @RequestParam String oldPassword, @RequestParam String newPassword, @RequestParam String confirmPassword) {
 		try {

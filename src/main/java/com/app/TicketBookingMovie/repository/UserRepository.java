@@ -25,8 +25,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	boolean existsByCode(Long code);
 	
 	Page<User> findByPhoneContaining(String phone, Pageable pageable);
+	Page<User> findByUsernameContaining(String username, Pageable pageable);
 	
-	Page<User> findByCodeContaining(Long code, Pageable pageable);
+	Page<User> findByCode(Long code, Pageable pageable);
 	
 	Page<User> findByEmailContaining(String email, Pageable pageable);
 }
