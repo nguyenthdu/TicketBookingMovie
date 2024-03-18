@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class GenreDTO {
 	private Long id;
-	private Long code;
+	private String code;
 	private String name;
 }

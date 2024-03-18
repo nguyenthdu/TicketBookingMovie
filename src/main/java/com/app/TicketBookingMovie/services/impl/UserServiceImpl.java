@@ -3,13 +3,10 @@ package com.app.TicketBookingMovie.services.impl;
 import com.app.TicketBookingMovie.dtos.UserDTO;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.User;
-import com.app.TicketBookingMovie.repository.RoleRepository;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.UserDetailsImpl;
 import com.app.TicketBookingMovie.services.UserService;
-import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,95 +19,97 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
+
 @Service
 public class UserServiceImpl implements UserService, UserDetailsService {
-	@Autowired
-	private final UserRepository userRepository;
-	@Autowired
-	private final RoleRepository roleRepository;
-	@Autowired
-	private final ModelMapper modelMapper;
-	
-	@Override
-	@Transactional
-	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-		User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
-		return UserDetailsImpl.build(user);
-	}
-	
-	@Override
-	public List<UserDTO> getAllUsers(Integer page, Integer size, Long code,String username, String phone, String email) {
-		Pageable pageable = PageRequest.of(page, size);
-		Page<User> userPage;
-		if(code != null && code != 0) {
-			userPage = userRepository.findByCode(code, pageable);
-		} else if(username != null && !username.isEmpty()) {
-			userPage = userRepository.findByUsernameContaining(username, pageable);
-		} else if(phone != null && !phone.isEmpty()) {
-			userPage = userRepository.findByPhoneContaining(phone, pageable);
-		} else if(email != null && !email.isEmpty()) {
-			userPage = userRepository.findByEmailContaining(email, pageable);
-		} else {
-			userPage = userRepository.findAll(pageable);
-		}
-		List<UserDTO> userDTOs = userPage.getContent().stream().map(user -> modelMapper.map(user, UserDTO.class)).collect(Collectors.toList());
-		return userDTOs;
-	}
-	
-	@Override
-	public UserDTO getUserByCode(Long code) {
-		User user = userRepository.findByCode(code).orElseThrow(() -> new AppException("Not found user with code: " + code, HttpStatus.NOT_FOUND));
-		return modelMapper.map(user, UserDTO.class);
-	}
-	
-	@Override
-	public UserDTO getUserByUsername(String username) {
-		User user = userRepository.findByUsername(username).orElseThrow(() -> new AppException("Not found user with username: " + username, HttpStatus.NOT_FOUND));
-		return modelMapper.map(user, UserDTO.class);
-	}
-	
-	@Override
-	public UserDTO getUserByEmail(String email) {
-		User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException("Not found user with email: " + email, HttpStatus.NOT_FOUND));
-		return modelMapper.map(user, UserDTO.class);
-	}
-	
-	@Override
-	public UserDTO getUserByPhone(String phone) {
-		User user = userRepository.findByPhone(phone).orElseThrow(() -> new AppException("Not found user with phone: " + phone, HttpStatus.NOT_FOUND));
-		return modelMapper.map(user, UserDTO.class);
-	}
-	
-	@Override
-	public void deleteUser(Long id) {
-		//xoa sẽ chuyển trạng thái user thành false
-		Optional<User> user = userRepository.findById(id);
-		user.get().setEnabled(false);
-		userRepository.save(user.get());
-	}
-	
-	@Override
-	public UserDTO updateUser(Long id, UserDTO userDTO){
-		User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
-		if(userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
-			throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
-		}
-		user.setUsername(userDTO.getUsername());
-		user.setGender(userDTO.isGender());
-		user.setBirthday(userDTO.getBirthday());
-		user.setPhone(userDTO.getPhone());
-		userRepository.save(user);
-		return modelMapper.map(user, UserDTO.class);
-	}
-	
-	@Override
-	public Long randomCode() {
-		//code là ngày thangs năm giờ phút giây
-		return Long.parseLong(String.valueOf(System.currentTimeMillis()));
-	}
+    private final UserRepository userRepository;
+    //TODO:  keyword final, bạn đảm bảo rằng field userRepository không thể được thay đổi sau khi đối tượng UserServiceImpl được tạo. Điều này tăng cường độ tin cậy và giúp code dễ hiểu hơn.
+    private final ModelMapper modelMapper;
+
+    public UserServiceImpl(UserRepository userRepository, ModelMapper modelMapper) {
+        this.userRepository = userRepository;
+        this.modelMapper = modelMapper;
+    }
+  /*TODO: constructor injection tốt hơn
+  * Testability (Khả năng test): Constructor injection giúp bạn dễ dàng kiểm soát các dependency được sử dụng trong unit test. Bạn chỉ cần tạo một mock object cho UserRepository và truyền trực tiếp vào constructor của UserServiceImpl.
+	Explicit Dependencies (Sự rõ ràng): Constructor injection làm cho dependencies của một class trở nên rõ ràng. Bất kỳ ai nhìn vào constructor cũng đều có thể hiểu được những dependency mà class cần để hoạt động.
+	Immutability (Tính bất biến): Bằng cách sử dụng keyword final, bạn đảm bảo rằng field userRepository không thể được thay đổi sau khi đối tượng UserServiceImpl được tạo. Điều này tăng cường độ tin cậy và giúp code dễ hiểu hơn.
+   */
+
+    @Override
+    @Transactional
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
+        return UserDetailsImpl.build(user);
+    }
+
+    /***
+     *
+     * @param page
+     * @param size
+     * @param code
+     * @param username
+     * @param phone
+     * @param email
+     * @return List<UserDTO>
+     */
+    @Override
+    public List<UserDTO> getAllUsers(Integer page,
+                                     Integer size, String code, String username,
+                                     String phone, String email) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> userPage;
+        if (code != null && code.isEmpty()) {
+            userPage = userRepository.findByCodeContaining(code, pageable);
+        } else if (username != null && !username.isEmpty()) {
+            userPage = userRepository.findByUsernameContaining(username, pageable);
+        } else if (phone != null && !phone.isEmpty()) {
+            userPage = userRepository.findByPhoneContaining(phone, pageable);
+        } else if (email != null && !email.isEmpty()) {
+            userPage = userRepository.findByEmailContaining(email, pageable);
+        } else {
+            userPage = userRepository.findAll(pageable);
+        }
+        List<UserDTO> userDTOs = userPage.getContent().stream().map(user -> modelMapper.map(user, UserDTO.class)).collect(Collectors.toList());
+        return userDTOs;
+    }
+
+
+
+
+
+    @Override
+    public void deleteUser(Long id) {
+        //xoa sẽ chuyển trạng thái user thành false
+        Optional<User> user = userRepository.findById(id);
+        user.get().setEnabled(false);
+        userRepository.save(user.get());
+    }
+
+    @Override
+    public UserDTO updateUser(Long id, UserDTO userDTO) {
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+        if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
+            throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
+        }
+        user.setUsername(userDTO.getUsername());
+        user.setGender(userDTO.isGender());
+        user.setBirthday(userDTO.getBirthday());
+        user.setPhone(userDTO.getPhone());
+        userRepository.save(user);
+        return modelMapper.map(user, UserDTO.class);
+    }
+
+    public String randomCode() {
+        Random random = new Random();
+        String code;
+        int number = random.nextInt(1000);
+        code = "KH" + System.currentTimeMillis() + number;
+        return code;
+    }
 }
 
 

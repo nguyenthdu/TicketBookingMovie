@@ -8,19 +8,11 @@ import java.util.List;
 public interface UserService {
 	UserDetails loadUserByUsername(String email);
 	
-	List<UserDTO> getAllUsers(Integer page, Integer size,Long code,String username, String phone,  String email);
-	
-	UserDTO getUserByCode(Long code);
-	
-	UserDTO getUserByUsername(String username);
-	
-	UserDTO getUserByEmail(String email);
-	
-	UserDTO getUserByPhone(String phone);
-	
+	List<UserDTO> getAllUsers(Integer page, Integer size,String code,String username, String phone,  String email);
+
 	void deleteUser(Long id);
 	
 	UserDTO updateUser(Long id, UserDTO userDTO);
-	
-	Long randomCode();
+
+	String randomCode();
 }

@@ -9,6 +9,6 @@ public interface GenreService {
 	GenreDTO getGenreById(Long id);
 	GenreDTO updateGenreById( GenreDTO genreDTO);
 	void deleteGenreById(Long id);
-	List<GenreDTO> getAllGenre(Integer page, Integer size,  Long code, String name);
+	List<GenreDTO> getAllGenre(Integer page, Integer size,  String code, String name);
 
 }

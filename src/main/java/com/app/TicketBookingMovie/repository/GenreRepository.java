@@ -13,7 +13,10 @@ public interface GenreRepository extends JpaRepository<Genre, Long> {
 	
 	
 	Optional<Genre> findByName(String name);
+	Optional<Genre> findById(Long id);
 	
-	Page<Genre> findByCode(Long code, Pageable pageable);
+	Page<Genre> findByCodeContaining(String code, Pageable pageable);
 	Page<Genre> findByNameContaining(String name, Pageable pageable);
+
+
 }

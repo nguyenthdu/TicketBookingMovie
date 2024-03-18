@@ -5,7 +5,6 @@ import com.app.TicketBookingMovie.models.RefreshToken;
 import com.app.TicketBookingMovie.repository.RefreshTokenRepository;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.services.RefreshTokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,11 +18,10 @@ import java.util.UUID;
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 	@Value("${movie.app.jwtRefreshExpirationMs}")
 	private Long refreshTokenDurationMs;
-	@Autowired
-	private RefreshTokenRepository refreshTokenRepository;
-	@Autowired
-	private UserRepository userRepository;
-	
+
+	private final RefreshTokenRepository refreshTokenRepository;
+
+	private final UserRepository userRepository;
 	public RefreshTokenServiceImpl(RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.userRepository = userRepository;
