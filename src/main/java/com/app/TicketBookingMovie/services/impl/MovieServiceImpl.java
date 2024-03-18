@@ -2,7 +2,7 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.app.TicketBookingMovie.dtos.MovieDTO;
+import com.app.TicketBookingMovie.dtos.MovieDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Genre;
 import com.app.TicketBookingMovie.models.Movie;
@@ -70,7 +70,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDTO createMovie(MovieDTO movieDTO, MultipartFile multipartFile) throws IOException {
+    public MovieDto createMovie(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
         String code = randomCode();
         checkFileType(multipartFile);
         if (multipartFile.getSize() > MAX_SIZE) {
@@ -95,21 +95,21 @@ public class MovieServiceImpl implements MovieService {
 
         movie.setGenres(genres);
         movieRepository.save(movie);
-        return modelMapper.map(movie, MovieDTO.class);
+        return modelMapper.map(movie, MovieDto.class);
     }
 
     @Override
-    public MovieDTO getMovieById(Long id) {
+    public MovieDto getMovieById(Long id) {
         Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException("Movie not found with id: " + id, HttpStatus.NOT_FOUND));
         Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
-        MovieDTO movieDTO = modelMapper.map(movie, MovieDTO.class);
+        MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
         movieDTO.setGenreIds(genreIds);
         return movieDTO;
 
     }
 
     @Override
-    public MovieDTO updateMovieById(MovieDTO movieDTO, MultipartFile multipartFile) throws IOException {
+    public MovieDto updateMovieById(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
         Movie movie = movieRepository.findById(movieDTO.getId())
                 .orElseThrow(() -> new AppException("Movie not found with id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));
         // Kiểm tra xem có hình ảnh mới được cung cấp không
@@ -146,7 +146,7 @@ public class MovieServiceImpl implements MovieService {
         movie.setCast(movieDTO.getCast());
         movie.setProducer(movieDTO.getProducer());
         movieRepository.save(movie);
-        return modelMapper.map(movie, MovieDTO.class);
+        return modelMapper.map(movie, MovieDto.class);
     }
 
     // Hàm tiện ích để lấy phần mở rộng của file
@@ -169,7 +169,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public List<MovieDTO> getAllMovies(Integer page, Integer size, String code, String name, Long genreId) {
+    public List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Movie> movies;
         if (code != null && !code.isEmpty()) {
@@ -182,7 +182,7 @@ public class MovieServiceImpl implements MovieService {
             movies = movieRepository.findAll(pageable);
         }
         return movies.stream().map(movie -> {
-            MovieDTO movieDTO = modelMapper.map(movie, MovieDTO.class);
+            MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
             Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
             movieDTO.setGenreIds(genreIds);
             return movieDTO;

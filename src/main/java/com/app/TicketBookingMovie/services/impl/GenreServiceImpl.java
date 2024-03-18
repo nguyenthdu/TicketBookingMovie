@@ -1,6 +1,6 @@
 package com.app.TicketBookingMovie.services.impl;
 
-import com.app.TicketBookingMovie.dtos.GenreDTO;
+import com.app.TicketBookingMovie.dtos.GenreDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Genre;
 import com.app.TicketBookingMovie.repository.GenreRepository;
@@ -27,24 +27,24 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
-    public GenreDTO createGenre(GenreDTO genreDTO) {
+    public GenreDto createGenre(GenreDto genreDTO) {
         if (genreRepository.findByName(genreDTO.getName()).isPresent()) {
             throw new AppException("name: " + genreDTO.getName() + " already exists", HttpStatus.BAD_REQUEST);
         }
         Genre genre = modelMapper.map(genreDTO, Genre.class);
         genre.setCode(randomCode());
         genreRepository.save(genre);
-        return modelMapper.map(genre, GenreDTO.class);
+        return modelMapper.map(genre, GenreDto.class);
     }
 
     @Override
-    public GenreDTO getGenreById(Long id) {
+    public GenreDto getGenreById(Long id) {
         Genre genre = genreRepository.findById(id).orElseThrow(() -> new AppException("Genre not found with id: " + id, HttpStatus.NOT_FOUND));
-        return modelMapper.map(genre, GenreDTO.class);
+        return modelMapper.map(genre, GenreDto.class);
     }
 
     @Override
-    public GenreDTO updateGenreById(GenreDTO genreDTO) {
+    public GenreDto updateGenreById(GenreDto genreDTO) {
         Genre genre = genreRepository.findById(genreDTO.getId()).orElseThrow(() -> new AppException("Genre not found with id: " + genreDTO.getId(), HttpStatus.NOT_FOUND));
         if(genreRepository.findByName(genreDTO.getName()).isPresent()){
             throw new AppException("name: " + genreDTO.getName() + " already exists", HttpStatus.BAD_REQUEST);
@@ -52,7 +52,7 @@ public class GenreServiceImpl implements GenreService {
 
         genre.setName(genreDTO.getName());
         genreRepository.save(genre);
-        return modelMapper.map(genre, GenreDTO.class);
+        return modelMapper.map(genre, GenreDto.class);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
-    public List<GenreDTO> getAllGenre(Integer page, Integer size, String code, String name) {
+    public List<GenreDto> getAllGenre(Integer page, Integer size, String code, String name) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Genre> genres;
         if (code != null && !code.isEmpty()) {
@@ -73,7 +73,7 @@ public class GenreServiceImpl implements GenreService {
             genres = genreRepository.findAll(pageable);
         }
         return genres.stream().map(genre -> modelMapper
-                .map(genre, GenreDTO.class)).collect(Collectors.toList());
+                .map(genre, GenreDto.class)).collect(Collectors.toList());
     }
 
     public String randomCode() {

@@ -1,7 +1,7 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
-import com.app.TicketBookingMovie.dtos.UserDTO;
+import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.models.User;
@@ -40,15 +40,15 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponse<UserDTO>> getAllUsers(
+    public ResponseEntity<PageResponse<UserDto>> getAllUsers(
             @RequestParam(defaultValue = "0", name = "page") Integer page,
             @RequestParam(defaultValue = "2", name = "size") Integer size,
             @RequestParam(required = false, name = "code") String code,
             @RequestParam(required = false, name = "username") String username,
             @RequestParam(required = false, name = "phone") String phone,
             @RequestParam(required = false, name = "email") String email) {
-        PageResponse<UserDTO> userPageResponse = new PageResponse<>();
-        userPageResponse.setContent(userService.getAllUsers(page, size, code, username, phone, email));
+        PageResponse<UserDto> userPageResponse = new PageResponse<>();
+        userPageResponse.setContent(userService.getAllUsersPage(page, size, code, username, phone, email));
         userPageResponse.setTotalElements(userRepository.count());
         userPageResponse.setTotalPages((int) Math.ceil((double) userRepository.count() / size));
         userPageResponse.setCurrentPage(page);
@@ -65,7 +65,7 @@ public class UserController {
             String email = jwtUtils.getEmailFromJwtToken(jwt);
             User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + email));
             // Tạo một DTO để trả về thông tin user mà không bao gồm mật khẩu
-            UserDTO userDTO = new UserDTO();
+            UserDto userDTO = new UserDto();
             userDTO.setId(user.getId());
             userDTO.setCode(user.getCode());
             userDTO.setUsername(user.getUsername());
@@ -101,7 +101,7 @@ public class UserController {
 
     // update
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserDTO userDTO) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserDto userDTO) {
         try {
             userService.updateUser(id, userDTO);
             return ResponseEntity.ok(new MessageResponseDTO("User updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));

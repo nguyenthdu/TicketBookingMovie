@@ -2,7 +2,7 @@ package com.app.TicketBookingMovie.controller;
 
 
 import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
-import com.app.TicketBookingMovie.dtos.MovieDTO;
+import com.app.TicketBookingMovie.dtos.MovieDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.repository.MovieRepository;
@@ -32,13 +32,13 @@ public class MovieController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponse<MovieDTO>> getAllMovies(
+    public ResponseEntity<PageResponse<MovieDto>> getAllMovies(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "2") Integer size,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Long genreId) {
-        PageResponse<MovieDTO> pageResponse = new PageResponse<>();
+        PageResponse<MovieDto> pageResponse = new PageResponse<>();
         pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId));
         pageResponse.setTotalElements(movieRepository.count());
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
@@ -60,7 +60,7 @@ public class MovieController {
             @RequestParam("director") String director,
             @RequestParam("cast") String cast,
             @RequestParam("producer") String producer) {
-        MovieDTO movieDTO = new MovieDTO();
+        MovieDto movieDTO = new MovieDto();
         movieDTO.setName(name);
         movieDTO.setTrailerLink(trailer);
         movieDTO.setDescription(description);
@@ -83,8 +83,8 @@ public class MovieController {
 
     //fidn by id
     @GetMapping("/{id}")
-    public ResponseEntity<MovieDTO> getMovieById(@PathVariable("id") Long id) {
-        MovieDTO movieDTO = movieService.getMovieById(id);
+    public ResponseEntity<MovieDto> getMovieById(@PathVariable("id") Long id) {
+        MovieDto movieDTO = movieService.getMovieById(id);
         return ResponseEntity.ok(movieDTO);
     }
 
@@ -104,7 +104,7 @@ public class MovieController {
             @RequestParam("cast") String cast,
             @RequestParam("producer") String producer) {
 
-        MovieDTO movieDTO = new MovieDTO();
+        MovieDto movieDTO = new MovieDto();
         movieDTO.setId(id);
         movieDTO.setName(name);
         movieDTO.setTrailerLink(trailer);

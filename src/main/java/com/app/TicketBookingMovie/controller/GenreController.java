@@ -1,6 +1,6 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.GenreDTO;
+import com.app.TicketBookingMovie.dtos.GenreDto;
 import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
@@ -24,8 +24,8 @@ public class GenreController {
     }
 
     @PostMapping()
-    public ResponseEntity<GenreDTO> createGenre(@RequestParam("name") String name) {
-        GenreDTO genreDTO = new GenreDTO();
+    public ResponseEntity<GenreDto> createGenre(@RequestParam("name") String name) {
+        GenreDto genreDTO = new GenreDto();
         genreDTO.setName(name);
         return ResponseEntity.ok(genreService.createGenre(genreDTO));
 
@@ -33,13 +33,13 @@ public class GenreController {
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<GenreDTO> getGenreById(@PathVariable Long id) {
+    public ResponseEntity<GenreDto> getGenreById(@PathVariable Long id) {
         return ResponseEntity.ok(genreService.getGenreById(id));
     }
 
     @PutMapping
     public ResponseEntity<MessageResponseDTO> updateGenreById(@RequestParam("id") Long id, @RequestParam("name") String name) {
-        GenreDTO genreDTO = new GenreDTO();
+        GenreDto genreDTO = new GenreDto();
         genreDTO.setId(id);
         genreDTO.setName(name);
         try {
@@ -61,12 +61,12 @@ public class GenreController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponse<GenreDTO>> getAllGenres(
+    public ResponseEntity<PageResponse<GenreDto>> getAllGenres(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "2") Integer size,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name) {
-        PageResponse<GenreDTO> genrePageResponse = new PageResponse<>();
+        PageResponse<GenreDto> genrePageResponse = new PageResponse<>();
         genrePageResponse.setContent(genreService.getAllGenre(page, size, code, name));
         genrePageResponse.setTotalElements(genreRepository.count());
         genrePageResponse.setTotalPages((int) Math.ceil((double) genreRepository.count() / size));

@@ -1,13 +1,13 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
-import com.app.TicketBookingMovie.dtos.SigninDTO;
-import com.app.TicketBookingMovie.dtos.SignupDTO;
+import com.app.TicketBookingMovie.dtos.SigninDto;
+import com.app.TicketBookingMovie.dtos.SignupDto;
 import com.app.TicketBookingMovie.exception.AppException;
-import com.app.TicketBookingMovie.models.ERole;
 import com.app.TicketBookingMovie.models.RefreshToken;
 import com.app.TicketBookingMovie.models.Role;
 import com.app.TicketBookingMovie.models.User;
+import com.app.TicketBookingMovie.models.enums.ERole;
 import com.app.TicketBookingMovie.repository.RoleRepository;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.JwtUtils;
@@ -65,7 +65,7 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody SigninDTO signinDTO) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody SigninDto signinDTO) {
         try {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(signinDTO.getEmail(), signinDTO.getPassword()));
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -82,7 +82,7 @@ public class AuthController {
 
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupDTO signUpDTO) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupDto signUpDTO) {
         if (userRepository.existsByUsername(signUpDTO.getUsername())) {
             return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Username is already taken!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
@@ -105,7 +105,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup/admin")
-    public ResponseEntity<?> registerAdmin(@Valid @RequestBody SignupDTO signUpDTO) {
+    public ResponseEntity<?> registerAdmin(@Valid @RequestBody SignupDto signUpDTO) {
         if (userRepository.existsByUsername(signUpDTO.getUsername())) {
             return ResponseEntity.badRequest().body(new MessageResponseDTO("Error: Username is already taken!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }

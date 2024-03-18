@@ -3,7 +3,7 @@ package com.app.TicketBookingMovie.dtos;
 import lombok.Data;
 
 @Data
-public class SigninDTO {
+public class SigninDto {
 	private String email;
 	private String password;
 }

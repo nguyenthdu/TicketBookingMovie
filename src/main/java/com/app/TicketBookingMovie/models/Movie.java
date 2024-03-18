@@ -46,7 +46,8 @@ public class Movie {
 	private String cast;
 	@NotEmpty
 	private String producer;
-
+	@OneToMany
+	private Set<ShowTime> showTimes;
 	public Movie() {
 	}
 

@@ -1,6 +1,6 @@
 package com.app.TicketBookingMovie.services.impl;
 
-import com.app.TicketBookingMovie.dtos.UserDTO;
+import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.User;
 import com.app.TicketBookingMovie.repository.UserRepository;
@@ -57,9 +57,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
      * @return List<UserDTO>
      */
     @Override
-    public List<UserDTO> getAllUsers(Integer page,
-                                     Integer size, String code, String username,
-                                     String phone, String email) {
+    public List<UserDto> getAllUsersPage(Integer page,
+                                         Integer size, String code, String username,
+                                         String phone, String email) {
         Pageable pageable = PageRequest.of(page, size);
         Page<User> userPage;
         if (code != null && code.isEmpty()) {
@@ -73,8 +73,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         } else {
             userPage = userRepository.findAll(pageable);
         }
-        List<UserDTO> userDTOs = userPage.getContent().stream().map(user -> modelMapper.map(user, UserDTO.class)).collect(Collectors.toList());
-        return userDTOs;
+        List<UserDto> userDtos = userPage.getContent().stream().map(user -> modelMapper.map(user, UserDto.class)).collect(Collectors.toList());
+        return userDtos;
     }
 
 
@@ -90,7 +90,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UserDTO updateUser(Long id, UserDTO userDTO) {
+    public UserDto updateUser(Long id, UserDto userDTO) {
         User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
         if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
             throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
@@ -100,7 +100,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setBirthday(userDTO.getBirthday());
         user.setPhone(userDTO.getPhone());
         userRepository.save(user);
-        return modelMapper.map(user, UserDTO.class);
+        return modelMapper.map(user, UserDto.class);
     }
 
     public String randomCode() {

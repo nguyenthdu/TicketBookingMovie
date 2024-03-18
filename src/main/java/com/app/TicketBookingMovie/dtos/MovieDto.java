@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 @Data
-public class MovieDTO {
+public class MovieDto {
     private Long id;
     private String code;
     private String name;
@@ -20,5 +20,6 @@ public class MovieDTO {
     private String director;
     private String cast;
     private String producer;
+    private Set<Long> showTimeIds;
 }
 

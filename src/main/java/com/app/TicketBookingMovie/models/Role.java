@@ -1,5 +1,6 @@
 package com.app.TicketBookingMovie.models;
 
+import com.app.TicketBookingMovie.models.enums.ERole;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
