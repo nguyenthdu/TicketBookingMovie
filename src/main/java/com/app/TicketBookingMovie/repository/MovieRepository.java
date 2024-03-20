@@ -6,12 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.Optional;
-
 public interface MovieRepository extends JpaRepository<Movie, Long> {
-    boolean existsByCode(String code);
-
-    Optional<Movie> findByCode(String code);
 
     Page<Movie> findByCodeContaining(String code, Pageable pageable);
 
@@ -28,7 +23,9 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     long countByNameContaining(String name);
 
+    @Query("SELECT COUNT(m) FROM Movie m JOIN m.genres g WHERE g.id = ?1")
     long countByGenreId(Long genreId);
 
+    @Query("SELECT COUNT(m) FROM Movie m JOIN m.cinemas c WHERE c.id = ?1")
     long countByCinemaId(Long cinemaId);
 }

@@ -103,7 +103,9 @@ public class MovieServiceImpl implements MovieService {
             Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
             cinemaOptional.ifPresent(cinemas::add);
         }
+
         movie.setCinemas(cinemas);
+        movie.setStatus(movieDTO.isStatus());
         movieRepository.save(movie);
         return modelMapper.map(movie, MovieDto.class);
     }
@@ -153,6 +155,7 @@ public class MovieServiceImpl implements MovieService {
             cinemaOptional.ifPresent(cinemas::add);
         }
         movie.setCinemas(cinemas);
+        movie.setStatus(movieDTO.isStatus());
         movieRepository.save(movie);
         return modelMapper.map(movie, MovieDto.class);
     }

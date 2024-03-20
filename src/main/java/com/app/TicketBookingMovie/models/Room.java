@@ -27,13 +27,4 @@ public class Room {
     private boolean status = true;
     public Room() {
     }
-
-    public Room(String name, ETypeRoom type, int totalSeats, Cinema cinema, Set<Seat> seats, boolean status) {
-        this.name = name;
-        this.type = type;
-        this.totalSeats = totalSeats;
-        this.cinema = cinema;
-        this.seats = seats;
-        this.status = status;
-    }
 }

@@ -22,5 +22,6 @@ public class MovieDto {
     private String producer;
     private Set<Long> showTimeIds;
     private Set<Long> cinemaIds;
+    private boolean status;
 }
 

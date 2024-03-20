@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -19,13 +19,13 @@ public class ShowTime {
     private String code;
     @Past
     private LocalDate showDate;
-    private LocalDateTime showTime;
+    private LocalTime showTime;
     @ManyToOne
     private Movie movie;
     @ManyToOne
     private Room room;
     private boolean status;
-
+    private int seatsBooked;
     public ShowTime() {
     }
 

@@ -5,7 +5,6 @@ import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.MovieDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
-import com.app.TicketBookingMovie.repository.MovieRepository;
 import com.app.TicketBookingMovie.services.MovieService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -23,12 +22,10 @@ import java.util.Set;
 @RequestMapping("/api/movie")
 public class MovieController {
     private final MovieService movieService;
-    private final MovieRepository movieRepository;
 
 
-    public MovieController(MovieService movieService, MovieRepository movieRepository) {
+    public MovieController(MovieService movieService) {
         this.movieService = movieService;
-        this.movieRepository = movieRepository;
     }
 
     @GetMapping
@@ -61,7 +58,8 @@ public class MovieController {
             @RequestParam("director") String director,
             @RequestParam("cast") String cast,
             @RequestParam("producer") String producer,
-            @RequestParam("cinemaId") Set<Long> cinemaId) {
+            @RequestParam("cinemaId") Set<Long> cinemaId,
+            @RequestParam("status") boolean status) {
         MovieDto movieDTO = new MovieDto();
         movieDTO.setName(name);
         movieDTO.setTrailerLink(trailer);
@@ -74,6 +72,7 @@ public class MovieController {
         movieDTO.setCast(cast);
         movieDTO.setProducer(producer);
         movieDTO.setCinemaIds(cinemaId);
+        movieDTO.setStatus(status);
         try {
             movieService.createMovie(movieDTO, image);
             return ResponseEntity.ok().body(new MessageResponseDto("Movie created successfully with movie name: " + name, HttpStatus.CREATED.value(), Instant.now().toString()));
@@ -106,9 +105,8 @@ public class MovieController {
             @RequestParam("director") String director,
             @RequestParam("cast") String cast,
             @RequestParam("producer") String producer,
-            @RequestParam("cinemaId") Set<Long> cinemaId
-    ) {
-
+            @RequestParam("cinemaId") Set<Long> cinemaId,
+            @RequestParam("status") boolean status) {
         MovieDto movieDTO = new MovieDto();
         movieDTO.setId(id);
         movieDTO.setName(name);
@@ -122,6 +120,7 @@ public class MovieController {
         movieDTO.setCast(cast);
         movieDTO.setProducer(producer);
         movieDTO.setCinemaIds(cinemaId);
+        movieDTO.setStatus(status);
         try {
             movieService.updateMovieById(movieDTO, image);
             return ResponseEntity.ok().body(new MessageResponseDto("Movie updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));

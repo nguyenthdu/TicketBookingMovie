@@ -54,6 +54,7 @@ public class Movie {
 	private String producer;
 	@OneToMany
 	private Set<ShowTime> showTimes;
+	private boolean status;
 	public Movie() {
 	}
 
