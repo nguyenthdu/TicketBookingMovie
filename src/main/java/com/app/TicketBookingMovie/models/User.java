@@ -1,12 +1,13 @@
 package com.app.TicketBookingMovie.models;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Past;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -23,24 +24,22 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String code;
-    @NotEmpty(message = "Username is not empty")
-    @Size(min = 3, max = 32, message = "Username is not between 3 and 20 characters")
+    @NotEmpty
     private String username;
-    @NotEmpty(message = "Email is not empty")
-    @Email(message = "Email is not valid")
+    @NotEmpty
+    @Email
     private String email;
-    @NotNull
+    @NotEmpty
     private boolean gender;
-    @NotNull
-    @Past(message = "Birthday is not valid")
+    @Past
     private LocalDate birthday;
-    @NotEmpty(message = "Phone is not empty")
+    @NotEmpty
     private String phone;
-    @NotEmpty(message = "Password is not empty")
+    @NotEmpty
     private String password;
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
+    private Set<Role> roles;
     private boolean enabled = true;
     private LocalDate createdDate = LocalDate.now();
 

@@ -12,7 +12,5 @@ public interface TypeSeatService {
 
     TypeSeatDto updateTypeSeatById(TypeSeatDto typeSeatDto);
 
-
-
     Set<TypeSeatDto> getAllTypeSeats();
 }

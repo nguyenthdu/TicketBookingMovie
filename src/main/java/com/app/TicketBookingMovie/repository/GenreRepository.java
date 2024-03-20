@@ -19,4 +19,7 @@ public interface GenreRepository extends JpaRepository<Genre, Long> {
 	Page<Genre> findByNameContaining(String name, Pageable pageable);
 
 
+    long countByCodeContaining(String code);
+
+	long countByNameContaining(String name);
 }

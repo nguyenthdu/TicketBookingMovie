@@ -11,5 +11,7 @@ public interface MovieService {
     MovieDto getMovieById(Long id);
     MovieDto updateMovieById(MovieDto movieDTO, MultipartFile multipartFile) throws IOException;
     void deleteMovieById(Long id);
-    List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId);
+    List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId, Long cinemaId);
+
+    long countAllMovies(String code, String name, Long genreId, Long cinemaId);
 }

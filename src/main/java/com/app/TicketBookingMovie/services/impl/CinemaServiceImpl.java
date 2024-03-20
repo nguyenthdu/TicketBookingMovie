@@ -47,8 +47,8 @@ public class CinemaServiceImpl implements CinemaService {
         addressDto = addressService.createAddress(addressDto); // Save the address and get the saved object
         Address address = modelMapper.map(addressDto, Address.class); // Map the saved AddressDto to Address
         cinema.setAddress(address);
-        cinema.setTotalRoom(cinemaDto.getTotalRoom());
         cinema.setStatus(cinemaDto.isStatus());
+        cinema.setTotalRoom(0);
         cinemaRepository.save(cinema);
         return modelMapper.map(cinema, CinemaDto.class);
     }
@@ -56,8 +56,8 @@ public class CinemaServiceImpl implements CinemaService {
     public String randomCode() {
         Random random = new Random();
         String code;
-        int number = random.nextInt(1000);
-        code = "RAP" + System.currentTimeMillis() + number;
+
+        code = "RAP" + System.currentTimeMillis();
         return code;
     }
 
@@ -79,8 +79,6 @@ public class CinemaServiceImpl implements CinemaService {
         AddressDto addressDto = cinemaDto.getAddress();
         addressDto.setId(address.getId());
         addressService.updateAddress(addressDto);
-
-        cinema.setTotalRoom(cinemaDto.getTotalRoom());
         cinema.setStatus(cinemaDto.isStatus());
         cinemaRepository.save(cinema);
         return modelMapper.map(cinema, CinemaDto.class);
@@ -116,4 +114,34 @@ public class CinemaServiceImpl implements CinemaService {
 
         return cinemaPage.map(cinema -> modelMapper.map(cinema, CinemaDto.class)).getContent();
     }
+
+    @Override
+    public int countTotalRooms(Long id, int number) {
+        Cinema cinema = cinemaRepository.findById(id).orElseThrow(
+                () -> new AppException("Cinema not found with id: " + id, HttpStatus.NOT_FOUND));
+        cinema.setTotalRoom(cinema.getTotalRoom() + number);
+        cinemaRepository.save(cinema);
+        return cinema.getTotalRoom();
+    }
+
+    @Override
+    public long countAllCinemas(String code, String name, String street, String district, String city, String nation) {
+        if (code != null && !code.isEmpty()) {
+            return cinemaRepository.countByCodeContaining(code);
+        } else if (name != null && !name.isEmpty()) {
+            return cinemaRepository.countByNameContaining(name);
+        } else if (street != null && !street.isEmpty()) {
+            return cinemaRepository.countByAddressStreet(street);
+        } else if (district != null && !district.isEmpty()) {
+            return cinemaRepository.countByAddressDistrict(district);
+        } else if (city != null && !city.isEmpty()) {
+            return cinemaRepository.countByAddressCity(city);
+        } else if (nation != null && !nation.isEmpty()) {
+            return cinemaRepository.countByAddressNation(nation);
+        } else {
+            return cinemaRepository.count();
+        }
+    }
+
+
 }

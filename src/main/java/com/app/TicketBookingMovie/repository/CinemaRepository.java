@@ -30,4 +30,16 @@ public interface CinemaRepository extends JpaRepository<Cinema, Long> {
     Page<Cinema> findByNameContaining(String name, Pageable pageable);
 
     Page<Cinema> findByCodeContaining(String code, Pageable pageable);
+
+    long countByCodeContaining(String code);
+
+    long countByNameContaining(String name);
+
+    long countByAddressStreet(String street);
+
+    long countByAddressDistrict(String district);
+
+    long countByAddressCity(String city);
+
+    long countByAddressNation(String nation);
 }

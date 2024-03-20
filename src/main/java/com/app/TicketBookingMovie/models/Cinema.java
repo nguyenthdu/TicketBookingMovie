@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -17,20 +18,16 @@ public class Cinema {
     private String code;
     @NotEmpty
     private String name;
-    @NotEmpty
     private int totalRoom;
     @OneToOne(cascade = CascadeType.REMOVE) // Add CascadeType.REMOVE here
     private Address address;
-    @OneToMany
+    @OneToMany(mappedBy = "cinema")
     private Set<Room> rooms;
+    @ManyToMany(mappedBy = "cinemas")
+    private Set<Movie> movies;
     private boolean status = true;
+
     public Cinema() {
     }
 
-    public Cinema(String name, int totalRoom, Address address, boolean status) {
-        this.name = name;
-        this.totalRoom = totalRoom;
-        this.address = address;
-        this.status = status;
-    }
 }

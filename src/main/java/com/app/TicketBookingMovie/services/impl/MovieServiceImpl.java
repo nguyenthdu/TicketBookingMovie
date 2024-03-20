@@ -4,8 +4,10 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.app.TicketBookingMovie.dtos.MovieDto;
 import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.models.Cinema;
 import com.app.TicketBookingMovie.models.Genre;
 import com.app.TicketBookingMovie.models.Movie;
+import com.app.TicketBookingMovie.repository.CinemaRepository;
 import com.app.TicketBookingMovie.repository.GenreRepository;
 import com.app.TicketBookingMovie.repository.MovieRepository;
 import com.app.TicketBookingMovie.services.MovieService;
@@ -32,13 +34,15 @@ public class MovieServiceImpl implements MovieService {
     private final ModelMapper modelMapper;
     private final MovieRepository movieRepository;
     private final GenreRepository genreRepository;
+    private final CinemaRepository cinemaRepository;
     private final AmazonS3 amazonS3;
 
-    public MovieServiceImpl(ModelMapper modelMapper, MovieRepository movieRepository, GenreRepository genreRepository, AmazonS3 amazonS3) {
+    public MovieServiceImpl(ModelMapper modelMapper, MovieRepository movieRepository, GenreRepository genreRepository, AmazonS3 amazonS3, CinemaRepository cinemaRepository) {
         this.modelMapper = modelMapper;
         this.movieRepository = movieRepository;
         this.genreRepository = genreRepository;
         this.amazonS3 = amazonS3;
+        this.cinemaRepository = cinemaRepository;
     }
 
     private static final long MAX_SIZE = 10 * 1024 * 1024;
@@ -92,8 +96,14 @@ public class MovieServiceImpl implements MovieService {
             Optional<Genre> genreOptional = Optional.ofNullable(genreRepository.findById(genreId).orElseThrow(() -> new AppException("Genre not found with id: " + genreId, HttpStatus.NOT_FOUND)));
             genreOptional.ifPresent(genres::add);
         }
-
         movie.setGenres(genres);
+        //Chuyển đổi id cinema sang các đối tượng Cinema
+        Set<Cinema> cinemas = new HashSet<>();
+        for (Long cinemeId : movieDTO.getCinemaIds()) {
+            Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
+            cinemaOptional.ifPresent(cinemas::add);
+        }
+        movie.setCinemas(cinemas);
         movieRepository.save(movie);
         return modelMapper.map(movie, MovieDto.class);
     }
@@ -112,10 +122,10 @@ public class MovieServiceImpl implements MovieService {
     public MovieDto updateMovieById(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
         Movie movie = movieRepository.findById(movieDTO.getId())
                 .orElseThrow(() -> new AppException("Movie not found with id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));
+        modelMapper.map(movieDTO, movie);
         // Kiểm tra xem có hình ảnh mới được cung cấp không
         if (multipartFile != null && !multipartFile.isEmpty()) {
             // Xóa hình ảnh cũ trên AWS
-
             String imageUrl = movie.getImageLink();
             String imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
             imageKey = imageKey.replace("%3A", ":");
@@ -136,15 +146,13 @@ public class MovieServiceImpl implements MovieService {
             genreOptional.ifPresent(genres::add);
         }
         movie.setGenres(genres);
-        movie.setName(movieDTO.getName());
-        movie.setTrailerLink(movieDTO.getTrailerLink());
-        movie.setDescription(movieDTO.getDescription());
-        movie.setDurationMinutes(movieDTO.getDurationMinutes());
-        movie.setReleaseDate(movieDTO.getReleaseDate());
-        movie.setCountry(movieDTO.getCountry());
-        movie.setDirector(movieDTO.getDirector());
-        movie.setCast(movieDTO.getCast());
-        movie.setProducer(movieDTO.getProducer());
+        //Chuyển đổi id cinema sang các đối tượng Cinema
+        Set<Cinema> cinemas = new HashSet<>();
+        for (Long cinemeId : movieDTO.getCinemaIds()) {
+            Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
+            cinemaOptional.ifPresent(cinemas::add);
+        }
+        movie.setCinemas(cinemas);
         movieRepository.save(movie);
         return modelMapper.map(movie, MovieDto.class);
     }
@@ -169,7 +177,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId) {
+    public List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId, Long cinemaId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Movie> movies;
         if (code != null && !code.isEmpty()) {
@@ -178,6 +186,8 @@ public class MovieServiceImpl implements MovieService {
             movies = movieRepository.findByNameContaining(name, pageable);
         } else if (genreId != null && genreId != 0) {
             movies = movieRepository.findByGenreId(genreId, pageable);
+        } else if (cinemaId != null && cinemaId != 0) {
+            movies = movieRepository.findByCinemaId(cinemaId, pageable);
         } else {
             movies = movieRepository.findAll(pageable);
         }
@@ -187,5 +197,20 @@ public class MovieServiceImpl implements MovieService {
             movieDTO.setGenreIds(genreIds);
             return movieDTO;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public long countAllMovies(String code, String name, Long genreId, Long cinemaId) {
+        if (code != null && !code.isEmpty()) {
+            return movieRepository.countByCodeContaining(code);
+        } else if (name != null && !name.isEmpty()) {
+            return movieRepository.countByNameContaining(name);
+        } else if (genreId != null && genreId != 0) {
+            return movieRepository.countByGenreId(genreId);
+        } else if (cinemaId != null && cinemaId != 0) {
+            return movieRepository.countByCinemaId(cinemaId);
+        } else {
+            return movieRepository.count();
+        }
     }
 }

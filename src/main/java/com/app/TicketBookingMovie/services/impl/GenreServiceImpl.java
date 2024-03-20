@@ -76,6 +76,17 @@ public class GenreServiceImpl implements GenreService {
                 .map(genre, GenreDto.class)).collect(Collectors.toList());
     }
 
+    @Override
+    public long countAllGenres(String code, String name) {
+        if (code != null && !code.isEmpty()) {
+            return genreRepository.countByCodeContaining(code);
+        } else if (name != null && !name.isEmpty()) {
+            return genreRepository.countByNameContaining(name);
+        } else {
+            return genreRepository.count();
+        }
+    }
+
     public String randomCode() {
         Random random = new Random();
         String code;

@@ -1,7 +1,7 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.AddressDto;
-import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
+import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.services.AddressService;
 import org.springframework.http.HttpStatus;
@@ -21,7 +21,7 @@ public class AddressController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDTO> createAddress(
+    public ResponseEntity<MessageResponseDto> createAddress(
             @RequestParam("street") String street,
             @RequestParam("district") String district,
             @RequestParam("city") String city,
@@ -33,9 +33,9 @@ public class AddressController {
         addressDto.setNation(nation);
         try {
             addressService.createAddress(addressDto);
-            return ResponseEntity.ok(new MessageResponseDTO("Address created successfully!" + addressDto.getId(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Address created successfully!" + addressDto.getId(), HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.ok(new MessageResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
     }
 

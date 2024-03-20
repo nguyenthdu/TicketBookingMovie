@@ -1,7 +1,7 @@
 package com.app.TicketBookingMovie.controller;
 
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
+import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.MovieDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
@@ -37,10 +37,11 @@ public class MovieController {
             @RequestParam(defaultValue = "2") Integer size,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long genreId) {
+            @RequestParam(required = false) Long genreId,
+            @RequestParam(required = false) Long cinemaId) {
         PageResponse<MovieDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId));
-        pageResponse.setTotalElements(movieRepository.count());
+        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId, cinemaId));
+        pageResponse.setTotalElements(movieService.countAllMovies(code, name, genreId, cinemaId));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -48,7 +49,7 @@ public class MovieController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDTO> createMovie(
+    public ResponseEntity<MessageResponseDto> createMovie(
             @RequestParam("name") String name,
             @RequestParam("image") MultipartFile image,
             @RequestParam("trailer") String trailer,
@@ -59,7 +60,8 @@ public class MovieController {
             @RequestParam("country") String country,
             @RequestParam("director") String director,
             @RequestParam("cast") String cast,
-            @RequestParam("producer") String producer) {
+            @RequestParam("producer") String producer,
+            @RequestParam("cinemaId") Set<Long> cinemaId) {
         MovieDto movieDTO = new MovieDto();
         movieDTO.setName(name);
         movieDTO.setTrailerLink(trailer);
@@ -71,13 +73,14 @@ public class MovieController {
         movieDTO.setDirector(director);
         movieDTO.setCast(cast);
         movieDTO.setProducer(producer);
+        movieDTO.setCinemaIds(cinemaId);
         try {
             movieService.createMovie(movieDTO, image);
-            return ResponseEntity.ok().body(new MessageResponseDTO("Movie created successfully with movie name: " + name, HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponseDto("Movie created successfully with movie name: " + name, HttpStatus.CREATED.value(), Instant.now().toString()));
         } catch (IOException e) {
             return ResponseEntity.badRequest().build();
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -90,7 +93,7 @@ public class MovieController {
 
     //update
     @PutMapping
-    public ResponseEntity<MessageResponseDTO> updateMovie(
+    public ResponseEntity<MessageResponseDto> updateMovie(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
             @RequestParam("image") MultipartFile image,
@@ -102,7 +105,9 @@ public class MovieController {
             @RequestParam("country") String country,
             @RequestParam("director") String director,
             @RequestParam("cast") String cast,
-            @RequestParam("producer") String producer) {
+            @RequestParam("producer") String producer,
+            @RequestParam("cinemaId") Set<Long> cinemaId
+    ) {
 
         MovieDto movieDTO = new MovieDto();
         movieDTO.setId(id);
@@ -116,24 +121,25 @@ public class MovieController {
         movieDTO.setDirector(director);
         movieDTO.setCast(cast);
         movieDTO.setProducer(producer);
+        movieDTO.setCinemaIds(cinemaId);
         try {
             movieService.updateMovieById(movieDTO, image);
-            return ResponseEntity.ok().body(new MessageResponseDTO("Movie updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponseDto("Movie updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (IOException e) {
             return ResponseEntity.badRequest().build();
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     //delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDTO> deleteMovie(@PathVariable("id") Long id) {
+    public ResponseEntity<MessageResponseDto> deleteMovie(@PathVariable("id") Long id) {
         try {
             movieService.deleteMovieById(id);
-            return ResponseEntity.ok().body(new MessageResponseDTO("Movie deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponseDto("Movie deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
 
     }

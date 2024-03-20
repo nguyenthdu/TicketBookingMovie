@@ -1,6 +1,7 @@
 package com.app.TicketBookingMovie.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Past;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,29 +17,16 @@ public class ShowTime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String code;
+    @Past
     private LocalDate showDate;
     private LocalDateTime showTime;
     @ManyToOne
     private Movie movie;
     @ManyToOne
     private Room room;
-    @ManyToOne
-    private Cinema cinema;
     private boolean status;
 
     public ShowTime() {
     }
 
-    public ShowTime(Long id) {
-        this.id = id;
-    }
-
-    public ShowTime(LocalDate showDate, LocalDateTime showTime, Movie movie, Room room, Cinema cinema, boolean status) {
-        this.showDate = showDate;
-        this.showTime = showTime;
-        this.movie = movie;
-        this.room = room;
-        this.cinema = cinema;
-        this.status = status;
-    }
 }

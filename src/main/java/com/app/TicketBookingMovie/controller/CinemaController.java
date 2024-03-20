@@ -2,7 +2,7 @@ package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.AddressDto;
 import com.app.TicketBookingMovie.dtos.CinemaDto;
-import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
+import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.services.CinemaService;
@@ -25,7 +25,6 @@ public class CinemaController {
     @PostMapping
     public ResponseEntity<CinemaDto> createCinema(
             @RequestParam("name") String name,
-            @RequestParam("totalRoom") int totalRoom,
             @RequestParam("status") boolean status,
             @RequestParam("street") String street,
             @RequestParam("district") String district,
@@ -33,7 +32,6 @@ public class CinemaController {
             @RequestParam("nation") String nation) {
         CinemaDto cinemaDto = new CinemaDto();
         cinemaDto.setName(name);
-        cinemaDto.setTotalRoom(totalRoom);
         cinemaDto.setStatus(status);
         AddressDto address = new AddressDto();
         address.setStreet(street);
@@ -53,15 +51,15 @@ public class CinemaController {
     public ResponseEntity<PageResponse<CinemaDto>> getAllCinema(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "2") Integer size,
-            @RequestParam("code") String code,
-            @RequestParam("name") String name,
-            @RequestParam("street") String street,
-            @RequestParam("district") String district,
-            @RequestParam("city") String city,
-            @RequestParam("nation") String nation) {
+            @RequestParam(required = false, name = "code") String code,
+            @RequestParam(required = false,name = "name") String name,
+            @RequestParam(required = false, name = "street") String street,
+            @RequestParam(required = false, name = "district") String district,
+            @RequestParam(required = false, name = "city") String city,
+            @RequestParam(required = false,name = "nation") String nation) {
         PageResponse<CinemaDto> pageResponse = new PageResponse<>();
         pageResponse.setContent(cinemaService.getAllCinemas(page, size,code, name, street, district, city, nation));
-        pageResponse.setTotalElements(pageResponse.getContent().size());
+        pageResponse.setTotalElements(cinemaService.countAllCinemas(code, name, street, district, city, nation));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -70,10 +68,9 @@ public class CinemaController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDTO> updateCinema(
+    public ResponseEntity<MessageResponseDto> updateCinema(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
-            @RequestParam("totalRoom") int totalRoom,
             @RequestParam("status") boolean status,
             @RequestParam("street") String street,
             @RequestParam("district") String district,
@@ -82,7 +79,6 @@ public class CinemaController {
         CinemaDto cinemaDto = new CinemaDto();
         cinemaDto.setId(id);
         cinemaDto.setName(name);
-        cinemaDto.setTotalRoom(totalRoom);
         cinemaDto.setStatus(status);
         AddressDto address = new AddressDto();
         address.setStreet(street);
@@ -92,19 +88,19 @@ public class CinemaController {
         cinemaDto.setAddress(address);
         try {
             cinemaService.updateCinema(cinemaDto);
-            return ResponseEntity.ok(new MessageResponseDTO("Update cinema successfully with id:" + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Update cinema successfully with id:" + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.ok(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.ok(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDTO> deleteCinemaById(@PathVariable Long id) {
+    public ResponseEntity<MessageResponseDto> deleteCinemaById(@PathVariable Long id) {
         try {
             cinemaService.deleteCinemaById(id);
-            return ResponseEntity.ok(new MessageResponseDTO("Delete cinema successfully with id:" + id, HttpStatus.NO_CONTENT.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Delete cinema successfully with id:" + id, HttpStatus.NO_CONTENT.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.ok(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.ok(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 

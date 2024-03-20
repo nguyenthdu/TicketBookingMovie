@@ -21,5 +21,6 @@ public class MovieDto {
     private String cast;
     private String producer;
     private Set<Long> showTimeIds;
+    private Set<Long> cinemaIds;
 }
 

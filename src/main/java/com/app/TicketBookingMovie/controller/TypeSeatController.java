@@ -1,6 +1,6 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
+import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.TypeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.services.TypeSeatService;
@@ -34,7 +34,7 @@ public class TypeSeatController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDTO> updateTypeSeatById(
+    public ResponseEntity<MessageResponseDto> updateTypeSeatById(
             @RequestParam("id") Long id,
             @RequestParam("price") double price) {
         TypeSeatDto typeSeatDto = new TypeSeatDto();
@@ -42,9 +42,9 @@ public class TypeSeatController {
         typeSeatDto.setPrice(price);
         try {
             typeSeatService.updateTypeSeatById(typeSeatDto);
-            return ResponseEntity.ok(new MessageResponseDTO("Update type seat successfully with: " + typeSeatDto.getId(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Update type seat successfully with: " + typeSeatDto.getId(), HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.ok(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.ok(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 

@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface MovieRepository extends JpaRepository<Movie, Long> {
     boolean existsByCode(String code);
+
     Optional<Movie> findByCode(String code);
 
     Page<Movie> findByCodeContaining(String code, Pageable pageable);
@@ -20,4 +21,14 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     @Query("SELECT m FROM Movie m JOIN m.genres g WHERE g.id = ?1")
     Page<Movie> findByGenreId(Long id, Pageable pageable);
 
+    @Query("SELECT m FROM Movie m JOIN m.cinemas c WHERE c.id = ?1")
+    Page<Movie> findByCinemaId(Long cinemaId, Pageable pageable);
+
+    long countByCodeContaining(String code);
+
+    long countByNameContaining(String name);
+
+    long countByGenreId(Long genreId);
+
+    long countByCinemaId(Long cinemaId);
 }

@@ -11,4 +11,5 @@ public interface GenreService {
 	void deleteGenreById(Long id);
 	List<GenreDto> getAllGenre(Integer page, Integer size, String code, String name);
 
+    long countAllGenres(String code, String name);
 }

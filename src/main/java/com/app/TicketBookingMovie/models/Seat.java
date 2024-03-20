@@ -21,11 +21,11 @@ public class Seat {
     @ManyToOne
     private TypeSeat seatType;
 
+
     public Seat() {
     }
 
-    public Seat(String name, int seatRow, int seatColumn, boolean status, TypeSeat seatType) {
-        this.name = name;
+    public Seat(int seatRow, int seatColumn, boolean status, TypeSeat seatType) {
         this.seatRow = seatRow;
         this.seatColumn = seatColumn;
         this.status = status;

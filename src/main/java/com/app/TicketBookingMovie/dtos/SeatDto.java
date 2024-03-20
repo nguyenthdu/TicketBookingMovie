@@ -6,10 +6,10 @@ import lombok.Data;
 public class SeatDto {
     private Long id;
     private String code;
-    private String type;
-    private String status;
-    private String room;
-    private String movie;
-    private String showtime;
-    private String user;
+    private String name;
+    private int seatRow;
+    private int seatColumn;
+    private boolean status;
+    private Long seatTypeId;
+
 }

@@ -10,4 +10,7 @@ public interface CinemaService {
     CinemaDto updateCinema(CinemaDto cinemaDto);
     void deleteCinemaById(Long id);
     List<CinemaDto> getAllCinemas(int page, int size,String  code, String name, String street, String district, String city, String nation);
+    int countTotalRooms(Long id, int number);
+
+    long countAllCinemas(String code, String name, String street, String district, String city, String nation);
 }

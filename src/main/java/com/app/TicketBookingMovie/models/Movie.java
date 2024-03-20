@@ -36,6 +36,12 @@ public class Movie {
 			joinColumns = @JoinColumn(name = "movie_id"),
 			inverseJoinColumns = @JoinColumn(name = "genre_id"))
 	private Set<Genre> genres;
+	//many to many cinema
+	@ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+	@JoinTable(name = "movie_cinema",
+			joinColumns = @JoinColumn(name = "movie_id"),
+			inverseJoinColumns = @JoinColumn(name = "cinema_id"))
+	private Set<Cinema> cinemas;
 	@NotEmpty
 	private LocalDate releaseDate;
 	@NotEmpty
@@ -51,19 +57,4 @@ public class Movie {
 	public Movie() {
 	}
 
-	public Movie(Long id, String code, String name, String imageLink, String trailerLink, String description, int durationMinutes, Set<Genre> genres, LocalDate releaseDate, String country, String director, String cast, String producer) {
-		this.id = id;
-		this.code = code;
-		this.name = name;
-		this.imageLink = imageLink;
-		this.trailerLink = trailerLink;
-		this.description = description;
-		this.durationMinutes = durationMinutes;
-		this.genres = genres;
-		this.releaseDate = releaseDate;
-		this.country = country;
-		this.director = director;
-		this.cast = cast;
-		this.producer = producer;
-	}
 }

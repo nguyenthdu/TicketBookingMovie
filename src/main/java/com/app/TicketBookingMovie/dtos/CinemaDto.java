@@ -13,4 +13,5 @@ public class CinemaDto {
     private AddressDto address;
     private boolean status = true;
     private Set<Long> roomIds;
+    private Set<Long> movieIds;
 }

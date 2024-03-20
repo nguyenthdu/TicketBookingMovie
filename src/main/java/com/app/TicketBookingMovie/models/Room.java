@@ -16,18 +16,20 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private  String code;
-    @Embedded
+    private String name;
+    @Enumerated(EnumType.STRING)
     private ETypeRoom type;
     private int totalSeats;
     @ManyToOne
     private Cinema cinema;
     @OneToMany
     private Set<Seat> seats;
-    private boolean status;
+    private boolean status = true;
     public Room() {
     }
 
-    public Room(ETypeRoom type, int totalSeats, Cinema cinema, Set<Seat> seats, boolean status) {
+    public Room(String name, ETypeRoom type, int totalSeats, Cinema cinema, Set<Seat> seats, boolean status) {
+        this.name = name;
         this.type = type;
         this.totalSeats = totalSeats;
         this.cinema = cinema;

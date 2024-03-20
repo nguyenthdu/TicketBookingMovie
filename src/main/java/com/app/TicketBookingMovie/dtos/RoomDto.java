@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.dtos;
 
-import com.app.TicketBookingMovie.models.Seat;
 import lombok.Data;
 
 import java.util.Set;
@@ -12,9 +11,10 @@ import java.util.Set;
 public class RoomDto   {
     private Long id;
     private String code;
+    private String name;
     private String type;
     private int totalSeat;
     private Long cinemaId;
     private boolean status = true;
-    private Set<Seat> seats;
+    private Set<SeatDto> seats;
 }

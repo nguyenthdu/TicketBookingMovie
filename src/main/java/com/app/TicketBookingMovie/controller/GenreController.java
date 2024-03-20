@@ -1,7 +1,7 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.GenreDto;
-import com.app.TicketBookingMovie.dtos.MessageResponseDTO;
+import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.repository.GenreRepository;
@@ -38,25 +38,25 @@ public class GenreController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDTO> updateGenreById(@RequestParam("id") Long id, @RequestParam("name") String name) {
+    public ResponseEntity<MessageResponseDto> updateGenreById(@RequestParam("id") Long id, @RequestParam("name") String name) {
         GenreDto genreDTO = new GenreDto();
         genreDTO.setId(id);
         genreDTO.setName(name);
         try {
             genreService.updateGenreById(genreDTO);
-            return ResponseEntity.ok().body(new MessageResponseDTO("Genre updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponseDto("Genre updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @DeleteMapping("{id}")
-    public ResponseEntity<MessageResponseDTO> deleteGenreById(Long id) {
+    public ResponseEntity<MessageResponseDto> deleteGenreById(Long id) {
         try {
             genreService.deleteGenreById(id);
-            return ResponseEntity.ok().body(new MessageResponseDTO("Genre deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponseDto("Genre deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDTO(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -66,12 +66,12 @@ public class GenreController {
             @RequestParam(defaultValue = "2") Integer size,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name) {
-        PageResponse<GenreDto> genrePageResponse = new PageResponse<>();
-        genrePageResponse.setContent(genreService.getAllGenre(page, size, code, name));
-        genrePageResponse.setTotalElements(genreRepository.count());
-        genrePageResponse.setTotalPages((int) Math.ceil((double) genreRepository.count() / size));
-        genrePageResponse.setCurrentPage(page);
-        genrePageResponse.setPageSize(size);
-        return ResponseEntity.ok().body(genrePageResponse);
+        PageResponse<GenreDto> pageResponse = new PageResponse<>();
+        pageResponse.setContent(genreService.getAllGenre(page, size, code, name));
+        pageResponse.setTotalElements(genreService.countAllGenres(code, name));
+        pageResponse.setTotalPages((int) Math.ceil((double)  pageResponse.getTotalElements()/ size));
+        pageResponse.setCurrentPage(page);
+        pageResponse.setPageSize(size);
+        return ResponseEntity.ok().body(pageResponse);
     }
 }
