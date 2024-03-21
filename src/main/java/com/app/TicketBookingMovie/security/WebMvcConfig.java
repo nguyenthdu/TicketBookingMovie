@@ -13,10 +13,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("*") // You can specify your ReactJS application's URL here instead of "*"
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
+                .allowedOriginPatterns("*")
                 .maxAge(MAX_AGE_SECS);
     }
 }

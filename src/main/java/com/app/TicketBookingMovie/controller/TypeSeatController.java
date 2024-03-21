@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.Set;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("api/typeSeat")
 public class TypeSeatController {
