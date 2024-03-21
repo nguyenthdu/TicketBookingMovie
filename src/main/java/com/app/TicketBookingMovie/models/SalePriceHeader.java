@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -22,6 +22,6 @@ public class SalePriceHeader {
     private LocalDateTime endDate;
     private boolean status;
    @OneToMany(mappedBy = "salePriceHeader")
-    private List<SalePriceDetail> salePriceDetails;
+    private Set<SalePriceDetail> salePriceDetails;
 
 }

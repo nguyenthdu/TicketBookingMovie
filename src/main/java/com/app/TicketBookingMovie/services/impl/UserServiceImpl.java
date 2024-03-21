@@ -103,7 +103,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UserDto updateUser(Long id, UserDto userDTO) {
+    public void updateUser(Long id, UserDto userDTO) {
         User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
         if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
             throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
@@ -129,7 +129,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setPhone(user.getPhone());
         }
         userRepository.save(user);
-        return modelMapper.map(user, UserDto.class);
+        modelMapper.map(user, UserDto.class);
     }
 //TODO: create user
     @Override
@@ -195,6 +195,20 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setPassword(passwordConfig.passwordEncoder()
                 .encode(signupDto.getPassword()));
         userRepository.save(user);
+    }
+
+    @Override
+    public void createRoles() {
+        if (roleRepository.findByName(ERole.valueOf("ROLE_ADMIN")).isEmpty()) {
+            roleRepository.save(new Role(ERole.ROLE_ADMIN));
+        }
+        if (roleRepository.findByName(ERole.valueOf("ROLE_USER")).isEmpty()) {
+            roleRepository.save(new Role(ERole.ROLE_USER));
+
+        }
+        if (roleRepository.findByName(ERole.valueOf("ROLE_MODERATOR")).isEmpty()) {
+            roleRepository.save(new Role(ERole.ROLE_MODERATOR));
+        }
     }
 
     @Override

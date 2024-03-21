@@ -5,10 +5,7 @@ import com.app.TicketBookingMovie.dtos.SignupDto;
 import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
-import com.app.TicketBookingMovie.models.Role;
 import com.app.TicketBookingMovie.models.User;
-import com.app.TicketBookingMovie.models.enums.ERole;
-import com.app.TicketBookingMovie.repository.RoleRepository;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.services.UserService;
@@ -31,13 +28,12 @@ public class UserController {
     JwtUtils jwtUtils;
     private final UserService userService;
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
 
-    public UserController(JwtUtils jwtUtils, UserService userService, UserRepository userRepository, RoleRepository roleRepository) {
+    public UserController(JwtUtils jwtUtils, UserService userService, UserRepository userRepository) {
         this.jwtUtils = jwtUtils;
         this.userService = userService;
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+
     }
 
     //TODO: get all users
@@ -53,7 +49,7 @@ public class UserController {
         PageResponse<UserDto> userPageResponse = new PageResponse<>();
         userPageResponse.setContent(userService.getAllUsersPage(page, size, code, username, phone, email, roleId));
         userPageResponse.setTotalElements(userService.countUsers(code, username, phone, email, roleId));
-        userPageResponse.setTotalPages((int) Math.ceil((double) userPageResponse.getTotalElements()/ size));
+        userPageResponse.setTotalPages((int) Math.ceil((double) userPageResponse.getTotalElements() / size));
         userPageResponse.setCurrentPage(page);
         userPageResponse.setPageSize(size);
         return ResponseEntity.ok().body(userPageResponse);
@@ -103,6 +99,7 @@ public class UserController {
             return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), Instant.now().toString()));
         }
     }
+
     //TODO: register user
 //    @PreAuthorize("hasRole('MODERATOR')")
     @PostMapping()
@@ -184,23 +181,13 @@ public class UserController {
 //            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), Instant.now().toString()));
 //        }
 //    }
-
-    @PostConstruct
-    public void createRole() {
-        if (roleRepository.findByName(ERole.valueOf("ROLE_ADMIN")).isEmpty()) {
-            roleRepository.save(new Role(ERole.ROLE_ADMIN));
-        }
-        if (roleRepository.findByName(ERole.valueOf("ROLE_USER")).isEmpty()) {
-            roleRepository.save(new Role(ERole.ROLE_USER));
-
-        }
-        if (roleRepository.findByName(ERole.valueOf("ROLE_MODERATOR")).isEmpty()) {
-            roleRepository.save(new Role(ERole.ROLE_MODERATOR));
-        }
+    public void createRoles() {
+        userService.createRoles();
     }
 
     @PostConstruct
     public void createAdmin() {
+        createRoles();
         userService.createAdmin();
     }
 }

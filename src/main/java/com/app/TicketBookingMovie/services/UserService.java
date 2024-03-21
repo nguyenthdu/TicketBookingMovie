@@ -8,16 +8,13 @@ import java.util.List;
 
 public interface UserService {
 	UserDetails loadUserByUsername(String email);
-	
 	List<UserDto> getAllUsersPage(Integer page, Integer size, String code, String username, String phone, String email, Long roleId);
-
 	void deleteUser(Long id);
-	
-	UserDto updateUser(Long id, UserDto userDTO);
+	void updateUser(Long id, UserDto userDTO);
 
 	void createUser(SignupDto signupDto);
 	void createMor(SignupDto SignupDto);
+	void createRoles();
 	void createAdmin();
-
     long countUsers(String code, String username, String phone, String email, Long roleId);
 }
