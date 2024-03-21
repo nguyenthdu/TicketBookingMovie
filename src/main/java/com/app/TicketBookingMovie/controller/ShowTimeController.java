@@ -35,7 +35,7 @@ public class ShowTimeController {
 
     @GetMapping
     public ResponseEntity<PageResponse<ShowTimeDto>> getAllShowTimes(@RequestParam(defaultValue = "0") Integer page,
-                                                                     @RequestParam(defaultValue = "2") Integer size,
+                                                                     @RequestParam(defaultValue = "10") Integer size,
                                                                      @RequestParam(required = false) String code,
                                                                      @RequestParam("movieId") Long movieId,
                                                                      @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {

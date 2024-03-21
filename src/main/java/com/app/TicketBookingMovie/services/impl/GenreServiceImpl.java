@@ -49,8 +49,11 @@ public class GenreServiceImpl implements GenreService {
         if(genreRepository.findByName(genreDTO.getName()).isPresent()){
             throw new AppException("name: " + genreDTO.getName() + " already exists", HttpStatus.BAD_REQUEST);
         }
-
-        genre.setName(genreDTO.getName());
+        if(!genreDTO.getName().isEmpty() && !genreDTO.getName().isBlank()) {
+            genre.setName(genreDTO.getName());
+        }else{
+            genre.setName(genre.getName());
+        }
         genreRepository.save(genre);
         return modelMapper.map(genre, GenreDto.class);
     }

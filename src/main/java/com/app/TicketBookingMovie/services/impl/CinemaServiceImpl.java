@@ -73,13 +73,21 @@ public class CinemaServiceImpl implements CinemaService {
     public CinemaDto updateCinema(CinemaDto cinemaDto) {
         Cinema cinema = cinemaRepository.findById(cinemaDto.getId()).orElseThrow(
                 () -> new AppException("Cinema not found with id: " + cinemaDto.getId(), HttpStatus.NOT_FOUND));
-        cinema.setName(cinemaDto.getName());
+        if(!cinemaDto.getName().isEmpty() && !cinemaDto.getName().isBlank()) {
+            cinema.setName(cinemaDto.getName());
+        } else{
+            cinema.setName(cinema.getName());
+        }
         //handle address
         Address address = cinema.getAddress();
         AddressDto addressDto = cinemaDto.getAddress();
         addressDto.setId(address.getId());
         addressService.updateAddress(addressDto);
-        cinema.setStatus(cinemaDto.isStatus());
+        if(cinemaDto.isStatus() != cinema.isStatus()) {
+            cinema.setStatus(cinemaDto.isStatus());
+        }else {
+            cinema.setStatus(cinema.isStatus());
+        }
         cinemaRepository.save(cinema);
         return modelMapper.map(cinema, CinemaDto.class);
     }

@@ -39,10 +39,26 @@ public class AddressServiceImpl implements AddressService {
     public AddressDto updateAddress(AddressDto addressDto) {
         Address address = addressRepository.findById(addressDto.getId())
                 .orElseThrow(() -> new AppException("Address not found with id: " + addressDto.getId(), HttpStatus.NOT_FOUND));
-        address.setStreet(addressDto.getStreet());
-        address.setDistrict(addressDto.getDistrict());
-        address.setCity(addressDto.getCity());
-        address.setNation(addressDto.getNation());
+        if (!addressDto.getStreet().isEmpty() && !addressDto.getStreet().isBlank()) {
+            address.setStreet(addressDto.getStreet());
+        } else {
+            address.setStreet(address.getStreet());
+        }
+        if (!addressDto.getDistrict().isEmpty() && !addressDto.getDistrict().isBlank()) {
+            address.setDistrict(addressDto.getDistrict());
+        } else {
+            address.setDistrict(address.getDistrict());
+        }
+        if (!addressDto.getCity().isEmpty() && !addressDto.getCity().isBlank()) {
+            address.setCity(addressDto.getCity());
+        } else {
+            address.setCity(address.getCity());
+        }
+        if (!addressDto.getNation().isEmpty() && !addressDto.getNation().isBlank()) {
+            address.setNation(addressDto.getNation());
+        } else {
+            address.setNation(address.getNation());
+        }
         addressRepository.save(address);
         return modelMapper.map(address, AddressDto.class);
     }

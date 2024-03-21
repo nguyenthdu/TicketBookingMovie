@@ -36,6 +36,7 @@ public class MovieServiceImpl implements MovieService {
     private final GenreRepository genreRepository;
     private final CinemaRepository cinemaRepository;
     private final AmazonS3 amazonS3;
+    private static final long MAX_SIZE = 10 * 1024 * 1024;
 
     public MovieServiceImpl(ModelMapper modelMapper, MovieRepository movieRepository, GenreRepository genreRepository, AmazonS3 amazonS3, CinemaRepository cinemaRepository) {
         this.modelMapper = modelMapper;
@@ -45,7 +46,6 @@ public class MovieServiceImpl implements MovieService {
         this.cinemaRepository = cinemaRepository;
     }
 
-    private static final long MAX_SIZE = 10 * 1024 * 1024;
 
     // random code
     public String randomCode() {
@@ -61,7 +61,7 @@ public class MovieServiceImpl implements MovieService {
         String fileName = Objects.requireNonNull(multipartFile.getOriginalFilename());
         String fileType = fileName.substring(fileName.lastIndexOf("."));
         if (!fileType.equals(".jpg") && !fileType.equals(".png")) {
-            throw new IllegalArgumentException("Only .jpg and .png files are allowed");
+            throw new AppException("Only .jpg and .png files are allowed", HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -74,11 +74,11 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDto createMovie(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
+    public void createMovie(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
         String code = randomCode();
         checkFileType(multipartFile);
         if (multipartFile.getSize() > MAX_SIZE) {
-            throw new IllegalArgumentException("File size is too large");
+            throw new AppException("File size is too large. must < 10mb", HttpStatus.BAD_REQUEST);
         }
         String image = Objects.requireNonNull(multipartFile.getOriginalFilename());
         String fileType = image.substring(image.lastIndexOf("."));
@@ -107,7 +107,7 @@ public class MovieServiceImpl implements MovieService {
         movie.setCinemas(cinemas);
         movie.setStatus(movieDTO.isStatus());
         movieRepository.save(movie);
-        return modelMapper.map(movie, MovieDto.class);
+        modelMapper.map(movie, MovieDto.class);
     }
 
     @Override
@@ -121,10 +121,10 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDto updateMovieById(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
+    public void updateMovieById(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
         Movie movie = movieRepository.findById(movieDTO.getId())
                 .orElseThrow(() -> new AppException("Movie not found with id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));
-        modelMapper.map(movieDTO, movie);
+
         // Kiểm tra xem có hình ảnh mới được cung cấp không
         if (multipartFile != null && !multipartFile.isEmpty()) {
             // Xóa hình ảnh cũ trên AWS
@@ -133,31 +133,92 @@ public class MovieServiceImpl implements MovieService {
             imageKey = imageKey.replace("%3A", ":");
             amazonS3.deleteObject(BUCKET_NAME_MOVIE, imageKey);
             // Lưu hình ảnh mới lên AWS
-            String newImageName = randomCode() + "_" + LocalDateTime.now() + getFileExtension(multipartFile.getOriginalFilename());
+            String newImageName = movie.getCode() + "_" + LocalDateTime.now() + getFileExtension(multipartFile.getOriginalFilename());
             File newImageFile = convertMultiPartFileToFile(multipartFile);
             amazonS3.putObject(new PutObjectRequest(BUCKET_NAME_MOVIE, newImageName, newImageFile));
             newImageFile.delete();
             String newImageLink = amazonS3.getUrl(BUCKET_NAME_MOVIE, newImageName).toString();
             // Cập nhật link hình ảnh mới trong movieDTO
             movie.setImageLink(newImageLink);
+        }else{
+            movie.setImageLink(movie.getImageLink());
         }
         // Chuyển đổi id của thể loại phim sang các đối tượng Genre
-        Set<Genre> genres = new HashSet<>();
-        for (Long genreId : movieDTO.getGenreIds()) {
-            Optional<Genre> genreOptional = Optional.ofNullable(genreRepository.findById(genreId).orElseThrow(() -> new AppException("Genre not found with id: " + genreId, HttpStatus.NOT_FOUND)));
-            genreOptional.ifPresent(genres::add);
+        if(!movieDTO.getGenreIds().isEmpty()){
+            Set<Genre> genres = new HashSet<>();
+            for (Long genreId : movieDTO.getGenreIds()) {
+                Optional<Genre> genreOptional = Optional.ofNullable(genreRepository.findById(genreId).orElseThrow(() -> new AppException("Genre not found with id: " + genreId, HttpStatus.NOT_FOUND)));
+                genreOptional.ifPresent(genres::add);
+            }
+            movie.setGenres(genres);
+        }else{
+            movie.setGenres(movie.getGenres());
         }
-        movie.setGenres(genres);
         //Chuyển đổi id cinema sang các đối tượng Cinema
-        Set<Cinema> cinemas = new HashSet<>();
-        for (Long cinemeId : movieDTO.getCinemaIds()) {
-            Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
-            cinemaOptional.ifPresent(cinemas::add);
+        if(!movieDTO.getCinemaIds().isEmpty()) {
+            Set<Cinema> cinemas = new HashSet<>();
+            for (Long cinemeId : movieDTO.getCinemaIds()) {
+                Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
+                cinemaOptional.ifPresent(cinemas::add);
+            }
+            movie.setCinemas(cinemas);
+        }else{
+            movie.setCinemas(movie.getCinemas());
         }
-        movie.setCinemas(cinemas);
-        movie.setStatus(movieDTO.isStatus());
+        if(!movieDTO.getName().isEmpty() && !movieDTO.getName().isBlank()){
+            movie.setName(movieDTO.getName());
+        }else{
+            movie.setName(movie.getName());
+        }
+        if(!movieDTO.getTrailerLink().isEmpty() && !movieDTO.getTrailerLink().isBlank()){
+            movie.setTrailerLink(movieDTO.getTrailerLink());
+        }else{
+            movie.setTrailerLink(movie.getTrailerLink());
+        }
+        if(!movieDTO.getDescription().isEmpty() && !movieDTO.getDescription().isBlank()){
+            movie.setDescription(movieDTO.getDescription());
+        }else{
+            movie.setDescription(movie.getDescription());
+        }
+        if(movieDTO.getDurationMinutes() > 0){
+            movie.setDurationMinutes(movieDTO.getDurationMinutes());
+        }else{
+            movie.setDurationMinutes(movie.getDurationMinutes());
+        }
+        if(movieDTO.getReleaseDate() != null){
+            movie.setReleaseDate(movieDTO.getReleaseDate());
+        }else{
+            movie.setReleaseDate(movie.getReleaseDate());
+        }
+        if(movieDTO.isStatus() != movie.isStatus()){
+            movie.setStatus(movieDTO.isStatus());
+        }else{
+            movie.setStatus(movie.isStatus());
+        }
+        if(!movieDTO.getCountry().isEmpty() && !movieDTO.getCountry().isBlank()){
+            movie.setCountry(movieDTO.getCountry());
+        }else{
+            movie.setCountry(movie.getCountry());
+        }
+        if(!movieDTO.getDirector().isEmpty() && !movieDTO.getDirector().isBlank()){
+            movie.setDirector(movieDTO.getDirector());
+        }else{
+            movie.setDirector(movie.getDirector());
+        }
+        if(!movieDTO.getCast().isEmpty() && !movieDTO.getCast().isBlank()){
+            movie.setCast(movieDTO.getCast());
+        }else{
+            movie.setCast(movie.getCast());
+
+        }
+        if(!movieDTO.getProducer().isEmpty() && !movieDTO.getProducer().isBlank()){
+            movie.setProducer(movieDTO.getProducer());
+        }else{
+            movie.setProducer(movie.getProducer());
+        }
+
         movieRepository.save(movie);
-        return modelMapper.map(movie, MovieDto.class);
+        modelMapper.map(movie, MovieDto.class);
     }
 
     // Hàm tiện ích để lấy phần mở rộng của file
@@ -176,7 +237,6 @@ public class MovieServiceImpl implements MovieService {
         amazonS3.deleteObject(BUCKET_NAME_MOVIE, imageKey);
         // Xóa phim từ cơ sở dữ liệu
         movieRepository.delete(movie);
-
     }
 
     @Override

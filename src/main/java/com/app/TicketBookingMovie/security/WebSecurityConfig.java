@@ -49,10 +49,7 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
 		return authConfig.getAuthenticationManager();
 	}
 	
-//	@Bean
-//	public PasswordEncoder passwordEncoder() {
-//		return new BCryptPasswordEncoder();
-//	}
+
 	
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -60,7 +57,7 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
 				.requestMatchers("/api/test/**","/api/users/**", "/api/genre/**","/api/movie/**"
-				,"/api/address/**","/api/cinema/**","/api/seat/**",
+				,"/api/address/**","/api/cinema/**","/api/seat/**","api/categoryFood/**","/api/food/**",
 						"/api/typeSeat/**","api/room/**","/api/showtime/**","/api/ticket/**")
 						.permitAll().anyRequest().authenticated());
 		http.authenticationProvider(authenticationProvider());

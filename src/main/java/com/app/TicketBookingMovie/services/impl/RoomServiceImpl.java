@@ -116,15 +116,26 @@ public class RoomServiceImpl implements RoomService {
             seatService.deleteSeatById(seatToRemove.getId());
         }
 
-        // Update the other fields
-        room.setName(roomDto.getName());
-        room.setStatus(roomDto.isStatus());
-        if (roomDto.getType().equals("2D")) {
-            room.setType(ETypeRoom.ROOM2D);
-        } else if (roomDto.getType().equals("3D")) {
-            room.setType(ETypeRoom.ROOM3D);
-        } else {
-            room.setType(ETypeRoom.ROOM4D);
+        if(!roomDto.getName().isEmpty() && !roomDto.getName().isBlank()) {
+            room.setName(roomDto.getName());
+        }else{
+            room.setName(room.getName());
+        }
+        if(roomDto.isStatus() != room.isStatus()){
+            room.setStatus(roomDto.isStatus());
+        }{
+            room.setStatus(room.isStatus());
+        }
+        if(!roomDto.getType().isEmpty() && !roomDto.getType().isBlank()) {
+            if (roomDto.getType().equals("2D")) {
+                room.setType(ETypeRoom.ROOM2D);
+            } else if (roomDto.getType().equals("3D")) {
+                room.setType(ETypeRoom.ROOM3D);
+            } else {
+                room.setType(ETypeRoom.ROOM4D);
+            }
+        }else{
+            room.setType(room.getType());
         }
         // Save the updated room
         roomRepository.save(room);

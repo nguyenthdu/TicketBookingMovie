@@ -44,7 +44,7 @@ public class UserController {
     @GetMapping
     public ResponseEntity<PageResponse<UserDto>> getAllUsers(
             @RequestParam(defaultValue = "0", name = "page") Integer page,
-            @RequestParam(defaultValue = "2", name = "size") Integer size,
+            @RequestParam(defaultValue = "10", name = "size") Integer size,
             @RequestParam(required = false, name = "code") String code,
             @RequestParam(required = false, name = "username") String username,
             @RequestParam(required = false, name = "phone") String phone,

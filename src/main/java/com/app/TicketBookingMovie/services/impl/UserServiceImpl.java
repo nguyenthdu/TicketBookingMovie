@@ -108,10 +108,26 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
             throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
         }
-        user.setUsername(userDTO.getUsername());
-        user.setGender(userDTO.isGender());
-        user.setBirthday(userDTO.getBirthday());
-        user.setPhone(userDTO.getPhone());
+        if(!userDTO.getUsername().isEmpty() &&!userDTO.getUsername().isBlank() ) {
+            user.setUsername(userDTO.getUsername());
+        }else{
+            user.setUsername(user.getUsername());
+        }
+        if(userDTO.isGender() != user.isGender()){
+            user.setGender(userDTO.isGender());
+        }else{
+            user.setGender(user.isGender());
+        }
+        if(userDTO.getBirthday() != user.getBirthday()){
+            user.setBirthday(userDTO.getBirthday());
+        }else{
+            user.setBirthday(user.getBirthday());
+        }
+        if(!userDTO.getPhone().isEmpty() && !userDTO.getPhone().isBlank()){
+            user.setPhone(userDTO.getPhone());
+        }else{
+            user.setPhone(user.getPhone());
+        }
         userRepository.save(user);
         return modelMapper.map(user, UserDto.class);
     }

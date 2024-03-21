@@ -63,7 +63,12 @@ public class TypeSeatServiceImpl implements TypeSeatService {
     public TypeSeatDto updateTypeSeatById(TypeSeatDto typeSeatDto) {
         TypeSeat typeSeat = typeSeatRepository.findById(typeSeatDto.getId())
                 .orElseThrow(() -> new AppException("TypeSeat not found with id: " + typeSeatDto.getId(), HttpStatus.NOT_FOUND));
-        typeSeat.setPrice(typeSeatDto.getPrice());
+        if(typeSeatDto.getPrice() > 0){
+            typeSeat.setPrice(typeSeatDto.getPrice());
+        }else{
+            typeSeat.setPrice(typeSeat.getPrice());
+        }
+
         TypeSeat updatedTypeSeat = typeSeatRepository.save(typeSeat);
         return modelMapper.map(updatedTypeSeat, TypeSeatDto.class);
     }

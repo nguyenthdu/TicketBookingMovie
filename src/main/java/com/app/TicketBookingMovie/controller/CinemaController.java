@@ -50,7 +50,7 @@ public class CinemaController {
     @GetMapping
     public ResponseEntity<PageResponse<CinemaDto>> getAllCinema(
             @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "2") Integer size,
+            @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false, name = "code") String code,
             @RequestParam(required = false,name = "name") String name,
             @RequestParam(required = false, name = "street") String street,

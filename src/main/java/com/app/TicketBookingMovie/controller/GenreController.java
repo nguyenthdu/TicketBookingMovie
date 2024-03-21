@@ -63,7 +63,7 @@ public class GenreController {
     @GetMapping
     public ResponseEntity<PageResponse<GenreDto>> getAllGenres(
             @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "2") Integer size,
+            @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name) {
         PageResponse<GenreDto> pageResponse = new PageResponse<>();
