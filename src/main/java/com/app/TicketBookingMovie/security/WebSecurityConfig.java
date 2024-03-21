@@ -58,7 +58,8 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
 				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
 				.requestMatchers("/api/test/**","/api/users/**", "/api/genre/**","/api/movie/**"
 				,"/api/address/**","/api/cinema/**","/api/seat/**","api/categoryFood/**","/api/food/**",
-						"/api/typeSeat/**","api/room/**","/api/showtime/**","/api/ticket/**")
+						"/api/typeSeat/**","api/room/**","/api/showtime/**","/api/ticket/**",
+						"api/salePrice/**","api/salePriceDetail/**")
 						.permitAll().anyRequest().authenticated());
 		http.authenticationProvider(authenticationProvider());
 		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);

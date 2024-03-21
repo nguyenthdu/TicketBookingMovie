@@ -44,7 +44,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public RoomDto createRoom(RoomDto roomDto) {
+    public void createRoom(RoomDto roomDto) {
         // Map RoomDto to Room
         Room room = modelMapper.map(roomDto, Room.class);
         if (roomRepository.findByName(roomDto.getName()).isPresent()) {
@@ -74,7 +74,7 @@ public class RoomServiceImpl implements RoomService {
         roomRepository.save(room);
         cinemaService.countTotalRooms(roomDto.getCinemaId(), 1);
         // Create seats and add them to the room
-        return modelMapper.map(room, RoomDto.class);
+        modelMapper.map(room, RoomDto.class);
     }
 
     public String randomCode() {
@@ -85,7 +85,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public RoomDto updateRoom(RoomDto roomDto) {
+    public void updateRoom(RoomDto roomDto) {
         // Retrieve the existing Room
         Room room = roomRepository.findById(roomDto.getId())
                 .orElseThrow(() -> new AppException("Room not found with id:" + roomDto.getId(), HttpStatus.NOT_FOUND));
@@ -140,7 +140,7 @@ public class RoomServiceImpl implements RoomService {
         // Save the updated room
         roomRepository.save(room);
         // Map Room to RoomDto and return
-        return modelMapper.map(room, RoomDto.class);
+        modelMapper.map(room, RoomDto.class);
     }
 
     @Override

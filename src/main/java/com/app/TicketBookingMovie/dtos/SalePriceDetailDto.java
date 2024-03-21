@@ -5,11 +5,11 @@ import lombok.Data;
 @Data
 public class SalePriceDetailDto {
     private Long id;
-    private String code;
-    private double price;
+    private double priceDecrease = 0;
     private double discount;
     private String typeDiscount;
     private Long typeSeatId;
     private Long foodId;
-    private Long salePriceHeaderId;
+    private Long salePriceId;
+    private boolean status;
 }

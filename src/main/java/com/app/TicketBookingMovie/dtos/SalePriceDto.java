@@ -2,16 +2,17 @@ package com.app.TicketBookingMovie.dtos;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
-public class SalePriceHeaderDto {
+public class SalePriceDto {
     private Long id;
     private String code;
     private String name;
     private String description;
-    private String startDate;
-    private String endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     private boolean status;
-    private Set<Long> salePriceDetailsId;
+    private Set<SalePriceDetailDto> salePriceDetailDtos;
 }
