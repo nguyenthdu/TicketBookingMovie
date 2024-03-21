@@ -18,6 +18,7 @@ public class Food {
     private String name;
     private String image;
     private double price;
+    private int quantity;
     @Enumerated(EnumType.STRING)
     private ESize size;
     @ManyToOne

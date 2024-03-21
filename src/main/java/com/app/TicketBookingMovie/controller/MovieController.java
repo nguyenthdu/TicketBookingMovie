@@ -17,7 +17,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/movie")
 public class MovieController {
