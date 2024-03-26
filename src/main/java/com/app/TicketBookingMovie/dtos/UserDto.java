@@ -4,6 +4,7 @@ import com.app.TicketBookingMovie.models.Role;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -17,5 +18,5 @@ public class UserDto {
 	private String phone;
 	private Set<Role> roles;
 	private boolean enabled;
-	private LocalDate createdDate;
+	private LocalDateTime createdDate;
 }

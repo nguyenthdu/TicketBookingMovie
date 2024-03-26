@@ -15,4 +15,5 @@ public class SalePriceDto {
     private LocalDateTime endDate;
     private boolean status;
     private Set<SalePriceDetailDto> salePriceDetailDtos;
+    private LocalDateTime createdDate;
 }

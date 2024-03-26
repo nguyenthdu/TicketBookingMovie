@@ -18,10 +18,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 @Service
@@ -41,7 +41,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     }
 
     @Override
-    public Set<ShowTimeDto> createShowTime(Set<ShowTimeDto> showTimeDtos) {
+    public void createShowTime(Set<ShowTimeDto> showTimeDtos) {
         Set<ShowTimeDto> createdShowTimes = new HashSet<>();
 
         LocalDate currentDate = LocalDate.now().plusDays(1); // Lấy ngày hiện tại và thêm một ngày
@@ -102,11 +102,12 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             newShowTime.setMovie(movie);
             newShowTime.setStatus(showTimeDto.isStatus());
             newShowTime.setSeatsBooked(0);
+            newShowTime.setCreatedDate(LocalDateTime.now());
             showTimeRepository.save(newShowTime);
             createdShowTimes.add(modelMapper.map(newShowTime, ShowTimeDto.class));
         }
 
-        return createdShowTimes;
+
     }
 
     @Override
@@ -165,10 +166,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        int number = random.nextInt(1000);
-        code = "LC" + System.currentTimeMillis() + number;
-        return code;
+        return  "LC" + LocalDateTime.now().getNano();
     }
 }

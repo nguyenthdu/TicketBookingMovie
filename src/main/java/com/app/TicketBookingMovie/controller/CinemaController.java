@@ -62,7 +62,7 @@ public class CinemaController {
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
-        return ResponseEntity.ok(pageResponse);
+        return ResponseEntity.ok().body(pageResponse);
 
     }
 

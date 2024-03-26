@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface ShowTimeService {
-    Set<ShowTimeDto> createShowTime(Set<ShowTimeDto> showTimeDtos);
+void createShowTime(Set<ShowTimeDto> showTimeDtos);
     ShowTimeDto getShowTimeById(Long id);
     List<ShowTimeDto> getAllShowTimes(Integer page, Integer size,String code, Long movieId, LocalDate date);
 

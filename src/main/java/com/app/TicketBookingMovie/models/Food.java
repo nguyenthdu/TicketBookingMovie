@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
@@ -25,6 +27,7 @@ public class Food {
     @JoinColumn(name = "category_food_id")
     private CategoryFood categoryFood;
     private boolean status;
+    private LocalDateTime createdDate;
     public Food() {
     }
 }

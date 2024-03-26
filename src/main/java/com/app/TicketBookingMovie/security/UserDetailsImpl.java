@@ -19,9 +19,10 @@ public class UserDetailsImpl implements UserDetails {
 	private LocalDate birthday;
 	private String phone;
 	private String password;
+	private boolean enabled;
 	private Collection<? extends GrantedAuthority> authorities;
 	
-	public UserDetailsImpl(Long id, String username, String email, boolean gender, LocalDate birthday, String phone, String password, Collection<? extends GrantedAuthority> authorities) {
+	public UserDetailsImpl(Long id, String username, String email, boolean gender, LocalDate birthday, String phone, String password,boolean enabled, Collection<? extends GrantedAuthority> authorities) {
 		this.id = id;
 		this.username = username;
 		this.email = email;
@@ -29,12 +30,13 @@ public class UserDetailsImpl implements UserDetails {
 		this.birthday = birthday;
 		this.phone = phone;
 		this.password = password;
+		this.enabled = enabled;
 		this.authorities = authorities;
 	}
 	
 	public static UserDetailsImpl build(User user) {
 		List<GrantedAuthority> authorities = user.getRoles().stream().map(role -> new SimpleGrantedAuthority(role.getName().name())).collect(Collectors.toList());
-		return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.isGender(), user.getBirthday(), user.getPhone(), user.getPassword(), authorities);
+		return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.isGender(), user.getBirthday(), user.getPhone(), user.getPassword(),user.isEnabled(), authorities);
 	}
 	
 	
@@ -79,7 +81,7 @@ public class UserDetailsImpl implements UserDetails {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return enabled;
 	}
 	
 	@Override

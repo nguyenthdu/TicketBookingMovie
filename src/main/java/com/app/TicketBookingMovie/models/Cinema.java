@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -26,6 +27,7 @@ public class Cinema {
     @ManyToMany(mappedBy = "cinemas")
     private Set<Movie> movies;
     private boolean status = true;
+    private LocalDateTime   createdDate;
 
     public Cinema() {
     }

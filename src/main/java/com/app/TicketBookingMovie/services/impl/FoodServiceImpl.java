@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 
 @Service
 public class FoodServiceImpl implements FoodService {
@@ -47,11 +46,7 @@ public class FoodServiceImpl implements FoodService {
     }
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        int number = random.nextInt(1000);
-        code = "DA" + System.currentTimeMillis() + number;
-        return code;
+        return "DA"+LocalDateTime.now().getNano();
     }
 
     public void checkFileType(MultipartFile multipartFile) {
@@ -103,6 +98,7 @@ public class FoodServiceImpl implements FoodService {
         }
         food.setCode(code);
         food.setImage(uploadLink);
+        food.setCreatedDate(LocalDateTime.now());
         food.setCategoryFood(cateogryFoodRepository.findById(foodDto.getCategoryId())
                 .orElseThrow(() -> new AppException("Category not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND)));
         foodRepository.save(food);

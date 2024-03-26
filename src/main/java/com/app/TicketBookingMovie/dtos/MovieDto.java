@@ -3,6 +3,7 @@ package com.app.TicketBookingMovie.dtos;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -23,5 +24,6 @@ public class MovieDto {
     private Set<Long> showTimeIds;
     private Set<Long> cinemaIds;
     private boolean status;
+    private LocalDateTime createdDate;
 }
 

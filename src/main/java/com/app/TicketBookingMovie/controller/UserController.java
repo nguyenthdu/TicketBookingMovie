@@ -51,7 +51,7 @@ public class UserController {
         userPageResponse.setTotalPages((int) Math.ceil((double) userPageResponse.getTotalElements() / size));
         userPageResponse.setCurrentPage(page);
         userPageResponse.setPageSize(size);
-        return ResponseEntity.ok().body(userPageResponse);
+        return ResponseEntity.ok(userPageResponse);
     }
 
 
@@ -77,6 +77,11 @@ public class UserController {
             return ResponseEntity.ok(userDTO);
         }
         return ResponseEntity.badRequest().body(new MessageResponseDto("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     //TODO: register morderater
@@ -127,26 +132,34 @@ public class UserController {
     }
 
     // TODO: Cập nhật thông tin của user đang đăng nhập theo token vào cookie
-    @PutMapping()
-    public ResponseEntity<?> updateUserProfile(@RequestParam("username") String username, @RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone, HttpServletRequest request) {
+    @PutMapping("/profile")
+    public ResponseEntity<MessageResponseDto> updateUserProfile(@RequestParam("username") String username, @RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone, HttpServletRequest request) {
         String jwt = jwtUtils.getJwtFromCookies(request);
         if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
             String currentEmail = jwtUtils.getEmailFromJwtToken(jwt);
-            User user = userRepository.findByEmail(currentEmail).orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + currentEmail));
+            UserDto user = new UserDto();
             user.setUsername(username);
             user.setGender(gender);
             user.setBirthday(birthday);
             user.setPhone(phone);
-            // Lưu lại thông tin đã cập nhật
-            userRepository.save(user);
-            return ResponseEntity.ok(new MessageResponseDto("User updated successfully with email: " + currentEmail, HttpStatus.OK.value(), Instant.now().toString()));
+            try {
+                userService.updateUserProfile(currentEmail, user);
+                return ResponseEntity.ok(new MessageResponseDto("User updated successfully with email: " + currentEmail, HttpStatus.OK.value(), Instant.now().toString()));
+            } catch (AppException e) {
+                return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), Instant.now().toString()));
+            }
         }
         return ResponseEntity.badRequest().body(new MessageResponseDto("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
     }
 
     // update
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserDto userDTO) {
+    @PutMapping()
+    public ResponseEntity<MessageResponseDto> updateUser(@RequestParam("id") Long id, @RequestParam("username") String username, @RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone) {
+        UserDto userDTO = new UserDto();
+        userDTO.setUsername(username);
+        userDTO.setGender(gender);
+        userDTO.setBirthday(birthday);
+        userDTO.setPhone(phone);
         try {
             userService.updateUser(id, userDTO);
             return ResponseEntity.ok(new MessageResponseDto("User updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
@@ -156,10 +169,14 @@ public class UserController {
     }
 
     // delete
-    @DeleteMapping()
-    public ResponseEntity<?> deleteUser(@RequestParam("id") Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.ok().body(new MessageResponseDto("User deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        try {
+            userService.deleteUser(id);
+            return ResponseEntity.ok().body(new MessageResponseDto("User deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), Instant.now().toString()));
+        }
     }
 
     // update password
@@ -183,9 +200,32 @@ public class UserController {
     public void createRoles() {
         userService.createRoles();
     }
+
     @PostConstruct
     public void createAdmin() {
         createRoles();
         userService.createAdmin();
+    }
+
+    @PostMapping("/userInTicket")
+    public ResponseEntity<MessageResponseDto> createUserInTicket(
+            @RequestParam("username") String username,
+            @RequestParam("email") String email) {
+        UserDto userDto = new UserDto();
+        userDto.setUsername(username);
+        userDto.setEmail(email);
+        try {
+            userService.createUserInTicket(userDto);
+            return ResponseEntity.ok(new MessageResponseDto("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), Instant.now().toString()));
+        }
+    }
+
+    @PostMapping("/guest")
+    public ResponseEntity<MessageResponseDto> createGuest() {
+        userService.createGuest();
+        return ResponseEntity.ok(new MessageResponseDto("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+
     }
 }

@@ -12,8 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
 
 @Service
 public class CategoryFoodServiceImpl implements CategoryFoodService {
@@ -26,11 +26,7 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
     }
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-
-        code = "DM" + System.currentTimeMillis();
-        return code;
+        return "DM"+ LocalDateTime.now().getNano();
     }
 
     @Override
@@ -40,6 +36,7 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
         }
         CategoryFood categoryFood = modelMapper.map(categoryFoodDto, CategoryFood.class);
         categoryFood.setCode(randomCode());
+        categoryFood.setCreatedDate(LocalDateTime.now());
         cateogryFoodRepository.save(categoryFood);
         modelMapper.map(categoryFood, CategoryFoodDto.class);
 

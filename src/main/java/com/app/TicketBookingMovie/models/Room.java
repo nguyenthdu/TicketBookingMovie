@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -25,6 +26,7 @@ public class Room {
     @OneToMany
     private Set<Seat> seats;
     private boolean status = true;
+    private LocalDateTime createdDate ;
     public Room() {
     }
 }

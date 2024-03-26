@@ -2,6 +2,8 @@ package com.app.TicketBookingMovie.dtos;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class SalePriceDetailDto {
     private Long id;
@@ -12,4 +14,5 @@ public class SalePriceDetailDto {
     private Long foodId;
     private Long salePriceId;
     private boolean status;
+    private LocalDateTime createdDate;
 }

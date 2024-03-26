@@ -23,5 +23,6 @@ public class SalePrice {
     private boolean status;
     @OneToMany(mappedBy = "salePrice")
     private Set<SalePriceDetail> salePriceDetails;
+    private LocalDateTime createdDat;
 
 }

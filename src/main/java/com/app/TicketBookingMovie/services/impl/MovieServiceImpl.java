@@ -49,11 +49,7 @@ public class MovieServiceImpl implements MovieService {
 
     // random code
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        int number = random.nextInt(1000);
-        code = "PHIM" + System.currentTimeMillis() + number;
-        return code;
+        return "PM" + LocalDateTime.now().getNano();
     }
 
     //methods check type file
@@ -106,6 +102,7 @@ public class MovieServiceImpl implements MovieService {
 
         movie.setCinemas(cinemas);
         movie.setStatus(movieDTO.isStatus());
+        movie.setCreatedDate(LocalDateTime.now());
         movieRepository.save(movie);
         modelMapper.map(movie, MovieDto.class);
     }

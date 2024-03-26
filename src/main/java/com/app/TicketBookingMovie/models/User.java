@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -41,7 +42,7 @@ public class User {
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
     private boolean enabled = true;
-    private LocalDate createdDate = LocalDate.now();
+    private LocalDateTime createdDate;
 
     public User(String username, String email, boolean gender, LocalDate birthday, String phone, String password) {
         this.username = username;

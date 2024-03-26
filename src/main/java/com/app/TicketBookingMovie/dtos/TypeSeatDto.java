@@ -9,4 +9,5 @@ public class TypeSeatDto {
     private String name;
     private double price;
 
+
 }

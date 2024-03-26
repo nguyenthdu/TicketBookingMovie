@@ -20,9 +20,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 @Service
@@ -70,6 +70,7 @@ public class RoomServiceImpl implements RoomService {
         }
         room.setSeats(seats);
         room.setTotalSeats(room.getSeats().size());
+        room.setCreatedDate(LocalDateTime.now());
         // Save the room
         roomRepository.save(room);
         cinemaService.countTotalRooms(roomDto.getCinemaId(), 1);
@@ -78,10 +79,8 @@ public class RoomServiceImpl implements RoomService {
     }
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        code = "PH" + System.currentTimeMillis();
-        return code;
+       return "PH"+ LocalDateTime.now().getNano();
+
     }
 
     @Override

@@ -4,7 +4,6 @@ import com.app.TicketBookingMovie.dtos.GenreDto;
 import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
-import com.app.TicketBookingMovie.repository.GenreRepository;
 import com.app.TicketBookingMovie.services.GenreService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,18 +15,21 @@ import java.time.Instant;
 @RequestMapping("/api/genre")
 public class GenreController {
     private final GenreService genreService;
-    private final GenreRepository genreRepository;
-    public GenreController(GenreService genreService, GenreRepository genreRepository) {
+    public GenreController(GenreService genreService) {
         this.genreService = genreService;
-        this.genreRepository = genreRepository;
+
     }
 
     @PostMapping()
-    public ResponseEntity<GenreDto> createGenre(@RequestParam("name") String name) {
+    public ResponseEntity<MessageResponseDto> createGenre(@RequestParam("name") String name) {
         GenreDto genreDTO = new GenreDto();
         genreDTO.setName(name);
-        return ResponseEntity.ok(genreService.createGenre(genreDTO));
-
+        try {
+            genreService.createGenre(genreDTO);
+            return ResponseEntity.ok().body(new MessageResponseDto("Genre created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+        }catch (AppException e) {
+            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
 
     }
 

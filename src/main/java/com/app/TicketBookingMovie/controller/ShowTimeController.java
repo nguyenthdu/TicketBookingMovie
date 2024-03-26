@@ -1,13 +1,17 @@
 package com.app.TicketBookingMovie.controller;
 
 
+import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.ShowTimeDto;
+import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.services.ShowTimeService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -21,9 +25,14 @@ public class ShowTimeController {
     }
 
     @PostMapping
-    public ResponseEntity<Set<ShowTimeDto>> createShowTime(@RequestBody Set<ShowTimeDto> showTimeDtos) {
-        Set<ShowTimeDto> createdShowTimes = showTimeService.createShowTime(showTimeDtos);
-        return ResponseEntity.ok(createdShowTimes);
+    public ResponseEntity<MessageResponseDto> createShowTime(@RequestBody Set<ShowTimeDto> showTimeDtos) {
+       try{
+              showTimeService.createShowTime(showTimeDtos);
+              return ResponseEntity.ok(new MessageResponseDto("Show time created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+       }
+       catch (AppException e){
+           return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(),e.getStatus(),e.getTimestamp()));
+       }
     }
 
     @GetMapping("/{id}")

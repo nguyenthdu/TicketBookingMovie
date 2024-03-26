@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,15 +31,15 @@ public class TypeSeatServiceImpl implements TypeSeatService {
         }
         Set<TypeSeat> listTypeSeat = new HashSet<>();
         TypeSeat TypeSeatStandard = new TypeSeat();
-        TypeSeatStandard.setCode(randomCode());
+        TypeSeatStandard.setCode("111111111");
         TypeSeatStandard.setName(ETypeSeat.STANDARD);
         TypeSeatStandard.setPrice(0);
         TypeSeat typeSeatVip = new TypeSeat();
-        typeSeatVip.setCode(randomCode());
+        typeSeatVip.setCode("222222222");
         typeSeatVip.setName(ETypeSeat.VIP);
         typeSeatVip.setPrice(0);
         TypeSeat typeSeatSweetBox = new TypeSeat();
-        typeSeatSweetBox.setCode(randomCode());
+        typeSeatSweetBox.setCode("333333333");
         typeSeatSweetBox.setName(ETypeSeat.SWEETBOX);
         typeSeatSweetBox.setPrice(0);
         listTypeSeat.add(TypeSeatStandard);
@@ -82,12 +81,6 @@ public class TypeSeatServiceImpl implements TypeSeatService {
                 .collect(Collectors.toSet());
     }
 
-    public String randomCode() {
-        Random random = new Random();
-        String code;
-        int number = random.nextInt(1000);
-        code = "LG" + System.currentTimeMillis() + number;
-        return code;
-    }
+
 
 }

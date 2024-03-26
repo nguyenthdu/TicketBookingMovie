@@ -23,9 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -76,7 +75,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                                          String phone, String email, Long roleId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<User> userPage;
-        if (code != null && code.isEmpty()) {
+        if (code != null && !code.isEmpty()) {
             userPage = userRepository.findByCodeContaining(code, pageable);
         } else if (username != null && !username.isEmpty()) {
             userPage = userRepository.findByUsernameContaining(username, pageable);
@@ -84,22 +83,39 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             userPage = userRepository.findByPhoneContaining(phone, pageable);
         } else if (email != null && !email.isEmpty()) {
             userPage = userRepository.findByEmailContaining(email, pageable);
-        } else if (roleId != null && roleId != 0) {
+        } else if (roleId != null && roleId > 0) {
             userPage = userRepository.findByRoleId(roleId, pageable);
         } else {
             userPage = userRepository.findAll(pageable);
         }
-        List<UserDto> userDtos = userPage.getContent().stream().map(user -> modelMapper.map(user, UserDto.class)).collect(Collectors.toList());
-        return userDtos;
+        // Filter out users with role "admin"
+//        List<UserDto> filteredUsers = userPage.stream()
+//                .filter(user -> !user.getRoles().stream().anyMatch(role -> role.getName() == ERole.ROLE_ADMIN))
+//                .map(user -> modelMapper.map(user, UserDto.class))
+//                .collect(Collectors.toList());
+        return userPage.stream()
+                .filter(user -> user.getRoles().stream().noneMatch(role -> role.getName() == ERole.ROLE_ADMIN))
+                .map(user -> modelMapper.map(user, UserDto.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public UserDto getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+        return modelMapper.map(user, UserDto.class);
     }
 
 
     @Override
     public void deleteUser(Long id) {
         //xoa sẽ chuyển trạng thái user thành false
-        Optional<User> user = userRepository.findById(id);
-        user.get().setEnabled(false);
-        userRepository.save(user.get());
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+        //khong the xoa user voi role la admin
+        if (user.getRoles().stream().anyMatch(role -> role.getName().equals(ERole.ROLE_ADMIN))) {
+            throw new AppException("Can't delete user with role admin!", HttpStatus.BAD_REQUEST);
+        }
+        user.setEnabled(false);
+        userRepository.save(user);
     }
 
     @Override
@@ -108,30 +124,91 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
             throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
         }
-        if(!userDTO.getUsername().isEmpty() &&!userDTO.getUsername().isBlank() ) {
+        if (!userDTO.getUsername().isEmpty() && !userDTO.getUsername().isBlank()) {
             user.setUsername(userDTO.getUsername());
-        }else{
+        } else {
             user.setUsername(user.getUsername());
         }
-        if(userDTO.isGender() != user.isGender()){
+        if (userDTO.isGender() != user.isGender()) {
             user.setGender(userDTO.isGender());
-        }else{
+        } else {
             user.setGender(user.isGender());
         }
-        if(userDTO.getBirthday() != user.getBirthday()){
+        if (userDTO.getBirthday() != user.getBirthday()) {
             user.setBirthday(userDTO.getBirthday());
-        }else{
+        } else {
             user.setBirthday(user.getBirthday());
         }
-        if(!userDTO.getPhone().isEmpty() && !userDTO.getPhone().isBlank()){
+        if (!userDTO.getPhone().isEmpty() && !userDTO.getPhone().isBlank()) {
             user.setPhone(userDTO.getPhone());
-        }else{
+        } else {
             user.setPhone(user.getPhone());
         }
         userRepository.save(user);
         modelMapper.map(user, UserDto.class);
     }
-//TODO: create user
+
+    @Override
+    public void updateUserProfile(String email, UserDto userDTO) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException("Not found user with email: " + email, HttpStatus.NOT_FOUND));
+        if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
+            throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
+        }
+        if (!userDTO.getUsername().isEmpty() && !userDTO.getUsername().isBlank()) {
+            user.setUsername(userDTO.getUsername());
+        } else {
+            user.setUsername(user.getUsername());
+        }
+        if (userDTO.isGender() != user.isGender()) {
+            user.setGender(userDTO.isGender());
+        } else {
+            user.setGender(user.isGender());
+        }
+        if (userDTO.getBirthday() != user.getBirthday()) {
+            user.setBirthday(userDTO.getBirthday());
+        } else {
+            user.setBirthday(user.getBirthday());
+        }
+        if (!userDTO.getPhone().isEmpty() && !userDTO.getPhone().isBlank()) {
+            user.setPhone(userDTO.getPhone());
+        } else {
+            user.setPhone(user.getPhone());
+        }
+        userRepository.save(user);
+    }
+
+    @Override
+    public void createGuest() {
+        User user = new User();
+        user.setCode(randomCode());
+        LocalDateTime now = LocalDateTime.now();
+        user.setUsername("Khách hàng_" + now.getDayOfMonth() + now.getMonthValue() + now.getYear() + "_" + now.getHour() + now.getMinute() + now.getSecond());
+        Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
+        user.setRoles(Set.of(role));
+        user.setEnabled(true);
+        user.setCreatedDate(now);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void createUserInTicket(UserDto userDto) {
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            throw new AppException("Email is already taken!", HttpStatus.BAD_REQUEST);
+        }
+        User user = new User();
+        user.setCode(randomCode());
+        user.setUsername(userDto.getUsername());
+        user.setEmail(userDto.getEmail());
+        user.setPassword(passwordConfig.passwordEncoder()
+                .encode("cinema123456"));
+        Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
+        user.setRoles(Set.of(role));
+        user.setCreatedDate(LocalDateTime.now());
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
+
+    //TODO: create user
     @Override
     public void createUser(SignupDto signupDto) {
         if (userRepository.existsByEmail(signupDto.getEmail())) {
@@ -149,28 +226,22 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setPhone(signupDto.getPhone());
         Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
-        user.setCreatedDate(LocalDate.now());
+//        user.setCreatedDate(LocalDateTime.now());
         user.setEnabled(true);
+        user.setCreatedDate(LocalDateTime.now());
         user.setPassword(passwordConfig.passwordEncoder()
                 .encode(signupDto.getPassword()));
         userRepository.save(user);
     }
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        int number = random.nextInt(1000);
-        code = "KH" + System.currentTimeMillis() + number;
-        return code;
+        return "KH" + LocalDateTime.now().getNano();
     }
 
     public String randomCodeMor() {
-        Random random = new Random();
-        String code;
-        int number = random.nextInt(1000);
-        code = "NV" + System.currentTimeMillis() + number;
-        return code;
+        return "MOD" + LocalDateTime.now().getNano();
     }
+
 
     @Override
     public void createMor(SignupDto signupDto) {
@@ -189,9 +260,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setBirthday(birthday);
         Role role = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
-        user.setCreatedDate(LocalDate.now());
+//        user.setCreatedDate(LocalDateTime.now());
         user.setPhone("0120000000");
         user.setEnabled(true);
+        user.setCreatedDate(LocalDateTime.now());
         user.setPassword(passwordConfig.passwordEncoder()
                 .encode(signupDto.getPassword()));
         userRepository.save(user);
@@ -224,7 +296,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setBirthday(birthday);
             user.setPhone("0120000001");
             user.setCode("ADMIN123456789");
-            user.setCreatedDate(LocalDate.now());
+//            user.setCreatedDate(LocalDateTime.now());
             user.setEnabled(true);
             user.setPassword(passwordConfig.passwordEncoder()
                     .encode("admin123456"));
@@ -234,7 +306,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public long countUsers(String code, String username, String phone, String email, Long roleId) {
-        if (code != null && code.isEmpty()) {
+        if (code != null && !code.isEmpty()) {
             return userRepository.countByCodeContaining(code);
         } else if (username != null && !username.isEmpty()) {
             return userRepository.countByUsernameContaining(username);

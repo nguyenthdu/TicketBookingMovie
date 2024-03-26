@@ -12,8 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,14 +27,14 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
-    public GenreDto createGenre(GenreDto genreDTO) {
+    public void createGenre(GenreDto genreDTO) {
         if (genreRepository.findByName(genreDTO.getName()).isPresent()) {
             throw new AppException("name: " + genreDTO.getName() + " already exists", HttpStatus.BAD_REQUEST);
         }
         Genre genre = modelMapper.map(genreDTO, Genre.class);
         genre.setCode(randomCode());
+        genre.setCreatedDate(LocalDateTime.now());
         genreRepository.save(genre);
-        return modelMapper.map(genre, GenreDto.class);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
-    public GenreDto updateGenreById(GenreDto genreDTO) {
+    public void updateGenreById(GenreDto genreDTO) {
         Genre genre = genreRepository.findById(genreDTO.getId()).orElseThrow(() -> new AppException("Genre not found with id: " + genreDTO.getId(), HttpStatus.NOT_FOUND));
         if(genreRepository.findByName(genreDTO.getName()).isPresent()){
             throw new AppException("name: " + genreDTO.getName() + " already exists", HttpStatus.BAD_REQUEST);
@@ -55,7 +55,6 @@ public class GenreServiceImpl implements GenreService {
             genre.setName(genre.getName());
         }
         genreRepository.save(genre);
-        return modelMapper.map(genre, GenreDto.class);
     }
 
     @Override
@@ -91,10 +90,6 @@ public class GenreServiceImpl implements GenreService {
     }
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        int number = random.nextInt(1000);
-        code = "TL" + System.currentTimeMillis() + number;
-        return code;
+        return "LO"+ LocalDateTime.now().getNano();
     }
 }

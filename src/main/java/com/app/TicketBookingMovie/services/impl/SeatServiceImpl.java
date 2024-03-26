@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Random;
+import java.time.LocalDateTime;
 
 @Service
 public class SeatServiceImpl implements SeatService {
@@ -31,10 +31,7 @@ public class SeatServiceImpl implements SeatService {
     }
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        code = "GHE" + System.currentTimeMillis();
-        return code;
+        return "GH" + LocalDateTime.now().getNano();
     }
 
     public String handleNameSeat(int row, int col) {

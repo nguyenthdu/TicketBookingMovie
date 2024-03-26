@@ -16,6 +16,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Service
@@ -65,6 +66,7 @@ public class SalePriceServiceDetailImpl implements SalePriceDetailService {
                         salePriceDetail.setPriceDecrease(food.getPrice() - salePriceDetail.getDiscount());
                     }
                 }
+                salePriceDetail.setCreatedDate(LocalDateTime.now());
             }
             salePrice.getSalePriceDetails().add(salePriceDetail);
             salePriceDetailRepository.save(salePriceDetail);

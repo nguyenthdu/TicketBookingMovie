@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
@@ -26,6 +27,7 @@ public class ShowTime {
     private Room room;
     private boolean status;
     private int seatsBooked;
+    private LocalDateTime createdDate;
     public ShowTime() {
     }
 

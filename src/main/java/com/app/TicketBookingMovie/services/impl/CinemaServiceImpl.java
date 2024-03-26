@@ -17,8 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
 
 @Service
 public class CinemaServiceImpl implements CinemaService {
@@ -49,16 +49,13 @@ public class CinemaServiceImpl implements CinemaService {
         cinema.setAddress(address);
         cinema.setStatus(cinemaDto.isStatus());
         cinema.setTotalRoom(0);
+        cinema.setCreatedDate(LocalDateTime.now());
         cinemaRepository.save(cinema);
         return modelMapper.map(cinema, CinemaDto.class);
     }
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-
-        code = "RAP" + System.currentTimeMillis();
-        return code;
+        return "RA" + LocalDateTime.now().getNano();
     }
 
     @Override

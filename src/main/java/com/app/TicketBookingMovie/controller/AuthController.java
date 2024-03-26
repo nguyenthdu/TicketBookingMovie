@@ -15,6 +15,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,16 +40,15 @@ public class AuthController {
     private final JwtUtils jwtUtils;
 
 
-    public AuthController(RefreshTokenService refreshTokenService, AuthenticationManager authenticationManager,JwtUtils jwtUtils) {
+    public AuthController(RefreshTokenService refreshTokenService, AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
         this.refreshTokenService = refreshTokenService;
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@Valid
-                                              @RequestParam("email") String email,
-                                                @RequestParam("password") String password) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestParam("email") String email,
+                                              @RequestParam("password") String password) {
         SigninDto signinDTO = new SigninDto();
         signinDTO.setEmail(email);
         signinDTO.setPassword(password);
@@ -57,6 +57,12 @@ public class AuthController {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(signinDTO.getEmail(), signinDTO.getPassword()));
             SecurityContextHolder.getContext().setAuthentication(authentication);
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+            // Kiểm tra trạng thái của người dùng
+            if (!userDetails.isEnabled()) {
+                return ResponseEntity.badRequest().build();
+            }
+
             ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
             List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority()).collect(Collectors.toList());
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
@@ -64,11 +70,11 @@ public class AuthController {
             return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString()).body(new MessageResponseDto("User signed in successfully!", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (BadCredentialsException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto("Incorrect email or password!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+        } catch (DisabledException e) {
+            return ResponseEntity.badRequest().body(new MessageResponseDto("Account is not activated yet! Please check your email to activate your account!"
+                    , HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
     }
-
-
-
 
 
     @PostMapping("/signout")

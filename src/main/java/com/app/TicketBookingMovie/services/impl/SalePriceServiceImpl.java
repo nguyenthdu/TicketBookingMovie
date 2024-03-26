@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
 
 @Service
 public class SalePriceServiceImpl implements SalePriceService {
@@ -22,10 +21,7 @@ public class SalePriceServiceImpl implements SalePriceService {
     private final ModelMapper modelMapper;
 
     public String randomCode() {
-        Random random = new Random();
-        String code;
-        code = "GG" + System.currentTimeMillis();
-        return code;
+        return "GG"+LocalDateTime.now().getNano();
     }
 
     public SalePriceServiceImpl(SalePriceRepository salePriceRepository, ModelMapper modelMapper) {
@@ -60,7 +56,7 @@ public class SalePriceServiceImpl implements SalePriceService {
 
         // Generate a random code for the salePrice
         salePrice.setCode(randomCode());
-
+        salePrice.setCreatedDat(LocalDateTime.now());
         // Save the salePrice to the database
         salePriceRepository.save(salePrice);
     }
