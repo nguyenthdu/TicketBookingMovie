@@ -80,6 +80,7 @@ public class CinemaController {
             @RequestParam("name") String name,
             @RequestParam("status") boolean status,
             @RequestParam("street") String street,
+            @RequestParam("ward") String ward,
             @RequestParam("district") String district,
             @RequestParam("city") String city,
             @RequestParam("nation") String nation) {
@@ -89,6 +90,7 @@ public class CinemaController {
         cinemaDto.setStatus(status);
         AddressDto address = new AddressDto();
         address.setStreet(street);
+        address.setWard(ward);
         address.setDistrict(district);
         address.setCity(city);
         address.setNation(nation);
@@ -105,7 +107,7 @@ public class CinemaController {
     public ResponseEntity<MessageResponseDto> deleteCinemaById(@PathVariable Long id) {
         try {
             cinemaService.deleteCinemaById(id);
-            return ResponseEntity.ok(new MessageResponseDto("Delete cinema successfully with id:" + id, HttpStatus.NO_CONTENT.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Delete cinema successfully with id:" + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.ok(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

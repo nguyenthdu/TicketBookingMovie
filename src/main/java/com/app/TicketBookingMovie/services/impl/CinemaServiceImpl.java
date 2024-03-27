@@ -67,9 +67,12 @@ public class CinemaServiceImpl implements CinemaService {
     public void updateCinema(CinemaDto cinemaDto) {
         Cinema cinema = cinemaRepository.findById(cinemaDto.getId()).orElseThrow(
                 () -> new AppException("Cinema not found with id: " + cinemaDto.getId(), HttpStatus.NOT_FOUND));
-        if(!cinemaDto.getName().isEmpty() && !cinemaDto.getName().isBlank()) {
+        if (cinemaRepository.findByName(cinemaDto.getName()).isPresent()) {
+            throw new AppException("name: " + cinemaDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+        }
+        if (!cinemaDto.getName().isEmpty() && !cinemaDto.getName().isBlank()) {
             cinema.setName(cinemaDto.getName());
-        } else{
+        } else {
             cinema.setName(cinema.getName());
         }
         //handle address
@@ -77,9 +80,9 @@ public class CinemaServiceImpl implements CinemaService {
         AddressDto addressDto = cinemaDto.getAddress();
         addressDto.setId(address.getId());
         addressService.updateAddress(addressDto);
-        if(cinemaDto.isStatus() != cinema.isStatus()) {
+        if (cinemaDto.isStatus() != cinema.isStatus()) {
             cinema.setStatus(cinemaDto.isStatus());
-        }else {
+        } else {
             cinema.setStatus(cinema.isStatus());
         }
         cinemaRepository.save(cinema);
@@ -90,29 +93,27 @@ public class CinemaServiceImpl implements CinemaService {
     public void deleteCinemaById(Long id) {
         Cinema cinema = cinemaRepository.findById(id).orElseThrow(
                 () -> new AppException("Cinema not found with id: " + id, HttpStatus.NOT_FOUND));
+        //nếu trạng thái là true thì không thể xóa
+        if (cinema.isStatus()) {
+            throw new AppException("Cinema is active, can't delete", HttpStatus.BAD_REQUEST);
+        }
         cinemaRepository.delete(cinema);
 
     }
 
     @Override
-    public List<CinemaDto> getAllCinemas(int page, int size, String code, String name, String street,String ward, String district, String city, String nation) {
+    public List<CinemaDto> getAllCinemas(int page, int size, String code, String name, String street, String ward, String district, String city, String nation) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Cinema> cinemaPage;
         if (code != null && !code.isEmpty()) {
             cinemaPage = cinemaRepository.findByCodeContaining(code, pageable);
         } else if (name != null && !name.isEmpty()) {
             cinemaPage = cinemaRepository.findByNameContaining(name, pageable);
-        }
-
-
-        else if (street != null && !street.isEmpty()) {
+        } else if (street != null && !street.isEmpty()) {
             cinemaPage = cinemaRepository.findByAddressStreet(street, pageable);
-        }
-
-        else if(ward != null && !ward.isEmpty()){
+        } else if (ward != null && !ward.isEmpty()) {
             cinemaPage = cinemaRepository.findByAddressWard(ward, pageable);
-        }
-        else if (district != null && !district.isEmpty()) {
+        } else if (district != null && !district.isEmpty()) {
             cinemaPage = cinemaRepository.findByAddressDistrict(district, pageable);
         } else if (city != null && !city.isEmpty()) {
             cinemaPage = cinemaRepository.findByAddressCity(city, pageable);
@@ -134,19 +135,16 @@ public class CinemaServiceImpl implements CinemaService {
     }
 
     @Override
-    public long countAllCinemas(String code, String name, String street, String ward ,String district, String city, String nation) {
+    public long countAllCinemas(String code, String name, String street, String ward, String district, String city, String nation) {
         if (code != null && !code.isEmpty()) {
             return cinemaRepository.countByCodeContaining(code);
         } else if (name != null && !name.isEmpty()) {
             return cinemaRepository.countByNameContaining(name);
         } else if (street != null && !street.isEmpty()) {
             return cinemaRepository.countByAddressStreet(street);
-        }
-        else if(ward != null && !ward.isEmpty()){
+        } else if (ward != null && !ward.isEmpty()) {
             return cinemaRepository.countByAddressWard(ward);
-        }
-
-        else if (district != null && !district.isEmpty()) {
+        } else if (district != null && !district.isEmpty()) {
             return cinemaRepository.countByAddressDistrict(district);
         } else if (city != null && !city.isEmpty()) {
             return cinemaRepository.countByAddressCity(city);

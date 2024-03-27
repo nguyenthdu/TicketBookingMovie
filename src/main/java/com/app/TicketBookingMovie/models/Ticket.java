@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Set;
-
 @Getter
 @Setter
 @Entity
@@ -15,10 +13,9 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String code;
-    @OneToMany
-    private Set<Seat> seats;
+    @ManyToOne
+    private Seat seat;
     @ManyToOne
     private ShowTime showTime;
-    private int numberOfSeats;
-    private double totalPrice;
+    private double price;
 }
