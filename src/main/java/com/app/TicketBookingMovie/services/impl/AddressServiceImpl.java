@@ -39,6 +39,11 @@ public class AddressServiceImpl implements AddressService {
     public AddressDto updateAddress(AddressDto addressDto) {
         Address address = addressRepository.findById(addressDto.getId())
                 .orElseThrow(() -> new AppException("Address not found with id: " + addressDto.getId(), HttpStatus.NOT_FOUND));
+        if(!addressDto.getWard().isEmpty() && !addressDto.getWard().isBlank()){
+            address.setWard(addressDto.getWard());
+        } else {
+            address.setWard(address.getWard());
+        }
         if (!addressDto.getStreet().isEmpty() && !addressDto.getStreet().isBlank()) {
             address.setStreet(addressDto.getStreet());
         } else {

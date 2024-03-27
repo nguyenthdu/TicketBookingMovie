@@ -56,7 +56,7 @@ public class SalePriceServiceImpl implements SalePriceService {
 
         // Generate a random code for the salePrice
         salePrice.setCode(randomCode());
-        salePrice.setCreatedDat(LocalDateTime.now());
+        salePrice.setCreatedDate(LocalDateTime.now());
         // Save the salePrice to the database
         salePriceRepository.save(salePrice);
     }
@@ -119,7 +119,12 @@ public class SalePriceServiceImpl implements SalePriceService {
     public void deleteSalePriceById(Long id) {
         SalePrice salePrice = salePriceRepository.findById(id)
                 .orElseThrow(() -> new AppException("Sale price not found with id: " + id, HttpStatus.NOT_FOUND));
-        salePriceRepository.delete(salePrice);
+        if(salePrice.isStatus()){
+            throw new AppException("Sale price is active, can't delete", HttpStatus.BAD_REQUEST);
+        }
+        else {
+            salePriceRepository.delete(salePrice);
+        }
 
     }
 

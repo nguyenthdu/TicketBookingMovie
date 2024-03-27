@@ -75,15 +75,7 @@ public class SalePriceController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deleteSalePrice(@PathVariable("id") Long id) {
-        try {
-            salePriceService.deleteSalePriceById(id);
-            return ResponseEntity.ok(new MessageResponseDto("Sale price deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
-        } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
-        }
-    }
+
 
     @GetMapping
     public ResponseEntity<PageResponse<SalePriceDto>> getAllSalePrice(
@@ -132,4 +124,25 @@ public class SalePriceController {
     public ResponseEntity<Set<SalePriceDetailDto>> getAllSalePriceDetail( @PathVariable Long id) {
         return ResponseEntity.ok(salePriceDetailService.getAllSalePriceDetail(id));
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<MessageResponseDto> deleteSalePrice(@PathVariable("id") Long id) {
+        try {
+            salePriceService.deleteSalePriceById(id);
+            return ResponseEntity.ok(new MessageResponseDto("Sale price deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
+    }
+    //delete sale price detail
+    @DeleteMapping("/detail/{id}")
+    public ResponseEntity<MessageResponseDto> deleteSalePriceDetail(@PathVariable Long id) {
+        try {
+            salePriceDetailService.deleteSalePriceDetail(id);
+            return ResponseEntity.ok(new MessageResponseDto("Sale price detail deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
+    }
+    //delete sale price
+
 }

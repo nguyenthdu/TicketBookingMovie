@@ -22,10 +22,11 @@ public class CinemaController {
     }
 
     @PostMapping
-    public ResponseEntity<CinemaDto> createCinema(
+    public ResponseEntity<MessageResponseDto> createCinema(
             @RequestParam("name") String name,
             @RequestParam("status") boolean status,
             @RequestParam("street") String street,
+            @RequestParam("ward") String ward,
             @RequestParam("district") String district,
             @RequestParam("city") String city,
             @RequestParam("nation") String nation) {
@@ -34,11 +35,17 @@ public class CinemaController {
         cinemaDto.setStatus(status);
         AddressDto address = new AddressDto();
         address.setStreet(street);
+        address.setWard(ward);
         address.setDistrict(district);
         address.setCity(city);
         address.setNation(nation);
         cinemaDto.setAddress(address);
-        return ResponseEntity.ok(cinemaService.createCinema(cinemaDto));
+        try{
+            cinemaService.createCinema(cinemaDto);
+            return  ResponseEntity.ok(new MessageResponseDto("Create cinema successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.ok(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
     }
 
     @GetMapping("/{id}")
@@ -53,12 +60,13 @@ public class CinemaController {
             @RequestParam(required = false, name = "code") String code,
             @RequestParam(required = false,name = "name") String name,
             @RequestParam(required = false, name = "street") String street,
+            @RequestParam(required = false, name = "ward") String ward,
             @RequestParam(required = false, name = "district") String district,
             @RequestParam(required = false, name = "city") String city,
             @RequestParam(required = false,name = "nation") String nation) {
         PageResponse<CinemaDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(cinemaService.getAllCinemas(page, size,code, name, street, district, city, nation));
-        pageResponse.setTotalElements(cinemaService.countAllCinemas(code, name, street, district, city, nation));
+        pageResponse.setContent(cinemaService.getAllCinemas(page, size,code, name, street,ward, district, city, nation));
+        pageResponse.setTotalElements(cinemaService.countAllCinemas(code, name, street, ward,district, city, nation));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);

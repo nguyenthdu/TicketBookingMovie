@@ -18,6 +18,10 @@ public interface CinemaRepository extends JpaRepository<Cinema, Long> {
     @Query("SELECT c FROM Cinema c WHERE c.address.street = :street")
     Page<Cinema> findByAddressStreet(String street, Pageable pageable);
 
+    @Query("SELECT c FROM Cinema c WHERE c.address.ward = :ward")
+    Page<Cinema> findByAddressWard(String ward, Pageable pageable);
+
+
     @Query("SELECT c FROM Cinema c WHERE c.address.district = :district")
     Page<Cinema> findByAddressDistrict(String district, Pageable pageable);
 
@@ -26,6 +30,7 @@ public interface CinemaRepository extends JpaRepository<Cinema, Long> {
 
     @Query("SELECT c FROM Cinema c WHERE c.address.nation = :nation")
     Page<Cinema> findByAddressNation(String nation, Pageable pageable);
+
 
     Page<Cinema> findByNameContaining(String name, Pageable pageable);
 
@@ -42,4 +47,6 @@ public interface CinemaRepository extends JpaRepository<Cinema, Long> {
     long countByAddressCity(String city);
 
     long countByAddressNation(String nation);
+
+    long countByAddressWard(String ward);
 }

@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -43,31 +44,38 @@ public class SalePriceServiceDetailImpl implements SalePriceDetailService {
             SalePriceDetail salePriceDetail = modelMapper.map(salePriceDetailDto, SalePriceDetail.class);
             SalePrice salePrice = salePriceRepository.findById(salePriceDetailDto.getSalePriceId())
                     .orElseThrow(() -> new AppException("Sale Price not found with id: " + salePriceDetailDto.getSalePriceId(), HttpStatus.NOT_FOUND));
-            SalePriceDetail existSalePriceDetail = salePriceDetailRepository.findByTypeSeatIdAndFoodId(salePriceDetailDto.getTypeSeatId(), salePriceDetailDto.getFoodId());
-            if (existSalePriceDetail != null && existSalePriceDetail.getSalePrice().getId().equals(salePrice.getId())) {
-                throw new AppException("Sale Price Detail already exist", HttpStatus.BAD_REQUEST);
-            } else {
-                if (salePriceDetailDto.getTypeSeatId() != null && salePriceDetailDto.getTypeSeatId() > 0) {
-                    TypeSeat typeSeat = typeSeatRepository.findById(salePriceDetailDto.getTypeSeatId())
-                            .orElseThrow(() -> new AppException("Type seat not found", HttpStatus.NOT_FOUND));
-                    salePriceDetail.setTypeSeat(typeSeat);
-                    if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.PERCENT.name())) {
-                        salePriceDetail.setPriceDecrease(typeSeat.getPrice() * salePriceDetail.getDiscount() / 100);
-                    } else if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.AMOUNT.name())) {
-                        salePriceDetail.setPriceDecrease(typeSeat.getPrice() - salePriceDetail.getDiscount());
-                    }
-                } else if (salePriceDetailDto.getFoodId() != null && salePriceDetailDto.getFoodId() > 0) {
-                    Food food = foodRepository.findById(salePriceDetailDto.getFoodId())
-                            .orElseThrow(() -> new AppException("Food not found", HttpStatus.NOT_FOUND));
-                    salePriceDetail.setFood(food);
-                    if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.PERCENT.name())) {
-                        salePriceDetail.setPriceDecrease(food.getPrice() * salePriceDetail.getDiscount() / 100);
-                    } else if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.AMOUNT.name())) {
-                        salePriceDetail.setPriceDecrease(food.getPrice() - salePriceDetail.getDiscount());
-                    }
+            if (salePriceDetailDto.getTypeSeatId() != null && salePriceDetailDto.getTypeSeatId() > 0) {
+                boolean typeSeatExists = salePrice.getSalePriceDetails().stream()
+                        .anyMatch(detail -> Objects.equals(detail.getTypeSeat().getId(), salePriceDetail.getTypeSeat().getId()));
+                if (typeSeatExists) {
+                    throw new AppException("type seat is already exist in sale price header id:  " + salePrice.getId(), HttpStatus.BAD_REQUEST);
                 }
-                salePriceDetail.setCreatedDate(LocalDateTime.now());
+                TypeSeat typeSeat = typeSeatRepository.findById(salePriceDetailDto.getTypeSeatId())
+                        .orElseThrow(() -> new AppException("Type seat not found", HttpStatus.NOT_FOUND));
+                salePriceDetail.setTypeSeat(typeSeat);
+                if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.PERCENT.name())) {
+                    salePriceDetail.setPriceDecrease(typeSeat.getPrice() * salePriceDetail.getDiscount() / 100);
+                } else if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.AMOUNT.name())) {
+                    salePriceDetail.setPriceDecrease(typeSeat.getPrice() - salePriceDetail.getDiscount());
+                }
             }
+            if (salePriceDetailDto.getFoodId() != null && salePriceDetailDto.getFoodId() > 0) {
+                boolean foodExists = salePrice.getSalePriceDetails().stream()
+                        .anyMatch(detail -> Objects.equals(detail.getFood().getId(), salePriceDetail.getFood().getId()));
+                if (foodExists) {
+                    throw new AppException("food is already exist in sale price header id:  " + salePrice.getId(), HttpStatus.BAD_REQUEST);
+                }
+                Food food = foodRepository.findById(salePriceDetailDto.getFoodId())
+                        .orElseThrow(() -> new AppException("Food not found", HttpStatus.NOT_FOUND));
+                salePriceDetail.setFood(food);
+                if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.PERCENT.name())) {
+                    salePriceDetail.setPriceDecrease(food.getPrice() * salePriceDetail.getDiscount() / 100);
+                } else if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.AMOUNT.name())) {
+                    salePriceDetail.setPriceDecrease(food.getPrice() - salePriceDetail.getDiscount());
+                }
+            }
+            salePriceDetail.setCreatedDate(LocalDateTime.now());
+
             salePrice.getSalePriceDetails().add(salePriceDetail);
             salePriceDetailRepository.save(salePriceDetail);
         }
@@ -87,6 +95,20 @@ public class SalePriceServiceDetailImpl implements SalePriceDetailService {
         //chuyển status thành false
         salePriceDetail.setStatus(false);
         salePriceDetailRepository.save(salePriceDetail);
+
+    }
+
+    @Override
+    public void deleteSalePriceDetail(Long id) {
+        //nếu trạng thái là true thì không thể xóa
+        SalePriceDetail salePriceDetail = salePriceDetailRepository.findById(id)
+                .orElseThrow(() -> new AppException("Sale Price Detail not found with id: " + id, HttpStatus.NOT_FOUND));
+        if (salePriceDetail.isStatus()) {
+            throw new AppException("Sale Price Detail is active, can't delete", HttpStatus.BAD_REQUEST);
+        } else {
+            salePriceDetailRepository.delete(salePriceDetail);
+        }
+
 
     }
 

@@ -20,9 +20,9 @@ public class SalePriceDetail {
     private double discount;
     @Enumerated(EnumType.STRING)
     private ETypeDiscount typeDiscount = ETypeDiscount.AMOUNT;
-    @OneToOne
+    @ManyToOne
     private TypeSeat typeSeat;
-    @OneToOne
+    @ManyToOne
     private Food food;
     @JsonIgnore
     @ManyToOne
