@@ -31,15 +31,15 @@ public class TypeSeatServiceImpl implements TypeSeatService {
         }
         Set<TypeSeat> listTypeSeat = new HashSet<>();
         TypeSeat TypeSeatStandard = new TypeSeat();
-        TypeSeatStandard.setCode("111111111");
+        TypeSeatStandard.setCode("LG111111111");
         TypeSeatStandard.setName(ETypeSeat.STANDARD);
         TypeSeatStandard.setPrice(0);
         TypeSeat typeSeatVip = new TypeSeat();
-        typeSeatVip.setCode("222222222");
+        typeSeatVip.setCode("LG222222222");
         typeSeatVip.setName(ETypeSeat.VIP);
         typeSeatVip.setPrice(0);
         TypeSeat typeSeatSweetBox = new TypeSeat();
-        typeSeatSweetBox.setCode("333333333");
+        typeSeatSweetBox.setCode("LG333333333");
         typeSeatSweetBox.setName(ETypeSeat.SWEETBOX);
         typeSeatSweetBox.setPrice(0);
         listTypeSeat.add(TypeSeatStandard);

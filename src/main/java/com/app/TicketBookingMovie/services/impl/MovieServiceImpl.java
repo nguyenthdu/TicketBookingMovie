@@ -49,7 +49,7 @@ public class MovieServiceImpl implements MovieService {
 
     // random code
     public String randomCode() {
-        return "PM" + LocalDateTime.now().getNano();
+        return "PI" + LocalDateTime.now().getNano();
     }
 
     //methods check type file

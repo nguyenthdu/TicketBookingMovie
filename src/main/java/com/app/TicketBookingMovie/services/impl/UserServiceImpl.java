@@ -239,7 +239,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     public String randomCodeMor() {
-        return "MOD" + LocalDateTime.now().getNano();
+        return "MO" + LocalDateTime.now().getNano();
     }
 
 

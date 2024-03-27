@@ -4,7 +4,6 @@ import com.app.TicketBookingMovie.dtos.SeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Seat;
 import com.app.TicketBookingMovie.models.TypeSeat;
-import com.app.TicketBookingMovie.repository.RoomRepository;
 import com.app.TicketBookingMovie.repository.SeatRepository;
 import com.app.TicketBookingMovie.repository.TypeSeatRepository;
 import com.app.TicketBookingMovie.services.SeatService;
@@ -20,14 +19,14 @@ public class SeatServiceImpl implements SeatService {
     private final ModelMapper modelMapper;
     private final SeatRepository seatRepository;
     private final TypeSeatRepository typeSeatRepository;
-    private final RoomRepository roomRepository;
+
 
     @Autowired
-    public SeatServiceImpl(ModelMapper modelMapper, SeatRepository seatRepository, TypeSeatRepository typeSeatRepository, RoomRepository roomRepository) {
+    public SeatServiceImpl(ModelMapper modelMapper, SeatRepository seatRepository, TypeSeatRepository typeSeatRepository) {
         this.modelMapper = modelMapper;
         this.seatRepository = seatRepository;
         this.typeSeatRepository = typeSeatRepository;
-        this.roomRepository = roomRepository;
+
     }
 
     public String randomCode() {

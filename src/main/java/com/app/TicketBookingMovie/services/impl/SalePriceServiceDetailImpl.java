@@ -17,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -46,38 +45,60 @@ public class SalePriceServiceDetailImpl implements SalePriceDetailService {
                     .orElseThrow(() -> new AppException("Sale Price not found with id: " + salePriceDetailDto.getSalePriceId(), HttpStatus.NOT_FOUND));
             if (salePriceDetailDto.getTypeSeatId() != null && salePriceDetailDto.getTypeSeatId() > 0) {
                 boolean typeSeatExists = salePrice.getSalePriceDetails().stream()
-                        .anyMatch(detail -> Objects.equals(detail.getTypeSeat().getId(), salePriceDetail.getTypeSeat().getId()));
+                        .anyMatch(detail -> detail.getTypeSeat() != null && detail.getTypeSeat().getId().equals(salePriceDetailDto.getTypeSeatId()));
                 if (typeSeatExists) {
-                    throw new AppException("type seat is already exist in sale price header id:  " + salePrice.getId(), HttpStatus.BAD_REQUEST);
+                    throw new AppException("Type seat is already exist in sale price detail for sale price with id: " + salePrice.getId(), HttpStatus.BAD_REQUEST);
                 }
                 TypeSeat typeSeat = typeSeatRepository.findById(salePriceDetailDto.getTypeSeatId())
                         .orElseThrow(() -> new AppException("Type seat not found", HttpStatus.NOT_FOUND));
                 salePriceDetail.setTypeSeat(typeSeat);
                 if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.PERCENT.name())) {
-                    salePriceDetail.setPriceDecrease(typeSeat.getPrice() * salePriceDetail.getDiscount() / 100);
+                    checkDiscountValuePercent(salePriceDetail.getDiscount());
+                    salePriceDetail.setPriceDecrease(typeSeat.getPrice() - (typeSeat.getPrice() * (salePriceDetail.getDiscount() / 100)));
                 } else if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.AMOUNT.name())) {
+                    checkDiscountValueAmount(salePriceDetail.getDiscount(), typeSeat.getPrice());
                     salePriceDetail.setPriceDecrease(typeSeat.getPrice() - salePriceDetail.getDiscount());
+                } else {
+                    throw new AppException("Type discount is invalid", HttpStatus.BAD_REQUEST);
+
                 }
-            }
-            if (salePriceDetailDto.getFoodId() != null && salePriceDetailDto.getFoodId() > 0) {
+            } else if (salePriceDetailDto.getFoodId() != null && salePriceDetailDto.getFoodId() > 0) {
                 boolean foodExists = salePrice.getSalePriceDetails().stream()
-                        .anyMatch(detail -> Objects.equals(detail.getFood().getId(), salePriceDetail.getFood().getId()));
+                        .anyMatch(detail -> detail.getFood() != null && detail.getFood().getId().equals(salePriceDetailDto.getFoodId()));
                 if (foodExists) {
-                    throw new AppException("food is already exist in sale price header id:  " + salePrice.getId(), HttpStatus.BAD_REQUEST);
+                    throw new AppException("Food is already exist in sale price detail for sale price with id: " + salePrice.getId(), HttpStatus.BAD_REQUEST);
                 }
                 Food food = foodRepository.findById(salePriceDetailDto.getFoodId())
                         .orElseThrow(() -> new AppException("Food not found", HttpStatus.NOT_FOUND));
                 salePriceDetail.setFood(food);
                 if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.PERCENT.name())) {
-                    salePriceDetail.setPriceDecrease(food.getPrice() * salePriceDetail.getDiscount() / 100);
+                    checkDiscountValuePercent(salePriceDetail.getDiscount());
+                    salePriceDetail.setPriceDecrease(food.getPrice() - (food.getPrice() * (salePriceDetail.getDiscount() / 100)));
                 } else if (salePriceDetailDto.getTypeDiscount().equals(ETypeDiscount.AMOUNT.name())) {
+                    checkDiscountValueAmount(salePriceDetail.getDiscount(), food.getPrice());
                     salePriceDetail.setPriceDecrease(food.getPrice() - salePriceDetail.getDiscount());
+                } else {
+                    throw new AppException("Type discount is invalid", HttpStatus.BAD_REQUEST);
                 }
+            } else {
+                throw new AppException("Must entry food or type seat", HttpStatus.BAD_REQUEST);
             }
             salePriceDetail.setCreatedDate(LocalDateTime.now());
 
             salePrice.getSalePriceDetails().add(salePriceDetail);
             salePriceDetailRepository.save(salePriceDetail);
+        }
+    }
+
+    public void checkDiscountValueAmount(double discount, double price) {
+        if (discount <= 0 || discount > price) {
+            throw new AppException("Discount value is invalid", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    public void checkDiscountValuePercent(double discount) {
+        if (discount <= 0 || discount > 100) {
+            throw new AppException("Discount value is invalid", HttpStatus.BAD_REQUEST);
         }
     }
 
