@@ -3,10 +3,7 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.dtos.ShowTimeDto;
 import com.app.TicketBookingMovie.exception.AppException;
-import com.app.TicketBookingMovie.models.Movie;
-import com.app.TicketBookingMovie.models.Room;
-import com.app.TicketBookingMovie.models.Seat;
-import com.app.TicketBookingMovie.models.ShowTime;
+import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.repository.MovieRepository;
 import com.app.TicketBookingMovie.repository.RoomRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeRepository;
@@ -77,11 +74,9 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
             // Kiểm tra xem giờ chiếu mới có trùng với bất kỳ giờ chiếu nào khác trong cùng một ngày và phòng không.
             List<ShowTime> existingShowTimes = showTimeRepository.findByRoomAndShowDate(room, showDate);
-
             for (ShowTime existingShowTime : existingShowTimes) {
                 LocalTime existingShowTimeStart = existingShowTime.getShowTime();
                 LocalTime existingShowTimeEnd = existingShowTimeStart.plusMinutes(existingShowTime.getMovie().getDurationMinutes()).plusHours(1);
-
                 if (newShowTimeStart.isBefore(existingShowTimeEnd) && newShowTimeEnd.isAfter(existingShowTimeStart)) {
                     throw new AppException("The new showtime overlaps with an existing showtime.", HttpStatus.BAD_REQUEST);
                 }
@@ -95,18 +90,29 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                     throw new AppException("The new showtime must be at least 1 hour after the end time of the previous movie.", HttpStatus.BAD_REQUEST);
                 }
             }
-            //copy danh sách ghế từ phòng
-            Set<Seat> seats = new HashSet<>(room.getSeats());
-            
+
+
             // Tạo giờ chiếu mới
             ShowTime newShowTime = new ShowTime();
             newShowTime.setCode(randomCode());
+            newShowTime.setShowDate(showDate);
+            newShowTime.setShowTime(newShowTimeStart);
             newShowTime.setRoom(room);
             newShowTime.setMovie(movie);
             newShowTime.setStatus(showTimeDto.isStatus());
             newShowTime.setSeatsBooked(0);
             newShowTime.setCreatedDate(LocalDateTime.now());
-            newShowTime.setSeats(seats);
+
+            Set<Seat> seats = room.getSeats();
+            Set<ShowTimeSeat> showTimeSeats = new HashSet<>();
+            for (Seat seat : seats) {
+                ShowTimeSeat showTimeSeat = new ShowTimeSeat();
+                showTimeSeat.setSeat(seat);
+                showTimeSeat.setShowTime(newShowTime);
+                showTimeSeat.setStatus(true); // Khởi tạo trạng thái của ghế là true
+                showTimeSeats.add(showTimeSeat);
+            }
+            newShowTime.setShowTimeSeat(showTimeSeats);
             showTimeRepository.save(newShowTime);
             createdShowTimes.add(modelMapper.map(newShowTime, ShowTimeDto.class));
         }

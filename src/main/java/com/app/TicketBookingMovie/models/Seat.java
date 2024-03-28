@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -20,6 +23,9 @@ public class Seat {
     private boolean status;
     @ManyToOne
     private TypeSeat seatType;
+    @OneToMany(mappedBy = "seat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<ShowTimeSeat> showTimeSeats = new HashSet<>();
+
 
 
     public Seat() {

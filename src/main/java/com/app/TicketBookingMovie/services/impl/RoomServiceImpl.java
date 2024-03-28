@@ -47,12 +47,14 @@ public class RoomServiceImpl implements RoomService {
     public void createRoom(RoomDto roomDto) {
         // Map RoomDto to Room
         Room room = modelMapper.map(roomDto, Room.class);
-        if (roomRepository.findByName(roomDto.getName()).isPresent()) {
-            throw new AppException("Room with name: " + roomDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
-        }
+
         room.setCode(randomCode());
         Cinema cinema = cinemaRepository.findById(roomDto.getCinemaId())
                 .orElseThrow(() -> new AppException("Cinema not found with id:" + roomDto.getCinemaId(), HttpStatus.NOT_FOUND));
+        //nếu tên rạp trong cinema đã tồn tại thì thông báo lỗi
+        if (roomRepository.findByName(roomDto.getName()).isPresent()) {
+            throw new AppException("name: " + roomDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+        }
         room.setCinema(cinema);
         //handle type
         if (roomDto.getType().equals("2D")) {
@@ -88,7 +90,10 @@ public class RoomServiceImpl implements RoomService {
         // Retrieve the existing Room
         Room room = roomRepository.findById(roomDto.getId())
                 .orElseThrow(() -> new AppException("Room not found with id:" + roomDto.getId(), HttpStatus.NOT_FOUND));
-
+        //nếu tên rạp trong cinema đã tồn tại thì thông báo lỗi
+        if (roomRepository.findByName(roomDto.getName()).isPresent()) {
+            throw new AppException("name: " + roomDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+        }
         // Create a set to hold the seats to be removed
         Set<Seat> seatsToRemove = new HashSet<>(room.getSeats());
 

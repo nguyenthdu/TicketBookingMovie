@@ -26,12 +26,11 @@ public class ShowTime {
     private Movie movie;
     @ManyToOne
     private Room room;
-    //khi tao phong thi danh sach ghe trong showtime se la danh sach ghe cuar phong do
-    @OneToMany
-    private Set<Seat> seats;
     private boolean status;
     private int seatsBooked;
     private LocalDateTime createdDate;
+    @OneToMany(mappedBy = "showTime", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<ShowTimeSeat> showTimeSeat;
     public ShowTime() {
     }
 
