@@ -14,7 +14,7 @@ public class RoomDto   {
     private String code;
     private String name;
     private String type;
-    private int totalSeat;
+    private int totalSeats;
     private Long cinemaId;
     private boolean status = true;
     private Set<SeatDto> seats;

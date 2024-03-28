@@ -67,10 +67,11 @@ public class CinemaServiceImpl implements CinemaService {
     public void updateCinema(CinemaDto cinemaDto) {
         Cinema cinema = cinemaRepository.findById(cinemaDto.getId()).orElseThrow(
                 () -> new AppException("Cinema not found with id: " + cinemaDto.getId(), HttpStatus.NOT_FOUND));
-        if (cinemaRepository.findByName(cinemaDto.getName()).isPresent()) {
-            throw new AppException("name: " + cinemaDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
-        }
-        if (!cinemaDto.getName().isEmpty() && !cinemaDto.getName().isBlank()) {
+
+        if (!cinemaDto.getName().isEmpty() && !cinemaDto.getName().isBlank() && !cinemaDto.getName().equals(cinema.getName())) {
+            if (cinemaRepository.findByName(cinemaDto.getName()).isPresent()) {
+                throw new AppException("name: " + cinemaDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+            }
             cinema.setName(cinemaDto.getName());
         } else {
             cinema.setName(cinema.getName());

@@ -2,6 +2,8 @@ package com.app.TicketBookingMovie.dtos;
 
 import lombok.Data;
 
+import java.util.Set;
+
 /**
  * DTO for {@link com.app.TicketBookingMovie.models.Ticket}
  */
@@ -10,6 +12,6 @@ public class TicketDto  {
     private Long id;
     private String code;
     private Long showTimeId;
-    private Long seatIds;
+    private Set<Long> seatIds;
     private double price;
 }

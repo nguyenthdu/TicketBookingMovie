@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -25,6 +26,9 @@ public class ShowTime {
     private Movie movie;
     @ManyToOne
     private Room room;
+    //khi tao phong thi danh sach ghe trong showtime se la danh sach ghe cuar phong do
+    @OneToMany
+    private Set<Seat> seats;
     private boolean status;
     private int seatsBooked;
     private LocalDateTime createdDate;

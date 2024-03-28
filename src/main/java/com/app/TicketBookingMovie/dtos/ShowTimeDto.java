@@ -16,7 +16,6 @@ public class ShowTimeDto {
     private LocalDate showDate;
     private LocalTime showTime;
     private Long movieId;
-
     private Long roomId;
     boolean status;
     private int seatsBooked;
