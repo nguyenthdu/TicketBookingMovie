@@ -12,4 +12,10 @@ public class InvoiceDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @ManyToOne
+    private Food food;
+    @OneToOne
+    private Ticket ticket;
+    private int quantity;
+    private double price;
 }

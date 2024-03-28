@@ -14,10 +14,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,6 +40,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         this.modelMapper = modelMapper;
     }
 
+    @Transactional
     @Override
     public void createShowTime(Set<ShowTimeDto> showTimeDtos) {
         Set<ShowTimeDto> createdShowTimes = new HashSet<>();
@@ -62,41 +65,27 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             if (!room.isStatus()) {
                 throw new AppException("The room is not available for scheduling.", HttpStatus.BAD_REQUEST);
             }
-            LocalTime newShowTimeStart = showTimeDto.getShowTime();
-            // Convert duration to minutes
-            int movieDuration = movie.getDurationMinutes();
-            LocalTime newShowTimeEnd = newShowTimeStart.plusMinutes(movieDuration).plusHours(1);
 
-            // Kiểm tra xem ngày chiếu có phải là sau ngày hiện tại không
-            if (showDate.isBefore(currentDate)) {
-                throw new AppException("Show date must be after the current date.", HttpStatus.BAD_REQUEST);
-            }
+            //TODO: xử lý khoảng thời gian giữa các lịch chiếu trong cùng 1 ngày cùng 1 phòng
 
-            // Kiểm tra xem giờ chiếu mới có trùng với bất kỳ giờ chiếu nào khác trong cùng một ngày và phòng không.
             List<ShowTime> existingShowTimes = showTimeRepository.findByRoomAndShowDate(room, showDate);
+            existingShowTimes.sort(Comparator.comparing(ShowTime::getShowTime));
+            LocalTime newShowTimeStart = showTimeDto.getShowTime();
+            LocalTime newShowTimeEnd = newShowTimeStart.plusMinutes(movie.getDurationMinutes()).plusMinutes(60);
             for (ShowTime existingShowTime : existingShowTimes) {
                 LocalTime existingShowTimeStart = existingShowTime.getShowTime();
-                LocalTime existingShowTimeEnd = existingShowTimeStart.plusMinutes(existingShowTime.getMovie().getDurationMinutes()).plusHours(1);
+                LocalTime existingShowTimeEnd = existingShowTimeStart.plusMinutes(existingShowTime.getMovie().getDurationMinutes()).plusMinutes(60);
                 if (newShowTimeStart.isBefore(existingShowTimeEnd) && newShowTimeEnd.isAfter(existingShowTimeStart)) {
-                    throw new AppException("The new showtime overlaps with an existing showtime.", HttpStatus.BAD_REQUEST);
-                }
-            }
-
-            // Kiểm tra xem thời gian bắt đầu của phim tiếp theo có cách thời gian kết thúc của phim trước đó ít nhất một giờ không.
-            if (!existingShowTimes.isEmpty()) {
-                ShowTime lastShowTime = existingShowTimes.get(existingShowTimes.size() - 1);
-                LocalTime lastShowTimeEnd = lastShowTime.getShowTime().plusMinutes(lastShowTime.getMovie().getDurationMinutes()).plusHours(1);
-                if (newShowTimeStart.isBefore(lastShowTimeEnd.plusHours(1))) {
-                    throw new AppException("The new showtime must be at least 1 hour after the end time of the previous movie.", HttpStatus.BAD_REQUEST);
+                    throw new AppException("Showtime is overlapped with existing showtime.", HttpStatus.BAD_REQUEST);
                 }
             }
 
 
-            // Tạo giờ chiếu mới
+            //TODO: Tạo giờ chiếu mới
             ShowTime newShowTime = new ShowTime();
             newShowTime.setCode(randomCode());
             newShowTime.setShowDate(showDate);
-            newShowTime.setShowTime(newShowTimeStart);
+            newShowTime.setShowTime(showTimeDto.getShowTime());
             newShowTime.setRoom(room);
             newShowTime.setMovie(movie);
             newShowTime.setStatus(showTimeDto.isStatus());
@@ -119,6 +108,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
 
     }
+
 
     @Override
     public ShowTimeDto getShowTimeById(Long id) {
@@ -168,7 +158,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         if (code != null && !code.isEmpty()) {
             return showTimeRepository.countByCodeContaining(code);
         } else if (movieId != null && movieId > 0 && date != null && !date.toString().isEmpty()) {
-            return showTimeRepository.countByMovieIdAndShowDate(movieId,date);
+            return showTimeRepository.countByMovieIdAndShowDate(movieId, date);
         } else {
             return showTimeRepository.count();
         }
@@ -176,6 +166,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
 
     public String randomCode() {
-        return  "LC" + LocalDateTime.now().getNano();
+        return "LC" + LocalDateTime.now().getNano();
     }
 }
