@@ -1,9 +1,11 @@
 package com.app.TicketBookingMovie.services;
 
-import com.app.TicketBookingMovie.dtos.TicketDto;
-import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.models.Ticket;
+
+import java.util.List;
+import java.util.Set;
 
 public interface TicketService {
-    void createTickets(TicketDto ticketDto) throws AppException;
+    List<Ticket> createTickets(Long showTimeId, Set<Long> seatIds);
 
 }

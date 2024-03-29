@@ -57,26 +57,14 @@ public class UserController {
 
     // TODO: Lấy thông tin của user đang đăng nhập theo token vào cookie
     @GetMapping("/profile")
-    public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
+    public ResponseEntity<User> getCurrentUser(HttpServletRequest request) {
         String jwt = jwtUtils.getJwtFromCookies(request);
         if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
             String email = jwtUtils.getEmailFromJwtToken(jwt);
-            User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + email));
-            // Tạo một DTO để trả về thông tin user mà không bao gồm mật khẩu
-            UserDto userDTO = new UserDto();
-            userDTO.setId(user.getId());
-            userDTO.setCode(user.getCode());
-            userDTO.setUsername(user.getUsername());
-            userDTO.setEmail(user.getEmail());
-            userDTO.setGender(user.isGender());
-            userDTO.setBirthday(user.getBirthday());
-            userDTO.setPhone(user.getPhone());
-            userDTO.setRoles(user.getRoles());
-            userDTO.setEnabled(user.isEnabled());
-            userDTO.setCreatedDate(user.getCreatedDate());
-            return ResponseEntity.ok(userDTO);
+            User user = userService.getCurrentUser(email);
+            return ResponseEntity.ok(user);
         }
-        return ResponseEntity.badRequest().body(new MessageResponseDto("Error: Invalid JWT token", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+        throw new UsernameNotFoundException("User not found with email: " + jwtUtils.getEmailFromJwtToken(jwt));
     }
 
     @GetMapping("/{id}")

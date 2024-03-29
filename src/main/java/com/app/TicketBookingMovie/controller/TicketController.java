@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.TicketDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.services.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,12 +22,8 @@ public class TicketController {
     @PostMapping
     public ResponseEntity<?> createTickets(@RequestParam("showTimeId") Long showTimeId,
                                            @RequestParam("seatIds") Set<Long> seatIds) {
-        TicketDto ticketDto = new TicketDto();
-        ticketDto.setShowTimeId(showTimeId);
-        ticketDto.setSeatIds(seatIds);
-
         try {
-            ticketService.createTickets(ticketDto);
+            ticketService.createTickets(showTimeId, seatIds);
             return ResponseEntity.status(HttpStatus.CREATED).body("Tickets created successfully!");
         } catch (AppException e) {
             return ResponseEntity.status(e.getStatus()).body(e.getMessage());

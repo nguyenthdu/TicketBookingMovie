@@ -108,6 +108,8 @@ public class RoomServiceImpl implements RoomService {
                 // If the seat does not exist, create a new one and add it to the room
                 SeatDto seat = seatService.createSeat(seatDto);
                 room.getSeats().add(modelMapper.map(seat, Seat.class));
+                //tang so luong ghe
+
             } else {
                 // If the seat already exists, remove it from the seatsToRemove set
                 seatsToRemove.remove(existingSeat);
@@ -141,6 +143,7 @@ public class RoomServiceImpl implements RoomService {
         }else{
             room.setType(room.getType());
         }
+            room.setTotalSeats(room.getSeats().size());
         // Save the updated room
         roomRepository.save(room);
         // Map Room to RoomDto and return

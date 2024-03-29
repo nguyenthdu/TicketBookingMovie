@@ -29,12 +29,14 @@ public class FoodController {
             @RequestParam("price") double price,
             @RequestParam("categoryId") Long categoryId,
             @RequestParam("sizeFood") String sizeFood,
+            @RequestParam("quantity") int quantity,
             @RequestParam("status") boolean status) throws IOException {
         FoodDto foodDto = new FoodDto();
         foodDto.setName(name);
         foodDto.setPrice(price);
         foodDto.setCategoryId(categoryId);
         foodDto.setSize(sizeFood);
+        foodDto.setQuantity(quantity);
         foodDto.setStatus(status);
         try {
             foodService.createFood(foodDto, image);
@@ -55,6 +57,7 @@ public class FoodController {
             @RequestParam("price") double price,
             @RequestParam("categoryId") Long categoryId,
             @RequestParam("sizeFood") String sizeFood,
+            @RequestParam("quantity") int quantity,
             @RequestParam("status") boolean status) throws IOException {
         FoodDto foodDto = new FoodDto();
         foodDto.setId(id);
@@ -62,6 +65,7 @@ public class FoodController {
         foodDto.setPrice(price);
         foodDto.setCategoryId(categoryId);
         foodDto.setSize(sizeFood);
+        foodDto.setQuantity(quantity);
         foodDto.setStatus(status);
         try {
             foodService.updateFood(foodDto, image);

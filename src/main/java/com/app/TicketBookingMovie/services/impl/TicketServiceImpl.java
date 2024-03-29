@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.services.impl;
 
-import com.app.TicketBookingMovie.dtos.TicketDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.repository.SalePriceDetailRepository;
@@ -33,18 +32,12 @@ public class TicketServiceImpl implements TicketService {
         this.showTimeRepository = showTimeRepository;
         this.seatRepository = seatRepository;
         this.salePriceDetailRepository = salePriceDetailRepository;
+
     }
 
     @Transactional // Đảm bảo giao dịch tính nguyên vẹn
     @Override
-    public void createTickets(TicketDto ticketDto) throws AppException {
-
-        // Bước 1: Lấy thông tin
-
-        Long showTimeId = ticketDto.getShowTimeId();
-        Set<Long> seatIds = ticketDto.getSeatIds();
-
-        // Bước 2: Kiểm tra tính hợp lệ của request
+    public List<Ticket> createTickets(Long showTimeId, Set<Long> seatIds) throws AppException {
 
         if (showTimeId == null || showTimeId <= 0) {
             throw new AppException("Showtime id is invalid", HttpStatus.BAD_REQUEST);
@@ -89,12 +82,10 @@ public class TicketServiceImpl implements TicketService {
                 throw new AppException("Seat " + seat.getCode() + " has been booked", HttpStatus.BAD_REQUEST);
             }
         }
-
         int totalSeatsBooked = showTime.getSeatsBooked() + seats.size();
         if (totalSeatsBooked > showTime.getRoom().getTotalSeats()) {
             throw new AppException("Exceed the maximum number of seats", HttpStatus.BAD_REQUEST);
         }
-
         // Bước 3: Tìm chiến lược khuyến mãi
         LocalDateTime currentTime = LocalDateTime.now();
         List<SalePriceDetail> currentSalePriceDetails = salePriceDetailRepository.findCurrentSalePriceDetails(currentTime);
@@ -103,7 +94,7 @@ public class TicketServiceImpl implements TicketService {
         List<Ticket> createdTickets = new ArrayList<>();
         for (Seat seat : seats) {
             Ticket ticket = new Ticket();
-            ticket.setCode(generateUniqueCode());
+            ticket.setCode(randomCode());
             ticket.setShowTime(showTime);
             ticket.setSeat(seat);
 
@@ -130,11 +121,11 @@ public class TicketServiceImpl implements TicketService {
                 showTimeSeat.setStatus(false);
             }
         }
-
+        return createdTickets;
 
     }
 
-    private String generateUniqueCode() {
+    private String randomCode() {
         // TODO: Implement logic to generate unique code for ticket
         return "VE" + LocalDateTime.now().getNano();
     }

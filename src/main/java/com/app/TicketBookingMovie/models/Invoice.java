@@ -23,13 +23,15 @@ public class Invoice {
     private User user;
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "invoice_id")
-    private List<InvoiceDetail> invoiceDetails;
+    private List<InvoiceFoodDetail> invoiceFoodDetails;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "invoice_id")
+    private List<InvoiceTicketDetail> invoiceTicketDetails;
     private LocalDateTime createdDate;
     private LocalDateTime cancelledDate;
     //nhân viên thanh toán
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     private User staff;
-    private double VAT;
     private boolean status;
 }

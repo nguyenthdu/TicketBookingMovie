@@ -98,6 +98,7 @@ public class FoodServiceImpl implements FoodService {
         }
         food.setCode(code);
         food.setImage(uploadLink);
+        food.setQuantity(foodDto.getQuantity());
         food.setCreatedDate(LocalDateTime.now());
         food.setCategoryFood(cateogryFoodRepository.findById(foodDto.getCategoryId())
                 .orElseThrow(() -> new AppException("Category not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND)));
@@ -110,6 +111,13 @@ public class FoodServiceImpl implements FoodService {
         Food food = foodRepository.findById(id)
                 .orElseThrow(() -> new AppException("Food not found with id: " + id, HttpStatus.NOT_FOUND));
         return modelMapper.map(food, FoodDto.class);
+
+    }
+
+    @Override
+    public Food findById(Long id) {
+        return foodRepository.findById(id)
+                .orElseThrow(() -> new AppException("Food not found with id: " + id, HttpStatus.NOT_FOUND));
 
     }
 
@@ -176,6 +184,11 @@ public class FoodServiceImpl implements FoodService {
                     .orElseThrow(() -> new AppException("Category not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND)));
         } else {
             food.setCategoryFood(food.getCategoryFood());
+        }
+        if (foodDto.getQuantity() >= 0) {
+            food.setQuantity(foodDto.getQuantity());
+        } else {
+            food.setQuantity(food.getQuantity());
         }
         foodRepository.save(food);
         modelMapper.map(food, FoodDto.class);
