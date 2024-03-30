@@ -2,6 +2,7 @@ package com.app.TicketBookingMovie.models;
 
 import com.app.TicketBookingMovie.models.enums.EApplicableObject;
 import com.app.TicketBookingMovie.models.enums.ETypePromotion;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,13 +24,18 @@ public class PromotionLine {
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    @Enumerated(EnumType.STRING)
     private EApplicableObject applicableObject;
+    @Enumerated(EnumType.STRING)
     private ETypePromotion typePromotion;
-    private int usePerUser;
-    private int usePerPromotion;
-    @ManyToOne
-    private Promotion promotion;
+    private Long usePerUser;
+    private Long usePerPromotion;
     @OneToMany
+    @JoinColumn(name = "promotion_line_id")
     private Set<PromotionDetail> promotionDetails;
+    @ManyToOne
+    @JoinColumn(name = "promotion_id")
+    @JsonIgnore
+    private Promotion promotion;
     private boolean status;
 }

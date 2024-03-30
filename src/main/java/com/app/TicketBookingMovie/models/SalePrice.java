@@ -10,7 +10,7 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "sale_price_header")
+@Table(name = "sale_price")
 public class SalePrice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

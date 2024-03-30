@@ -12,6 +12,6 @@ public class PromotionDto {
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private Set<Long> promotionLineIds;
+    private Set<PromotionLineDto> promotionLineDtos;
     private boolean status;
 }

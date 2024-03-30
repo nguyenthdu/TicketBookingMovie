@@ -15,9 +15,9 @@ public class PromotionLineDto {
     private LocalDateTime endDate;
     private String applicableObject;
     private String  typePromotion;
-    private int usePerUser;
-    private int usePerPromotion;
+    private Long usePerUser;
+    private Long usePerPromotion;
     private Long  promotionId;
-    private Set<Long> promotionDetailIds;
+    private Set<PromotionDetailDto> promotionDetailDtos;
     private boolean status;
 }

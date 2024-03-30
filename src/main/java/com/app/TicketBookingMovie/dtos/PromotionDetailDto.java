@@ -6,12 +6,9 @@ import lombok.Data;
 public class PromotionDetailDto {
     private Long id;
     private String typeDiscount;
-    private int discountValue;
-    private int discountPercent;
-    private int maxDiscountValue;
-    private int minBillValue;
-
+    private double discountValue;
+    private double maxValue;
+    private double minBillValue;
     private Long foodId;
-
     private Long promotionLineId;
 }

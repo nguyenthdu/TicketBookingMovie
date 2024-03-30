@@ -1,7 +1,6 @@
 package com.app.TicketBookingMovie.models;
 
 import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,19 +8,16 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table
+@Table(name = "promotion_detail")
 public class PromotionDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Enumerated(EnumType.STRING)
     private ETypeDiscount typeDiscount;
-    private int discountValue;
-    private int discountPercent;
-    private int maxDiscountValue;
-    private int minBillValue;
+    private double discountValue;
+    private double maxValue;
+    private double minBillValue;
     @ManyToOne
     private Food food;
-    @JsonIgnore
-    @ManyToOne
-    private PromotionLine promotionLine;
 }
