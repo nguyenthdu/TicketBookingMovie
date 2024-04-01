@@ -29,4 +29,10 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
 
 
     List<ShowTime> findByRoomAndShowDate(Room room, @Past LocalDate showDate);
+
+    Page<ShowTime> findByMovieIdAndShowDateAndRoomId(Long movieId, LocalDate date, Long roomId, Pageable pageable);
+
+    long countByCode(String code);
+
+    long countByMovieIdAndShowDateAndRoomId(Long movieId, LocalDate date, Long roomId);
 }

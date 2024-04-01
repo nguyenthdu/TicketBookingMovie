@@ -48,9 +48,7 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         // Check if the time period is already occupied
         boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, startDate);
         if (exists) {
-            throw new AppException("A sale price already exists within the specified time period. Start date:" + priceHeaderDto.getStartDate() + " End date:" + endDate
-
-                    , HttpStatus.BAD_REQUEST);        }
+            throw new AppException("A sale price already exists within the specified time period. Start date:", HttpStatus.BAD_REQUEST);        }
 
         // Map the priceHeaderDto to a PriceHeader entity
         PriceHeader priceHeader = modelMapper.map(priceHeaderDto, PriceHeader.class);
@@ -95,9 +93,7 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
             // Check if the time period is already occupied
             boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, priceHeaderDto.getStartDate());
             if (exists) {
-                throw new AppException("A sale price already exists within the specified time period. Start date:" + priceHeaderDto.getStartDate() + " End date:" + endDate
-
-                        , HttpStatus.BAD_REQUEST);
+                throw new AppException("A sale price already exists within the specified time period. Start date:", HttpStatus.BAD_REQUEST);
             }
             priceHeader.setEndDate(priceHeaderDto.getEndDate());
         } else {

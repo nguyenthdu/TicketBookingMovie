@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,22 +119,54 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         return modelMapper.map(showTime, ShowTimeDto.class);
     }
 
-    @Override
-    public List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long movieId, LocalDate date) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ShowTime> showTimes;
-        if (code != null && !code.isEmpty()) {
-            showTimes = showTimeRepository.findByCode(code, pageable);
-        } else if (movieId != null && movieId > 0 && date != null && !date.toString().isEmpty()) {
-            showTimes = showTimeRepository.findByMovieIdAndShowDate(movieId, date, pageable);
-        } else {
-            showTimes = showTimeRepository.findAll(pageable);
-        }
-        return showTimes.map(showTime -> modelMapper.map(showTime, ShowTimeDto.class)).getContent();
-    }
+
 
     @Override
-    public void updateShowTimeStatus() {
+    public void updateShowTime(ShowTimeDto showTimeDto) {
+        // Lấy thông tin lịch chiếu từ cơ sở dữ liệu
+        ShowTime showTime = showTimeRepository.findById(showTimeDto.getId())
+                .orElseThrow(() -> new AppException("Showtime not found with id: " + showTimeDto.getId(), HttpStatus.NOT_FOUND));
+
+        // Kiểm tra nếu thời gian lịch chiếu đã qua, không thể cập nhật
+        LocalDate currentDate = LocalDate.now();
+        LocalTime currentTime = LocalTime.now();
+        LocalDate showDate = showTime.getShowDate();
+        LocalTime showTimeStart = showTime.getShowTime();
+        boolean isShowTimePassed = showDate.isBefore(currentDate) || (showDate.isEqual(currentDate) && showTimeStart.isBefore(currentTime));
+        if (isShowTimePassed) {
+            throw new AppException("Cannot update past showtime.", HttpStatus.BAD_REQUEST);
+        }
+
+        // Kiểm tra nếu có ghế đã được đặt, chỉ được cập nhật trạng thái
+        if (showTime.getSeatsBooked() > 0) {
+            showTime.setStatus(showTimeDto.isStatus());
+        } else {
+            // Kiểm tra ngày chiếu nếu chưa đến ngày hiện tại thì cập nhật được
+            if (showTime.getShowDate().isAfter(currentDate) || showTime.getShowDate().isEqual(currentDate)) {
+                showTime.setShowDate(showTimeDto.getShowDate());
+                // Kiểm tra giờ chiếu nếu chưa đến thời gian hiện tại thì cập nhật được
+                if (showTime.getShowTime().isAfter(currentTime) || showTime.getShowTime().equals(currentTime)) {
+                    showTime.setShowTime(showTimeDto.getShowTime());
+                }
+                // Cập nhật phòng chiếu và phim
+                showTime.setRoom(roomRepository.findById(showTimeDto.getRoomId())
+                        .orElseThrow(() -> new AppException("Room not found with id: " + showTimeDto.getRoomId(), HttpStatus.NOT_FOUND)));
+                showTime.setMovie(movieRepository.findById(showTimeDto.getMovieId())
+                        .orElseThrow(() -> new AppException("Movie not found with id: " + showTimeDto.getMovieId(), HttpStatus.NOT_FOUND)));
+                showTime.setStatus(showTimeDto.isStatus());
+            } else {
+                throw new AppException("Cannot update showtime before the current date.", HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        // Lưu lại cập nhật vào cơ sở dữ liệu
+        showTimeRepository.save(showTime);
+    }
+
+    //Xử lý nếu thời gian lịch chiếu đã qua hoặc số ghế đã đặt vượt quá số ghế của phòng chiếu thì trạng thái của lịch chiếu sẽ là false
+    @Async
+    @Scheduled(fixedRate = 60000) // Chạy mỗi phút
+    public void updateShowTimeStatusAsync() {
         LocalDate currentDate = LocalDate.now(); // Ngày hiện tại
         LocalTime currentTime = LocalTime.now(); // Thời gian hiện tại
 
@@ -152,17 +186,60 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             showTimeRepository.save(showTime);
         }
     }
+    @Override
+    public List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long movieId, LocalDate date, Long roomId) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ShowTime> showTimes;
+
+        if (code != null && !code.isEmpty()) {
+            showTimes = showTimeRepository.findByCode(code, pageable);
+        } else if (movieId != null && movieId > 0 && date != null && !date.toString().isEmpty()) {
+            if (roomId != null && roomId > 0) {
+                showTimes = showTimeRepository.findByMovieIdAndShowDateAndRoomId(movieId, date, roomId, pageable);
+            } else {
+                showTimes = showTimeRepository.findByMovieIdAndShowDate(movieId, date, pageable);
+            }
+        } else {
+            showTimes = showTimeRepository.findAll(pageable);
+        }
+        return showTimes.map(showTime -> modelMapper.map(showTime, ShowTimeDto.class)).getContent();
+    }
 
     @Override
-    public long countAllShowTimes(String code, Long movieId, LocalDate date) {
+    public long countAllShowTimes(String code, Long movieId, LocalDate date, Long roomId) {
         if (code != null && !code.isEmpty()) {
-            return showTimeRepository.countByCodeContaining(code);
+            return showTimeRepository.countByCode(code);
         } else if (movieId != null && movieId > 0 && date != null && !date.toString().isEmpty()) {
-            return showTimeRepository.countByMovieIdAndShowDate(movieId, date);
+            if (roomId != null && roomId > 0) {
+                return showTimeRepository.countByMovieIdAndShowDateAndRoomId(movieId, date, roomId);
+            } else {
+                return showTimeRepository.countByMovieIdAndShowDate(movieId, date);
+            }
         } else {
             return showTimeRepository.count();
         }
     }
+
+    @Override
+    public void deleteShowTime(Long id) {
+        ShowTime showTime = showTimeRepository.findById(id)
+                .orElseThrow(() -> new AppException("Showtime not found with id: " + id, HttpStatus.NOT_FOUND));
+
+        // Kiểm tra xem lịch chiếu đã có vé đặt chưa
+        if (showTime.getSeatsBooked() > 0) {
+            throw new AppException("Cannot delete showtime with booked seats.", HttpStatus.BAD_REQUEST);
+        }
+        if(showTime.getShowDate().isBefore(LocalDate.now()) || (showTime.getShowDate().isEqual(LocalDate.now()) && showTime.getShowTime().isBefore(LocalTime.now()))){
+            throw new AppException("Cannot delete past showtime.", HttpStatus.BAD_REQUEST);
+        }
+        if(showTime.isStatus()){
+            throw new AppException("Cannot delete showtime with status is active.", HttpStatus.BAD_REQUEST);
+        }
+
+        // Xóa lịch chiếu nếu chưa có vé đặt
+        showTimeRepository.delete(showTime);
+    }
+
 
 
     public String randomCode() {

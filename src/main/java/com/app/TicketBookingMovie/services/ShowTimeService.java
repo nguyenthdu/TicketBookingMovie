@@ -7,11 +7,15 @@ import java.util.List;
 import java.util.Set;
 
 public interface ShowTimeService {
-void createShowTime(Set<ShowTimeDto> showTimeDtos);
-    ShowTimeDto getShowTimeById(Long id);
-    List<ShowTimeDto> getAllShowTimes(Integer page, Integer size,String code, Long movieId, LocalDate date);
+    void createShowTime(Set<ShowTimeDto> showTimeDtos);
 
-    void updateShowTimeStatus();
-    long countAllShowTimes(String code,Long movieId, LocalDate date);
+    ShowTimeDto getShowTimeById(Long id);
+
+    List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long movieId, LocalDate date, Long roomId);
+
+    void updateShowTime(ShowTimeDto showTimeDto);
+
+    long countAllShowTimes(String code, Long movieId, LocalDate date, Long roomId);
+    void deleteShowTime(Long id);
 
 }
