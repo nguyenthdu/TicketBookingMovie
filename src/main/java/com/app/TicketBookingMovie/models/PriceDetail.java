@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.models;
 
-import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,22 +10,19 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "sale_price_detail")
-public class SalePriceDetail {
+@Table(name = "price_detail")
+public class PriceDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private double priceDecrease;
-    private double discount;
-    @Enumerated(EnumType.STRING)
-    private ETypeDiscount typeDiscount = ETypeDiscount.AMOUNT;
+    private double price;
     @ManyToOne
     private TypeSeat typeSeat;
     @ManyToOne
     private Food food;
     @JsonIgnore
     @ManyToOne
-    private SalePrice salePrice;
+    private PriceHeader priceHeader;
     private boolean status;
     private LocalDateTime createdDate;
 

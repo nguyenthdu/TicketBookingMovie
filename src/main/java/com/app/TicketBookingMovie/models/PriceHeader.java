@@ -10,8 +10,8 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "sale_price")
-public class SalePrice {
+@Table(name = "price_header")
+public class PriceHeader {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,8 +21,8 @@ public class SalePrice {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private boolean status;
-    @OneToMany(mappedBy = "salePrice")
-    private Set<SalePriceDetail> salePriceDetails;
+    @OneToMany(mappedBy = "priceHeader")
+    private Set<PriceDetail> priceDetails;
     private LocalDateTime createdDate;
 
 }

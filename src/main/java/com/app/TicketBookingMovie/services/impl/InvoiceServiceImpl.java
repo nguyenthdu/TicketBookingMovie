@@ -4,7 +4,7 @@ package com.app.TicketBookingMovie.services.impl;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
-import com.app.TicketBookingMovie.repository.SalePriceDetailRepository;
+import com.app.TicketBookingMovie.repository.PriceDetailRepository;
 import com.app.TicketBookingMovie.services.FoodService;
 import com.app.TicketBookingMovie.services.InvoiceService;
 import com.app.TicketBookingMovie.services.TicketService;
@@ -24,14 +24,14 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final TicketService ticketService;
     private final FoodService foodService;
     private final UserService userService;
-    private final SalePriceDetailRepository salePriceDetailRepository;
+    private final PriceDetailRepository priceDetailRepository;
 
-    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, SalePriceDetailRepository salePriceDetailRepository) {
+    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailRepository priceDetailRepository) {
         this.invoiceRepository = invoiceRepository;
         this.ticketService = ticketService;
         this.foodService = foodService;
         this.userService = userService;
-        this.salePriceDetailRepository = salePriceDetailRepository;
+        this.priceDetailRepository = priceDetailRepository;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         invoice.setInvoiceTicketDetails(invoiceTicketDetails);
         LocalDateTime currentTime = LocalDateTime.now();
-        List<SalePriceDetail> currentSalePriceDetails = salePriceDetailRepository.findCurrentSalePriceDetails(currentTime);
+        List<PriceDetail> currentPriceDetails = priceDetailRepository.findCurrentSalePriceDetails(currentTime);
 
         // Tạo danh sách chi tiết đồ ăn từ thông tin đồ ăn
         List<InvoiceFoodDetail> invoiceFoodDetails = new ArrayList<>();
@@ -80,11 +80,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             InvoiceFoodDetail foodDetail = new InvoiceFoodDetail();
             foodDetail.setFood(food);
             foodDetail.setQuantity(quantity);
-            Optional<SalePriceDetail> salePriceDetail = currentSalePriceDetails.stream()
+            Optional<PriceDetail> salePriceDetail = currentPriceDetails.stream()
                     .filter(salePrice -> salePrice.getFood().getId().equals(foodId))
                     .findFirst();
             if (salePriceDetail.isPresent()) {
-                foodDetail.setPrice(salePriceDetail.get().getPriceDecrease() * quantity);
+                foodDetail.setPrice(salePriceDetail.get().getPrice() * quantity);
             } else {
                 foodDetail.setPrice(food.getPrice() * quantity);
             }

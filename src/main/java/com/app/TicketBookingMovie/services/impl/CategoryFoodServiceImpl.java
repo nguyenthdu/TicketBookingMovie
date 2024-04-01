@@ -44,17 +44,19 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
 
     @Override
     public CategoryFoodDto getCategoryFoodById(Long id) {
-        return cateogryFoodRepository.findById(id).map(categoryFood -> modelMapper.map(categoryFood, CategoryFoodDto.class))
-                .orElseThrow(() -> new AppException("Category not found with id: " + id, HttpStatus.NOT_FOUND));
+       CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Category not found with id: " + id, HttpStatus.NOT_FOUND));
+        return modelMapper.map(categoryFood, CategoryFoodDto.class);
+
     }
 
     @Override
     public void updateCategoryFood(CategoryFoodDto categoryFoodDto) {
         CategoryFood categoryFood = cateogryFoodRepository.findById(categoryFoodDto.getId()).orElseThrow(() -> new AppException("Category not found with id: " + categoryFoodDto.getId(), HttpStatus.NOT_FOUND));
-        if (cateogryFoodRepository.findByName(categoryFoodDto.getName()).isPresent()) {
-            throw new AppException("name: " + categoryFoodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
-        }
+
         if(!categoryFoodDto.getName().isEmpty() && !categoryFoodDto.getName().isBlank()) {
+            if (cateogryFoodRepository.findByName(categoryFoodDto.getName()).isPresent()) {
+                throw new AppException("name: " + categoryFoodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+            }
             categoryFood.setName(categoryFoodDto.getName());
         }else{
             categoryFood.setName(categoryFood.getName());

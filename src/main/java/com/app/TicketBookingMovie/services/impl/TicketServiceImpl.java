@@ -2,7 +2,7 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
-import com.app.TicketBookingMovie.repository.SalePriceDetailRepository;
+import com.app.TicketBookingMovie.repository.PriceDetailRepository;
 import com.app.TicketBookingMovie.repository.SeatRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeRepository;
 import com.app.TicketBookingMovie.repository.TicketRepository;
@@ -25,13 +25,13 @@ public class TicketServiceImpl implements TicketService {
 
     private final SeatRepository seatRepository;
 
-    private final SalePriceDetailRepository salePriceDetailRepository;
+    private final PriceDetailRepository priceDetailRepository;
 
-    public TicketServiceImpl(TicketRepository ticketRepository, ShowTimeRepository showTimeRepository, SeatRepository seatRepository, SalePriceDetailRepository salePriceDetailRepository) {
+    public TicketServiceImpl(TicketRepository ticketRepository, ShowTimeRepository showTimeRepository, SeatRepository seatRepository, PriceDetailRepository priceDetailRepository) {
         this.ticketRepository = ticketRepository;
         this.showTimeRepository = showTimeRepository;
         this.seatRepository = seatRepository;
-        this.salePriceDetailRepository = salePriceDetailRepository;
+        this.priceDetailRepository = priceDetailRepository;
 
     }
 
@@ -88,7 +88,7 @@ public class TicketServiceImpl implements TicketService {
         }
         // Bước 3: Tìm chiến lược khuyến mãi
         LocalDateTime currentTime = LocalDateTime.now();
-        List<SalePriceDetail> currentSalePriceDetails = salePriceDetailRepository.findCurrentSalePriceDetails(currentTime);
+        List<PriceDetail> currentPriceDetails = priceDetailRepository.findCurrentSalePriceDetails(currentTime);
 
         // Bước 4: Xử lý vé tạo vé với mỗi ghế được thêm vào
         List<Ticket> createdTickets = new ArrayList<>();
@@ -99,11 +99,11 @@ public class TicketServiceImpl implements TicketService {
             ticket.setSeat(seat);
 
             // Kiểm tra xem ghế này có được giảm giá không
-            Optional<SalePriceDetail> saleDetail = currentSalePriceDetails.stream()
+            Optional<PriceDetail> saleDetail = currentPriceDetails.stream()
                     .filter(s -> s.getTypeSeat().getId().equals(seat.getSeatType().getId()))
                     .findFirst();
             if (saleDetail.isPresent()) {
-                ticket.setPrice(saleDetail.get().getPriceDecrease());
+                ticket.setPrice(saleDetail.get().getPrice());
             } else {
                 ticket.setPrice(seat.getSeatType().getPrice());
             }

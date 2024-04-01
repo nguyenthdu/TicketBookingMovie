@@ -5,14 +5,12 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class SalePriceDetailDto {
+public class PriceDetailDto {
     private Long id;
-    private double priceDecrease = 0;
-    private double discount;
-    private String typeDiscount;
+    private double price = 0;
     private Long typeSeatId;
     private Long foodId;
-    private Long salePriceId;
+    private Long priceHeaderId;
     private boolean status;
     private LocalDateTime createdDate;
 }

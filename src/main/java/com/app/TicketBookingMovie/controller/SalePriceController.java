@@ -1,12 +1,12 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.MessageResponseDto;
-import com.app.TicketBookingMovie.dtos.SalePriceDetailDto;
-import com.app.TicketBookingMovie.dtos.SalePriceDto;
+import com.app.TicketBookingMovie.dtos.PriceDetailDto;
+import com.app.TicketBookingMovie.dtos.PriceHeaderDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
-import com.app.TicketBookingMovie.services.SalePriceDetailService;
-import com.app.TicketBookingMovie.services.SalePriceService;
+import com.app.TicketBookingMovie.services.PriceDetailService;
+import com.app.TicketBookingMovie.services.PriceHeaderService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +19,13 @@ import java.util.Set;
 @RestController
 @RequestMapping("api/salePrice")
 public class SalePriceController {
-    private final SalePriceService salePriceService;
-    private final SalePriceDetailService salePriceDetailService;
+    private final PriceHeaderService priceHeaderService;
+    private final PriceDetailService priceDetailService;
 
-    public SalePriceController(SalePriceService salePriceService,
-                               SalePriceDetailService salePriceDetailService) {
-        this.salePriceService = salePriceService;
-        this.salePriceDetailService = salePriceDetailService;
+    public SalePriceController(PriceHeaderService priceHeaderService,
+                               PriceDetailService priceDetailService) {
+        this.priceHeaderService = priceHeaderService;
+        this.priceDetailService = priceDetailService;
     }
 
     @PostMapping
@@ -35,14 +35,14 @@ public class SalePriceController {
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
             @RequestParam("status") boolean status) {
-        SalePriceDto salePriceDto = new SalePriceDto();
-        salePriceDto.setName(name);
-        salePriceDto.setDescription(description);
-        salePriceDto.setStartDate(startDate);
-        salePriceDto.setEndDate(endDate);
-        salePriceDto.setStatus(status);
+        PriceHeaderDto priceHeaderDto = new PriceHeaderDto();
+        priceHeaderDto.setName(name);
+        priceHeaderDto.setDescription(description);
+        priceHeaderDto.setStartDate(startDate);
+        priceHeaderDto.setEndDate(endDate);
+        priceHeaderDto.setStatus(status);
         try {
-            salePriceService.createSalePrice(salePriceDto);
+            priceHeaderService.createPriceHeader(priceHeaderDto);
             return ResponseEntity.ok(new MessageResponseDto("Sale price created successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
@@ -50,8 +50,8 @@ public class SalePriceController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SalePriceDto> getSalePrice(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(salePriceService.getSalePriceById(id));
+    public ResponseEntity<PriceHeaderDto> getSalePrice(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(priceHeaderService.getPriceHeaderById(id));
     }
 
     @PutMapping
@@ -61,14 +61,14 @@ public class SalePriceController {
             @RequestParam("description") String description,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
             @RequestParam("status") boolean status) {
-        SalePriceDto salePriceDto = new SalePriceDto();
-        salePriceDto.setId(id);
-        salePriceDto.setName(name);
-        salePriceDto.setDescription(description);
-        salePriceDto.setEndDate(endDate);
-        salePriceDto.setStatus(status);
+        PriceHeaderDto priceHeaderDto = new PriceHeaderDto();
+        priceHeaderDto.setId(id);
+        priceHeaderDto.setName(name);
+        priceHeaderDto.setDescription(description);
+        priceHeaderDto.setEndDate(endDate);
+        priceHeaderDto.setStatus(status);
         try {
-            salePriceService.updateSalePrice(salePriceDto);
+            priceHeaderService.updatePriceHeader(priceHeaderDto);
             return ResponseEntity.ok(new MessageResponseDto("Sale price updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
@@ -76,9 +76,8 @@ public class SalePriceController {
     }
 
 
-
     @GetMapping
-    public ResponseEntity<PageResponse<SalePriceDto>> getAllSalePrice(
+    public ResponseEntity<PageResponse<PriceHeaderDto>> getAllSalePrice(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "code", required = false) String code,
@@ -87,9 +86,9 @@ public class SalePriceController {
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate) {
         {
-            PageResponse<SalePriceDto> pageResponse = new PageResponse<>();
-            pageResponse.setContent(salePriceService.getAllSalePrice(page, size, code, name, status, startDate, endDate));
-            pageResponse.setTotalElements(salePriceService.countAllSalePrice(code, name, status, startDate, endDate));
+            PageResponse<PriceHeaderDto> pageResponse = new PageResponse<>();
+            pageResponse.setContent(priceHeaderService.getAllPriceHeader(page, size, code, name, status, startDate, endDate));
+            pageResponse.setTotalElements(priceHeaderService.countAllPriceHeader(code, name, status, startDate, endDate));
             pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
             pageResponse.setCurrentPage(page);
             pageResponse.setPageSize(size);
@@ -99,45 +98,57 @@ public class SalePriceController {
 
 
     @PostMapping("/detail")
-    public ResponseEntity<MessageResponseDto> createSalePriceDetail(@RequestBody Set<SalePriceDetailDto> salePriceDetailDtos) {
+    public ResponseEntity<MessageResponseDto> createSalePriceDetail(@RequestBody Set<PriceDetailDto> priceDetailDtos) {
         try {
-            salePriceDetailService.createSalePriceDetail(salePriceDetailDtos);
+            priceDetailService.createPriceDetail(priceDetailDtos);
             return ResponseEntity.ok(new MessageResponseDto("Sale price detail created successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
+
     @GetMapping("/detail/{id}")
-    public ResponseEntity<SalePriceDetailDto> getSalePriceDetail(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(salePriceDetailService.getSalePriceDetail(id));
+    public ResponseEntity<PriceDetailDto> getSalePriceDetail(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(priceDetailService.getPriceDetail(id));
     }
-    @PutMapping("/detail/{id}")
-    public ResponseEntity<MessageResponseDto> updateStatusSalePriceDetail(@PathVariable Long id) {
+
+    @PutMapping("/detail")
+    public ResponseEntity<MessageResponseDto> updatePriceDetail(
+            @RequestParam("id") Long id,
+            @RequestParam("price") double price,
+            @RequestParam("status") boolean status) {
+        PriceDetailDto priceDetailDto = new PriceDetailDto();
+        priceDetailDto.setId(id);
+        priceDetailDto.setPrice(price);
+        priceDetailDto.setStatus(status);
         try {
-            salePriceDetailService.updateStatusSalePriceDetail(id);
+            priceDetailService.updatePriceDetail(priceDetailDto);
             return ResponseEntity.ok(new MessageResponseDto("Sale price detail updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
+
     @GetMapping("/{id}/detail")
-    public ResponseEntity<Set<SalePriceDetailDto>> getAllSalePriceDetail( @PathVariable Long id) {
-        return ResponseEntity.ok(salePriceDetailService.getAllSalePriceDetail(id));
+    public ResponseEntity<Set<PriceDetailDto>> getAllSalePriceDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(priceDetailService.getAllPriceDetail(id));
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<MessageResponseDto> deleteSalePrice(@PathVariable("id") Long id) {
         try {
-            salePriceService.deleteSalePriceById(id);
+            priceHeaderService.deletePriceHeaderById(id);
             return ResponseEntity.ok(new MessageResponseDto("Sale price deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
+
     //delete sale price detail
     @DeleteMapping("/detail/{id}")
     public ResponseEntity<MessageResponseDto> deleteSalePriceDetail(@PathVariable Long id) {
         try {
-            salePriceDetailService.deleteSalePriceDetail(id);
+            priceDetailService.deletePriceDetail(id);
             return ResponseEntity.ok(new MessageResponseDto("Sale price detail deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));

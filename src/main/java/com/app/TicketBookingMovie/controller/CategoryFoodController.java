@@ -35,11 +35,7 @@ public class CategoryFoodController {
 
     @GetMapping("/{id}")
     public ResponseEntity<CategoryFoodDto> getCategoryFood(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(categoryFoodService.getCategoryFoodById(id));
-        } catch (AppException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.ok(categoryFoodService.getCategoryFoodById(id));
     }
 
     @PutMapping

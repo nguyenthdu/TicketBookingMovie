@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.app.TicketBookingMovie.dtos.FoodDto;
 import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.models.CategoryFood;
 import com.app.TicketBookingMovie.models.Food;
 import com.app.TicketBookingMovie.models.enums.ESize;
 import com.app.TicketBookingMovie.repository.CateogryFoodRepository;
@@ -180,8 +181,9 @@ public class FoodServiceImpl implements FoodService {
         }
 
         if (foodDto.getCategoryId() > 0) {
-            food.setCategoryFood(cateogryFoodRepository.findById(foodDto.getCategoryId())
-                    .orElseThrow(() -> new AppException("Category not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND)));
+            CategoryFood categoryFood = cateogryFoodRepository.findById(foodDto.getCategoryId())
+                    .orElseThrow(() -> new AppException("Category not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND));
+            food.setCategoryFood(categoryFood);
         } else {
             food.setCategoryFood(food.getCategoryFood());
         }

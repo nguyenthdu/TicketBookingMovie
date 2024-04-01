@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
-public class SalePriceDto {
+public class PriceHeaderDto {
     private Long id;
     private String code;
     private String name;
@@ -14,6 +14,6 @@ public class SalePriceDto {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private boolean status;
-    private Set<SalePriceDetailDto> salePriceDetailDtos;
+    private Set<PriceDetailDto> priceDetails;
     private LocalDateTime createdDate;
 }
