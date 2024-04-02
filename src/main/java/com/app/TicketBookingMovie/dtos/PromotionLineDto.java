@@ -3,7 +3,6 @@ package com.app.TicketBookingMovie.dtos;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 @Data
 public class PromotionLineDto {
     private Long id;
@@ -18,6 +17,6 @@ public class PromotionLineDto {
     private Long usePerUser;
     private Long usePerPromotion;
     private Long  promotionId;
-    private Set<PromotionDetailDto> promotionDetailDtos;
+    private PromotionDetailDto promotionDetailDtos;
     private boolean status;
 }

@@ -33,5 +33,8 @@ public class Invoice {
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     private User staff;
+    @ManyToOne
+    @JsonIgnore
+    private Promotion  promotion;
     private boolean status;
 }

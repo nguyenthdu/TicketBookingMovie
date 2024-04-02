@@ -69,7 +69,6 @@ public class TicketServiceImpl implements TicketService {
 
             seats.add(seat);
         }
-
         //Bước 4: kiểm tra trạng thái của ghế trong ShowTimeSeat
         for (Seat seat : seats) {
             boolean isBooked = showTimeSeats.stream()

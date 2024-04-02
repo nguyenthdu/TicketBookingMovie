@@ -25,7 +25,13 @@ public class InvoiceController {
     }
 
     @PostMapping
-    public ResponseEntity<String> createInvoice(@RequestParam("showTimeId") Long showTimeId, @RequestParam("seatIds") Set<Long> seatIds, @RequestParam("foodIds") List<Long> foodIds, @RequestParam(value = "emailUser", required = false) String emailUser, @RequestParam("staffId") Long staffId, HttpServletRequest request) {
+    public ResponseEntity<String> createInvoice(@RequestParam("showTimeId") Long showTimeId,
+                                                @RequestParam("seatIds") Set<Long> seatIds,
+                                                @RequestParam("foodIds") List<Long> foodIds,
+                                                @RequestParam(value = "emailUser", required = false) String emailUser,
+                                                @RequestParam("staffId") Long staffId,
+                                                @RequestParam("promotionIds") Set<Long> promotionIds
+            , HttpServletRequest request) {
         String jwt = jwtUtils.getJwtFromCookies(request);
         if (emailUser.isEmpty()) {
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
@@ -33,7 +39,7 @@ public class InvoiceController {
             }
         }
         try {
-            invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId);
+            invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId, promotionIds);
             return ResponseEntity.ok("Invoice created successfully");
         } catch (AppException e) {
             return ResponseEntity.status(e.getStatus()).body(e.getMessage());

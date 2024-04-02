@@ -52,7 +52,7 @@ public class GenreController {
     }
 
     @DeleteMapping("{id}")
-    public ResponseEntity<MessageResponseDto> deleteGenreById(Long id) {
+    public ResponseEntity<MessageResponseDto> deleteGenreById(@PathVariable Long id) {
         try {
             genreService.deleteGenreById(id);
             return ResponseEntity.ok().body(new MessageResponseDto("Genre deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));

@@ -25,9 +25,9 @@ public class TypeSeatServiceImpl implements TypeSeatService {
     }
 
     @Override
-    public Set<TypeSeat> createTypeSeat() {
+    public void createTypeSeat() {
         if (!typeSeatRepository.findAll().isEmpty()) {
-            return new HashSet<>();
+            return;
         }
         Set<TypeSeat> listTypeSeat = new HashSet<>();
         TypeSeat TypeSeatStandard = new TypeSeat();
@@ -46,7 +46,6 @@ public class TypeSeatServiceImpl implements TypeSeatService {
         listTypeSeat.add(typeSeatVip);
         listTypeSeat.add(typeSeatSweetBox);
         typeSeatRepository.saveAll(listTypeSeat);
-        return listTypeSeat;
 
     }
 
@@ -59,7 +58,7 @@ public class TypeSeatServiceImpl implements TypeSeatService {
     }
 
     @Override
-    public TypeSeatDto updateTypeSeatById(TypeSeatDto typeSeatDto) {
+    public void updateTypeSeatById(TypeSeatDto typeSeatDto) {
         TypeSeat typeSeat = typeSeatRepository.findById(typeSeatDto.getId())
                 .orElseThrow(() -> new AppException("TypeSeat not found with id: " + typeSeatDto.getId(), HttpStatus.NOT_FOUND));
         if(typeSeatDto.getPrice() > 0){
@@ -69,7 +68,7 @@ public class TypeSeatServiceImpl implements TypeSeatService {
         }
 
         TypeSeat updatedTypeSeat = typeSeatRepository.save(typeSeat);
-        return modelMapper.map(updatedTypeSeat, TypeSeatDto.class);
+        modelMapper.map(updatedTypeSeat, TypeSeatDto.class);
     }
 
 

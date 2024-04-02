@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -30,9 +29,8 @@ public class PromotionLine {
     private ETypePromotion typePromotion;
     private Long usePerUser;
     private Long usePerPromotion;
-    @OneToMany
-    @JoinColumn(name = "promotion_line_id")
-    private Set<PromotionDetail> promotionDetails;
+    @OneToOne
+    private PromotionDetail promotionDetail;
     @ManyToOne
     @JoinColumn(name = "promotion_id")
     @JsonIgnore

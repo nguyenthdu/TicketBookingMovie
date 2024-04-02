@@ -48,7 +48,8 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         // Check if the time period is already occupied
         boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, startDate);
         if (exists) {
-            throw new AppException("A sale price already exists within the specified time period. Start date:", HttpStatus.BAD_REQUEST);        }
+            throw new AppException("A sale price already exists within the specified time period. Start date:", HttpStatus.BAD_REQUEST);
+        }
 
         // Map the priceHeaderDto to a PriceHeader entity
         PriceHeader priceHeader = modelMapper.map(priceHeaderDto, PriceHeader.class);
@@ -132,15 +133,14 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     }
 
     @Override
-    public List<PriceHeaderDto> getAllPriceHeader(Integer page, Integer size, String code, String name, boolean status, LocalDateTime startDate, LocalDateTime endDate) {
+    public List<PriceHeaderDto> getAllPriceHeader(Integer page, Integer size, String code, String name, LocalDateTime startDate, LocalDateTime endDate) {
         Pageable pageable = PageRequest.of(page, size);
         Page<PriceHeader> pageSalePrice;
         if (code != null && !code.isEmpty()) {
             pageSalePrice = priceHeaderRepository.findByCodeContaining(code, pageable);
         } else if (name != null && !name.isEmpty()) {
             pageSalePrice = priceHeaderRepository.findByNameContaining(name, pageable);
-        } else if (!status) {
-            pageSalePrice = priceHeaderRepository.findByStatus(false, pageable);
+
         } else if (startDate != null && endDate != null) {
             pageSalePrice = priceHeaderRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, startDate, pageable);
         } else {
@@ -150,13 +150,12 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     }
 
     @Override
-    public long countAllPriceHeader(String code, String name, boolean status, LocalDateTime startDate, LocalDateTime endDate) {
+    public long countAllPriceHeader(String code, String name, LocalDateTime startDate, LocalDateTime endDate) {
         if (code != null && !code.isEmpty()) {
             return priceHeaderRepository.countByCodeContaining(code);
         } else if (name != null && !name.isEmpty()) {
             return priceHeaderRepository.countByNameContaining(name);
-        } else if (!String.valueOf(status).isEmpty()) {
-            return priceHeaderRepository.countByStatus(status);
+
         } else if (startDate != null && endDate != null) {
             return priceHeaderRepository.countByStartDateGreaterThanEqualAndEndDateLessThanEqual(startDate, endDate);
         } else {

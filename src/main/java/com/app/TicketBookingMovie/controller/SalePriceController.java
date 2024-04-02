@@ -82,13 +82,12 @@ public class SalePriceController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "name", required = false) String name,
-            @RequestParam(value = "status", required = false, defaultValue = "true") Boolean status,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate) {
         {
             PageResponse<PriceHeaderDto> pageResponse = new PageResponse<>();
-            pageResponse.setContent(priceHeaderService.getAllPriceHeader(page, size, code, name, status, startDate, endDate));
-            pageResponse.setTotalElements(priceHeaderService.countAllPriceHeader(code, name, status, startDate, endDate));
+            pageResponse.setContent(priceHeaderService.getAllPriceHeader(page, size, code, name,  startDate, endDate));
+            pageResponse.setTotalElements(priceHeaderService.countAllPriceHeader(code, name, startDate, endDate));
             pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
             pageResponse.setCurrentPage(page);
             pageResponse.setPageSize(size);

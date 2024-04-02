@@ -2,7 +2,6 @@ package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.services.TicketService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,8 +15,12 @@ import java.util.Set;
 @RequestMapping("/api/ticket")
 public class TicketController {
 
-    @Autowired
-    private TicketService ticketService;
+
+    private final TicketService ticketService;
+
+    public TicketController(TicketService ticketService) {
+        this.ticketService = ticketService;
+    }
 
     @PostMapping
     public ResponseEntity<?> createTickets(@RequestParam("showTimeId") Long showTimeId,
@@ -31,4 +34,5 @@ public class TicketController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred!");
         }
     }
+
 }
