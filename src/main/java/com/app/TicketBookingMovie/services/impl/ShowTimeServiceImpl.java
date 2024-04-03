@@ -21,10 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class ShowTimeServiceImpl implements ShowTimeService {
@@ -120,7 +117,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     }
 
 
-
     @Override
     public void updateShowTime(ShowTimeDto showTimeDto) {
         // Lấy thông tin lịch chiếu từ cơ sở dữ liệu
@@ -186,34 +182,70 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             showTimeRepository.save(showTime);
         }
     }
+
     @Override
-    public List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long movieId, LocalDate date, Long roomId) {
+    public List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long cinemaId, Long movieId, LocalDate date, Long roomId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<ShowTime> showTimes;
 
         if (code != null && !code.isEmpty()) {
             showTimes = showTimeRepository.findByCode(code, pageable);
-        } else if (movieId != null && movieId > 0 && date != null && !date.toString().isEmpty()) {
-            if (roomId != null && roomId > 0) {
-                showTimes = showTimeRepository.findByMovieIdAndShowDateAndRoomId(movieId, date, roomId, pageable);
-            } else {
+        } else if (movieId != null && movieId > 0 && cinemaId != null && cinemaId > 0) {
+            if (roomId != null && roomId > 0 && date != null && !date.toString().isEmpty()) {
+                showTimes = showTimeRepository.findByMovieIdAndCinemaIdAndRoomIdAndShowDate(movieId, cinemaId, roomId, date, pageable);
+            } else if (roomId != null && roomId > 0) {
+                showTimes = showTimeRepository.findByMovieIdAndCinemaIdAndRoomId(movieId, cinemaId, roomId, pageable);
+            } else if (date != null && !date.toString().isEmpty()) {
                 showTimes = showTimeRepository.findByMovieIdAndShowDate(movieId, date, pageable);
+
+            } else {
+                showTimes = showTimeRepository.findByMovieIdAndCinemaId(movieId, cinemaId, pageable);
             }
         } else {
             showTimes = showTimeRepository.findAll(pageable);
         }
-        return showTimes.map(showTime -> modelMapper.map(showTime, ShowTimeDto.class)).getContent();
+
+        // Tạo một danh sách chứa các DTO ShowTimeDto
+        List<ShowTimeDto> showTimeDtos = new ArrayList<>();
+
+        // Lặp qua các ShowTime và lấy ra thông tin movieName, cinemaName, roomName
+        for (ShowTime showTime : showTimes) {
+            ShowTimeDto showTimeDto = modelMapper.map(showTime, ShowTimeDto.class);
+
+            // Lấy ra movieName từ movieId
+            Movie movie = showTime.getMovie();
+            if (movie != null) {
+                showTimeDto.setMovieName(movie.getName());
+            }
+
+            // Lấy ra cinemaName và roomName từ room và cinemaId
+            Room room = showTime.getRoom();
+            if (room != null) {
+                showTimeDto.setRoomName(room.getName());
+                Cinema cinema = room.getCinema();
+                if (cinema != null) {
+                    showTimeDto.setCinemaName(cinema.getName());
+                }
+            }
+
+            showTimeDtos.add(showTimeDto);
+        }
+
+        return showTimeDtos;
     }
 
+
     @Override
-    public long countAllShowTimes(String code, Long movieId, LocalDate date, Long roomId) {
+    public long countAllShowTimes(String code, Long cinemaId, Long movieId, LocalDate date, Long roomId) {
         if (code != null && !code.isEmpty()) {
             return showTimeRepository.countByCode(code);
-        } else if (movieId != null && movieId > 0 && date != null && !date.toString().isEmpty()) {
-            if (roomId != null && roomId > 0) {
+        } else if (movieId != null && movieId > 0 && cinemaId != null && cinemaId > 0) {
+            if (date != null && !date.toString().isEmpty() && roomId != null && roomId > 0) {
                 return showTimeRepository.countByMovieIdAndShowDateAndRoomId(movieId, date, roomId);
-            } else {
+            } else if (date != null && !date.toString().isEmpty()) {
                 return showTimeRepository.countByMovieIdAndShowDate(movieId, date);
+            } else {
+                return showTimeRepository.countByMovieIdAndCinemaId(movieId, cinemaId);
             }
         } else {
             return showTimeRepository.count();
@@ -229,17 +261,16 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         if (showTime.getSeatsBooked() > 0) {
             throw new AppException("Cannot delete showtime with booked seats.", HttpStatus.BAD_REQUEST);
         }
-        if(showTime.getShowDate().isBefore(LocalDate.now()) || (showTime.getShowDate().isEqual(LocalDate.now()) && showTime.getShowTime().isBefore(LocalTime.now()))){
+        if (showTime.getShowDate().isBefore(LocalDate.now()) || (showTime.getShowDate().isEqual(LocalDate.now()) && showTime.getShowTime().isBefore(LocalTime.now()))) {
             throw new AppException("Cannot delete past showtime.", HttpStatus.BAD_REQUEST);
         }
-        if(showTime.isStatus()){
+        if (showTime.isStatus()) {
             throw new AppException("Cannot delete showtime with status is active.", HttpStatus.BAD_REQUEST);
         }
 
         // Xóa lịch chiếu nếu chưa có vé đặt
         showTimeRepository.delete(showTime);
     }
-
 
 
     public String randomCode() {

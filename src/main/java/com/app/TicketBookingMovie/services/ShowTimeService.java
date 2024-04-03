@@ -11,11 +11,11 @@ public interface ShowTimeService {
 
     ShowTimeDto getShowTimeById(Long id);
 
-    List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long movieId, LocalDate date, Long roomId);
+    List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code,Long cinemaId, Long movieId, LocalDate date, Long roomId);
 
     void updateShowTime(ShowTimeDto showTimeDto);
 
-    long countAllShowTimes(String code, Long movieId, LocalDate date, Long roomId);
+    long countAllShowTimes(String code,Long cinemaId, Long movieId, LocalDate date, Long roomId);
     void deleteShowTime(Long id);
 
 }

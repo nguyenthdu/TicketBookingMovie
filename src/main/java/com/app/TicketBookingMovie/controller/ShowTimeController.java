@@ -46,11 +46,12 @@ public class ShowTimeController {
                                                                      @RequestParam(defaultValue = "10") Integer size,
                                                                      @RequestParam(required = false) String code,
                                                                      @RequestParam("movieId") Long movieId,
-                                                                     @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                                                     @RequestParam("cinemaId") Long cinemaId,
+                                                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                                                      @RequestParam(required = false) Long roomId) {
         PageResponse<ShowTimeDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(showTimeService.getAllShowTimes(page, size, code, movieId, date, roomId));
-        pageResponse.setTotalElements(showTimeService.countAllShowTimes(code, movieId, date, roomId));
+        pageResponse.setContent(showTimeService.getAllShowTimes(page, size, code,cinemaId, movieId, date, roomId));
+        pageResponse.setTotalElements(showTimeService.countAllShowTimes(code,cinemaId, movieId, date, roomId));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);

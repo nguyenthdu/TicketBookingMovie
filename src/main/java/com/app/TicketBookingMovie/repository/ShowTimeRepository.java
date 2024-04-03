@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -22,7 +23,6 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
 
 
     //phải khớp với cả ngày và id phim
-    Page<ShowTime> findByMovieIdAndShowDate(Long movieId, LocalDate date, Pageable pageable);
 
     @Query("select count(s) from ShowTime s where s.movie.id = ?1 and s.showDate = ?2")
     long countByMovieIdAndShowDate(Long movieId, LocalDate date);
@@ -30,9 +30,24 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
 
     List<ShowTime> findByRoomAndShowDate(Room room, @Past LocalDate showDate);
 
-    Page<ShowTime> findByMovieIdAndShowDateAndRoomId(Long movieId, LocalDate date, Long roomId, Pageable pageable);
 
     long countByCode(String code);
 
     long countByMovieIdAndShowDateAndRoomId(Long movieId, LocalDate date, Long roomId);
+
+
+    @Query("SELECT s FROM ShowTime s WHERE s.movie.id = :movieId AND s.room.cinema.id = :cinemaId")
+    Page<ShowTime> findByMovieIdAndCinemaId(@Param("movieId") Long movieId, @Param("cinemaId") Long cinemaId, Pageable pageable);
+
+
+    @Query("select count(s) from ShowTime s where s.movie.id = ?1 and s.room.cinema.id = ?2")
+    long countByMovieIdAndCinemaId(Long movieId, Long cinemaId);
+
+    Page<ShowTime> findByMovieIdAndShowDate(Long movieId, LocalDate date, Pageable pageable);
+
+    @Query("SELECT s FROM ShowTime s WHERE s.movie.id = :movieId AND s.room.cinema.id = :cinemaId AND s.room.id = :roomId")
+
+    Page<ShowTime> findByMovieIdAndCinemaIdAndRoomId(Long movieId, Long cinemaId, Long roomId, Pageable pageable);
+    @Query("SELECT s FROM ShowTime s WHERE s.movie.id = :movieId AND s.room.cinema.id = :cinemaId AND s.room.id = :roomId AND s.showDate = :date")
+    Page<ShowTime> findByMovieIdAndCinemaIdAndRoomIdAndShowDate(Long movieId, Long cinemaId, Long roomId, LocalDate date, Pageable pageable);
 }
