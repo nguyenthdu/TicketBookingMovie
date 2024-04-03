@@ -19,6 +19,4 @@ public class ShowTimeSeat {
     private ShowTime showTime;
 
     private boolean status;
-
-    // Getters and setters
 }

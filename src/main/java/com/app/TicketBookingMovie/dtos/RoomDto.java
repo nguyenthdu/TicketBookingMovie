@@ -13,6 +13,7 @@ public class RoomDto   {
     private Long id;
     private String code;
     private String name;
+    private double price;
     private String type;
     private int totalSeats;
     private Long cinemaId;

@@ -2,6 +2,7 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.dtos.PriceHeaderDto;
 import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.models.PriceDetail;
 import com.app.TicketBookingMovie.models.PriceHeader;
 import com.app.TicketBookingMovie.repository.PriceHeaderRepository;
 import com.app.TicketBookingMovie.services.PriceHeaderService;
@@ -105,9 +106,14 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         } else {
             priceHeader.setStatus(priceHeader.isStatus());
         }
-
         // Save the updated sale price to the database
         priceHeaderRepository.save(priceHeader);
+        if(!priceHeader.isStatus()){
+            for(PriceDetail priceDetail:priceHeader.getPriceDetails()){
+                priceDetail.setStatus(false);
+            }
+        }
+
     }
 
     @Override
@@ -115,8 +121,6 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         PriceHeader priceHeader = priceHeaderRepository.findById(id)
                 .orElseThrow(() -> new AppException("Sale price not found with id: " + id, HttpStatus.NOT_FOUND));
         //lấy danh sách price detail của price header
-
-
         return modelMapper.map(priceHeader, PriceHeaderDto.class);
     }
 

@@ -2,11 +2,13 @@ package com.app.TicketBookingMovie.services.impl;
 
 
 import com.app.TicketBookingMovie.dtos.ShowTimeDto;
+import com.app.TicketBookingMovie.dtos.ShowTimeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.repository.MovieRepository;
 import com.app.TicketBookingMovie.repository.RoomRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeRepository;
+import com.app.TicketBookingMovie.repository.ShowTimeSeatRepository;
 import com.app.TicketBookingMovie.services.ShowTimeService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -28,12 +30,14 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
 
     private final ShowTimeRepository showTimeRepository;
+    private final ShowTimeSeatRepository showTimeSeatRepository;
     private final RoomRepository roomRepository;
     private final MovieRepository movieRepository;
     private final ModelMapper modelMapper;
 
-    public ShowTimeServiceImpl(ShowTimeRepository showTimeRepository, RoomRepository roomRepository, MovieRepository movieRepository, ModelMapper modelMapper) {
+    public ShowTimeServiceImpl(ShowTimeRepository showTimeRepository, ShowTimeSeatRepository showTimeSeatRepository, RoomRepository roomRepository, MovieRepository movieRepository, ModelMapper modelMapper) {
         this.showTimeRepository = showTimeRepository;
+        this.showTimeSeatRepository = showTimeSeatRepository;
         this.roomRepository = roomRepository;
         this.movieRepository = movieRepository;
         this.modelMapper = modelMapper;
@@ -270,6 +274,21 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
         // Xóa lịch chiếu nếu chưa có vé đặt
         showTimeRepository.delete(showTime);
+    }
+
+    @Override
+    public List<ShowTimeSeatDto> getShowTimeSeatById(Long id) {
+        ShowTime showTime = showTimeRepository.findById(id)
+                .orElseThrow(() -> new AppException("Showtime not found with id: " + id, HttpStatus.NOT_FOUND));
+
+        Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
+        List<ShowTimeSeatDto> showTimeSeatDtos = new ArrayList<>();
+        for (ShowTimeSeat showTimeSeat : showTimeSeats) {
+            ShowTimeSeatDto showTimeSeatDto = modelMapper.map(showTimeSeat, ShowTimeSeatDto.class);
+            showTimeSeatDtos.add(showTimeSeatDto);
+        }
+
+        return showTimeSeatDtos;
     }
 
 

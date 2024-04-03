@@ -70,6 +70,11 @@ public class RoomServiceImpl implements RoomService {
             SeatDto seat = seatService.createSeat(seatDto);
             seats.add(modelMapper.map(seat, Seat.class));
         }
+        if(roomDto.getPrice()<0){
+            throw new AppException("Price must be greater than 0", HttpStatus.BAD_REQUEST);
+        }else{
+            room.setPrice(roomDto.getPrice());
+        }
         room.setSeats(seats);
         room.setTotalSeats(room.getSeats().size());
         room.setCreatedDate(LocalDateTime.now());
@@ -129,8 +134,13 @@ public class RoomServiceImpl implements RoomService {
         }
         if(roomDto.isStatus() != room.isStatus()){
             room.setStatus(roomDto.isStatus());
-        }{
+        }else {
             room.setStatus(room.isStatus());
+        }
+        if(roomDto.getPrice() != room.getPrice() && roomDto.getPrice() >= 0){
+            room.setPrice(roomDto.getPrice());
+        }else {
+            room.setPrice(room.getPrice());
         }
         if(!roomDto.getType().isEmpty() && !roomDto.getType().isBlank()) {
             if (roomDto.getType().equals("2D")) {

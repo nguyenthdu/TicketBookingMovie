@@ -133,6 +133,11 @@ public class PromotionLineServiceImpl implements PromotionLineService {
             throw new AppException("Type promotion is invalid", HttpStatus.BAD_REQUEST);
 
         }
+
+        //nếu status của promotion là false thì không được tạo promotion line
+        if(!promotion.isStatus() && promotionLine.isStatus()){
+            throw new AppException("Promotion is not active, please active before active promotion line", HttpStatus.BAD_REQUEST);
+        }
         promotionLineRepository.save(promotionLine);
         promotion.getPromotionLines().add(promotionLine);
 

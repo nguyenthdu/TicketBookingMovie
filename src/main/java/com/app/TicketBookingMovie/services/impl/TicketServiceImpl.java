@@ -1,7 +1,10 @@
 package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.exception.AppException;
-import com.app.TicketBookingMovie.models.*;
+import com.app.TicketBookingMovie.models.Seat;
+import com.app.TicketBookingMovie.models.ShowTime;
+import com.app.TicketBookingMovie.models.ShowTimeSeat;
+import com.app.TicketBookingMovie.models.Ticket;
 import com.app.TicketBookingMovie.repository.PriceDetailRepository;
 import com.app.TicketBookingMovie.repository.SeatRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeRepository;
@@ -14,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -85,9 +87,7 @@ public class TicketServiceImpl implements TicketService {
         if (totalSeatsBooked > showTime.getRoom().getTotalSeats()) {
             throw new AppException("Exceed the maximum number of seats", HttpStatus.BAD_REQUEST);
         }
-        // Bước 3: Tìm chiến lược khuyến mãi
-        LocalDateTime currentTime = LocalDateTime.now();
-        List<PriceDetail> currentPriceDetails = priceDetailRepository.findCurrentSalePriceDetails(currentTime);
+
 
         // Bước 4: Xử lý vé tạo vé với mỗi ghế được thêm vào
         List<Ticket> createdTickets = new ArrayList<>();
@@ -96,17 +96,6 @@ public class TicketServiceImpl implements TicketService {
             ticket.setCode(randomCode());
             ticket.setShowTime(showTime);
             ticket.setSeat(seat);
-
-            // Kiểm tra xem ghế này có được giảm giá không
-            Optional<PriceDetail> saleDetail = currentPriceDetails.stream()
-                    .filter(s -> s.getTypeSeat().getId().equals(seat.getSeatType().getId()))
-                    .findFirst();
-            if (saleDetail.isPresent()) {
-                ticket.setPrice(saleDetail.get().getPrice());
-            } else {
-                ticket.setPrice(seat.getSeatType().getPrice());
-            }
-
             ticketRepository.save(ticket);
             createdTickets.add(ticket);
         }

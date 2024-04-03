@@ -15,7 +15,14 @@ public class InvoiceDto {
     private List<Long> invoiceDetailIds;
     private LocalDateTime createdDate;
     private LocalDateTime cancelledDate;
+    private Long promotionId;
     private boolean status;
+    private String showTimeCode;
+    private String cinemaName;
+    private String roomName;
+    private String movieName;
+    private String userName;
+    private String staffName;
 
 
 

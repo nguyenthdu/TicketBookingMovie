@@ -16,4 +16,5 @@ public class InvoiceFoodDetail {
     private Food food;
     private int quantity;
     private double price;
+    private String note;
 }

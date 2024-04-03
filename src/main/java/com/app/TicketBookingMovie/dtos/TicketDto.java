@@ -13,5 +13,4 @@ public class TicketDto  {
     private String code;
     private Long showTimeId;
     private Set<Long> seatIds;
-    private double price;
 }

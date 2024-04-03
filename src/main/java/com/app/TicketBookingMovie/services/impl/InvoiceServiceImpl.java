@@ -1,6 +1,7 @@
 package com.app.TicketBookingMovie.services.impl;
 
 
+import com.app.TicketBookingMovie.dtos.*;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
@@ -12,10 +13,15 @@ import com.app.TicketBookingMovie.services.FoodService;
 import com.app.TicketBookingMovie.services.InvoiceService;
 import com.app.TicketBookingMovie.services.TicketService;
 import com.app.TicketBookingMovie.services.UserService;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -29,15 +35,17 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final UserService userService;
     private final PriceDetailRepository priceDetailRepository;
     private final PromotionLineRepository promotionLineRepository;
+    private final ModelMapper modelMapper;
 
 
-    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailRepository priceDetailRepository, PromotionLineRepository promotionLineRepository) {
+    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailRepository priceDetailRepository, PromotionLineRepository promotionLineRepository, ModelMapper modelMapper) {
         this.invoiceRepository = invoiceRepository;
         this.ticketService = ticketService;
         this.foodService = foodService;
         this.userService = userService;
         this.priceDetailRepository = priceDetailRepository;
         this.promotionLineRepository = promotionLineRepository;
+        this.modelMapper = modelMapper;
     }
 
     @Override
@@ -47,8 +55,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = new Invoice();
         invoice.setCode(randomCode()); // Tạo mã hóa đơn
         invoice.setCreatedDate(LocalDateTime.now());
-        invoice.setStatus(false); // Chưa thanh toán
-
+        invoice.setStatus(true);
+        // Bước 3: Tìm chiến lược khuyến mãi
+        LocalDateTime currentTime = LocalDateTime.now();
+        List<PriceDetail> currentPriceDetails = priceDetailRepository.findCurrentSalePriceDetails(currentTime);
         // Tạo danh sách chi tiết vé từ thông tin vé
         List<InvoiceTicketDetail> invoiceTicketDetails = new ArrayList<>();
         List<Ticket> tickets = ticketService.createTickets(showTimeId, seatIds);
@@ -56,12 +66,22 @@ public class InvoiceServiceImpl implements InvoiceService {
             InvoiceTicketDetail ticketDetail = new InvoiceTicketDetail();
             ticketDetail.setTicket(ticket);
             ticketDetail.setQuantity(1); // Mỗi vé là 1 sản phẩm
-            ticketDetail.setPrice(ticket.getPrice()); // Giá vé
+            Optional<PriceDetail> saleDetail = currentPriceDetails.stream()
+                    .filter(s -> s.getTypeSeat().getId().equals(ticket.getSeat().getSeatType().getId()))
+                    .findFirst();
+            if (saleDetail.isPresent() && saleDetail.get().isStatus()) {
+                ticketDetail.setPrice(saleDetail.get().getPrice() + ticket.getShowTime().getRoom().getPrice());
+                if (saleDetail.get().getPrice() > ticket.getSeat().getSeatType().getPrice()) {
+                    ticketDetail.setNote("Tăng giá");
+                } else {
+                    ticketDetail.setNote("Giảm giá");
+                }
+            } else {
+                ticketDetail.setPrice(ticket.getSeat().getSeatType().getPrice() + ticket.getShowTime().getRoom().getPrice());
+            }
             invoiceTicketDetails.add(ticketDetail);
         }
         invoice.setInvoiceTicketDetails(invoiceTicketDetails);
-        LocalDateTime currentTime = LocalDateTime.now();
-        List<PriceDetail> currentPriceDetails = priceDetailRepository.findCurrentSalePriceDetails(currentTime);
 
         // Tạo danh sách chi tiết đồ ăn từ thông tin đồ ăn
         List<InvoiceFoodDetail> invoiceFoodDetails = new ArrayList<>();
@@ -89,8 +109,13 @@ public class InvoiceServiceImpl implements InvoiceService {
             Optional<PriceDetail> salePriceDetail = currentPriceDetails.stream()
                     .filter(salePrice -> salePrice.getFood().getId().equals(foodId))
                     .findFirst();
-            if (salePriceDetail.isPresent()) {
+            if (salePriceDetail.isPresent() && salePriceDetail.get().isStatus()) {
                 foodDetail.setPrice(salePriceDetail.get().getPrice() * quantity);
+                if (salePriceDetail.get().getPrice() > food.getPrice()) {
+                    foodDetail.setNote("Tăng giá");
+                } else {
+                    foodDetail.setNote("Giảm giá");
+                }
             } else {
                 foodDetail.setPrice(food.getPrice() * quantity);
             }
@@ -128,6 +153,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoiceRepository.save(invoice);
     }
 
+
     private double applyPromotions(Set<Long> promotionLineIds, Invoice invoice, double total) {
         List<PromotionLine> promotionLines = promotionLineRepository.findAllById(promotionLineIds);
 
@@ -145,14 +171,14 @@ public class InvoiceServiceImpl implements InvoiceService {
                 total = applyDiscountPromotion(promotionLine, promotionDetail, total);
             }
         }
-
+        invoice.setPromotion(promotionLines.get(0).getPromotion());
         // Trả về tổng giá trị hóa đơn sau khi áp dụng các khuyến mãi
         return total;
     }
 
 
     private void applyGiftPromotion(PromotionLine promotionLine, PromotionDetail promotionDetail, Invoice invoice) {
-       //tì đồ ăn trong khuyến mãi và  trừ đi số lượng của đồ ăn đó
+        //tì đồ ăn trong khuyến mãi và  trừ đi số lượng của đồ ăn đó
         Food food = promotionDetail.getFood();
         int quantity = promotionDetail.getMaxValue();
         if (food.getQuantity() < quantity) {
@@ -162,12 +188,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         foodDetail.setFood(food);
         foodDetail.setQuantity(quantity);
         foodDetail.setPrice(0);
+        foodDetail.setNote("Quà tặng");
         invoice.getInvoiceFoodDetails().add(foodDetail);
         food.setQuantity(food.getQuantity() - quantity);
         // Giảm số lượng khuyến mãi còn lại của promotion line
         promotionLine.setUsePerPromotion(promotionLine.getUsePerPromotion() - quantity);
     }
-
 
 
     private double applyDiscountPromotion(PromotionLine promotionLine, PromotionDetail promotionDetail, double total) {
@@ -180,7 +206,208 @@ public class InvoiceServiceImpl implements InvoiceService {
         return total - discountValue;
     }
 
+    @Override
+    public InvoiceDto getInvoiceById(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        return modelMapper.map(invoice, InvoiceDto.class);
 
+    }
+
+    @Override
+    public List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate dateCreated) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Invoice> pageInvoice;
+        if (invoiceCode != null && !invoiceCode.isEmpty()) {
+            pageInvoice = invoiceRepository.findByCode(invoiceCode, pageable);
+        } else if (cinemaId != null) {
+            pageInvoice = invoiceRepository.findByCinemaId(cinemaId, pageable);
+        } else if (roomId != null) {
+            pageInvoice = invoiceRepository.findByRoomId(roomId, pageable);
+        } else if (movieId != null) {
+            pageInvoice = invoiceRepository.findByMovieId(movieId, pageable);
+        } else if (showTimeCode != null && !showTimeCode.isEmpty()) {
+            pageInvoice = invoiceRepository.findByShowTimeCode(showTimeCode, pageable);
+        } else if (staffId != null) {
+            pageInvoice = invoiceRepository.findByStaffId(staffId, pageable);
+        } else if (userId != null) {
+            pageInvoice = invoiceRepository.findByUserId(userId, pageable);
+        } else if (status != null && !status.isEmpty()) {
+            pageInvoice = invoiceRepository.findByStatus(status.equals("true"), pageable);
+        } else if (dateCreated != null && !dateCreated.toString().isEmpty()) {
+            //lọc theo ngày tháng năm
+            pageInvoice = invoiceRepository.findByCreatedDate(dateCreated, pageable);
+        } else {
+            pageInvoice = invoiceRepository.findAll(pageable);
+        }
+        // tạo 1 danh sách chứa các đối tượng InvoiceDto
+        List<InvoiceDto> invoiceDtos = new ArrayList<>();
+        //lặp qua  các đối tượng Invoice và chuyển đổi chúng thành InvoiceDto
+        for (Invoice invoice : pageInvoice) {
+            InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+            //lấy code show time
+            invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+            //lấy tên rạp
+            invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+            //lấy tên phòng
+            invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+            //lấy tên phim
+            invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+            //lấy tên nhân viên
+            invoiceDto.setStaffName(invoice.getStaff().getUsername());
+            //lấy tên người dùng
+            invoiceDto.setUserName(invoice.getUser().getUsername());
+            //thêm vào danh sách
+            invoiceDtos.add(invoiceDto);
+        }
+        return invoiceDtos;
+    }
+
+    @Override
+    public long countAllInvoices(String invoiceCode, Long cinemaId, Long roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate dateCreated) {
+        if (invoiceCode != null && !invoiceCode.isEmpty()) {
+            return invoiceRepository.countByCode(invoiceCode);
+        } else if (cinemaId != null) {
+            return invoiceRepository.countByCinemaId(cinemaId);
+        } else if (roomId != null) {
+            return invoiceRepository.countByRoomId(roomId);
+        } else if (movieId != null) {
+            return invoiceRepository.countByMovieId(movieId);
+        } else if (showTimeCode != null && !showTimeCode.isEmpty()) {
+            return invoiceRepository.countByShowTimeCode(showTimeCode);
+        } else if (staffId != null) {
+            return invoiceRepository.countByStaffId(staffId);
+        } else if (userId != null) {
+            return invoiceRepository.countByUserId(userId);
+        } else if (status != null && !status.isEmpty()) {
+            return invoiceRepository.countByStatus(status.equals("true"));
+        } else if (dateCreated != null && !dateCreated.toString().isEmpty()) {
+            return invoiceRepository.countByCreatedDate(dateCreated);
+        } else {
+            return invoiceRepository.count();
+        }
+    }
+
+    @Override
+    public CinemaDto getCinemaByInvoiceId(Long id) {
+        CinemaDto cinemaDto = new CinemaDto();
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        cinemaDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getId());
+        cinemaDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+        AddressDto addressDto = getAddressDto(invoice);
+        cinemaDto.setAddress(addressDto);
+        return cinemaDto;
+    }
+
+    private static AddressDto getAddressDto(Invoice invoice) {
+        AddressDto addressDto = new AddressDto();
+        addressDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getId());
+        addressDto.setCity(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getCity());
+        addressDto.setDistrict(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getDistrict());
+        addressDto.setStreet(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getStreet());
+        return addressDto;
+    }
+
+    @Override
+    public RoomDto getRoomByInvoiceId(Long id) {
+        RoomDto roomDto = new RoomDto();
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        roomDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId());
+        roomDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+        roomDto.setPrice(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getPrice());
+        String typeRoom = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getType().toString();
+        roomDto.setType(typeRoom);
+        return roomDto;
+    }
+
+    @Override
+    public MovieDto getMovieByInvoiceId(Long id) {
+        MovieDto movieDto = new MovieDto();
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        movieDto.setCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getCode());
+        movieDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+        movieDto.setDurationMinutes(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDurationMinutes());
+        movieDto.setReleaseDate(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getReleaseDate());
+        movieDto.setImageLink(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
+        movieDto.setDirector(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDirector());
+        movieDto.setDirector(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDirector());
+        movieDto.setProducer(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getProducer());
+        movieDto.setCast(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getCast());
+        StringBuilder genres = new StringBuilder();
+        for (Genre genre : invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getGenres()) {
+            genres.append(genre.getName()).append(", ");
+        }
+        movieDto.setGenres(genres.toString());
+        return movieDto;
+    }
+
+    @Override
+    public ShowTimeDto getShowTimeByInvoiceId(Long id) {
+        ShowTimeDto showTimeDto = new ShowTimeDto();
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        showTimeDto.setCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+        showTimeDto.setShowDate(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowDate());
+        showTimeDto.setShowTime(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowTime());
+        return showTimeDto;
+    }
+
+    @Override
+    public UserDto getUserByInvoiceId(Long id) {
+        UserDto userDto = new UserDto();
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        userDto.setCode(invoice.getUser().getCode());
+        userDto.setUsername(invoice.getUser().getUsername());
+        userDto.setEmail(invoice.getUser().getEmail());
+        userDto.setPhone(invoice.getUser().getPhone());
+        return userDto;
+    }
+
+    @Override
+    public List<InvoiceFoodDetailDto> getInvoiceFoodDetailByInvoiceId(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        List<InvoiceFoodDetail> invoiceFoodDetails = invoiceRepository.findById(id).get().getInvoiceFoodDetails();
+        List<InvoiceFoodDetailDto> invoiceFoodDetailDtos = new ArrayList<>();
+        for (InvoiceFoodDetail invoiceFoodDetail : invoiceFoodDetails) {
+            InvoiceFoodDetailDto invoiceFoodDetailDto = modelMapper.map(invoiceFoodDetail, InvoiceFoodDetailDto.class);
+            invoiceFoodDetailDto.setFoodName(invoiceFoodDetail.getFood().getName());
+            invoiceFoodDetailDto.setQuantity(invoiceFoodDetail.getQuantity());
+            invoiceFoodDetailDto.setPriceItem(invoiceFoodDetail.getFood().getPrice());
+            invoiceFoodDetailDto.setPrice(invoiceFoodDetail.getPrice());
+            invoiceFoodDetailDto.setNote(invoiceFoodDetail.getNote());
+            invoiceFoodDetailDtos.add(invoiceFoodDetailDto);
+        }
+        return invoiceFoodDetailDtos;
+
+
+    }
+
+    @Override
+    public List<InvoiceTicketDetailDto> getInvoiceTicketDetailByInvoiceId(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        List<InvoiceTicketDetail> invoiceTicketDetails = invoiceRepository.findById(id).get().getInvoiceTicketDetails();
+        List<InvoiceTicketDetailDto> invoiceTicketDetailDtos = new ArrayList<>();
+        for (InvoiceTicketDetail invoiceTicketDetail : invoiceTicketDetails) {
+            InvoiceTicketDetailDto invoiceTicketDetailDto = modelMapper.map(invoiceTicketDetail, InvoiceTicketDetailDto.class);
+            invoiceTicketDetailDto.setTicketCode(invoiceTicketDetail.getTicket().getCode());
+            invoiceTicketDetailDto.setSeatName(invoiceTicketDetail.getTicket().getSeat().getName());
+            invoiceTicketDetailDto.setRowCol(invoiceTicketDetail.getTicket().getSeat().getSeatRow() + " - " + invoiceTicketDetail.getTicket().getSeat().getSeatColumn());
+            String typeSeat = String.valueOf(invoiceTicketDetail.getTicket().getSeat().getSeatType().getName());
+            invoiceTicketDetailDto.setSeatType(typeSeat);
+            invoiceTicketDetailDto.setPrice(invoiceTicketDetail.getPrice());
+            invoiceTicketDetailDto.setPriceItem(invoiceTicketDetail.getTicket().getSeat().getSeatType().getPrice());
+            invoiceTicketDetailDto.setQuantity(invoiceTicketDetail.getQuantity());
+            invoiceTicketDetailDto.setNote(invoiceTicketDetail.getNote());
+            invoiceTicketDetailDtos.add(invoiceTicketDetailDto);
+        }
+        return invoiceTicketDetailDtos;
+    }
 
     private String randomCode() {
         return "HD" + LocalDateTime.now().getNano();

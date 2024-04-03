@@ -17,5 +17,4 @@ public class Ticket {
     private Seat seat;
     @ManyToOne
     private ShowTime showTime;
-    private double price;
 }

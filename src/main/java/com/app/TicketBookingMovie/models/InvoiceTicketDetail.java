@@ -12,8 +12,10 @@ public class InvoiceTicketDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne
+    @OneToOne
     private Ticket ticket;
     private int quantity;
     private double price;
+    private double priceItem;
+    private String note;
 }

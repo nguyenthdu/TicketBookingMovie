@@ -18,6 +18,7 @@ public class Room {
     private Long id;
     private  String code;
     private String name;
+    private double price;
     @Enumerated(EnumType.STRING)
     private ETypeRoom type;
     private int totalSeats;

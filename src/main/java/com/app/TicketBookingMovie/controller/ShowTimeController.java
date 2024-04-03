@@ -3,6 +3,7 @@ package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.ShowTimeDto;
+import com.app.TicketBookingMovie.dtos.ShowTimeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.services.ShowTimeService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Set;
 
 @RequestMapping("api/showtime")
@@ -90,5 +92,9 @@ public class ShowTimeController {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
-
+     @GetMapping("/seat/{id}")
+    public ResponseEntity<List<ShowTimeSeatDto>> getShowTimeSeatById(@PathVariable Long id) {
+        List<ShowTimeSeatDto> showTimeSeatDtos = showTimeService.getShowTimeSeatById(id);
+        return ResponseEntity.ok(showTimeSeatDtos);
+     }
 }

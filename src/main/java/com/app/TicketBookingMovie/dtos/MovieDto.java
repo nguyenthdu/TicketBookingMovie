@@ -25,5 +25,6 @@ public class MovieDto {
     private Set<Long> cinemaIds;
     private boolean status;
     private LocalDateTime createdDate;
+    private String genres;
 }
 

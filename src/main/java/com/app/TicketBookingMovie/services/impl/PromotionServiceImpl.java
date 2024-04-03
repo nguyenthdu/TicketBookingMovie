@@ -175,6 +175,11 @@ public class PromotionServiceImpl implements PromotionService {
             promotion.setStatus(promotion.isStatus());
         }
         promotionRepository.save(promotion);
+        if(!promotion.isStatus()){
+            for(PromotionLine promotionLine:promotion.getPromotionLines()){
+                promotionLine.setStatus(false);
+            }
+        }
 
     }
 
