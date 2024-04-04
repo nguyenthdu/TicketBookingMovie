@@ -21,5 +21,6 @@ public class Promotion {
     private LocalDateTime endDate;
     @OneToMany(mappedBy = "promotion")
     private Set<PromotionLine> promotionLines;
+    private LocalDateTime createdAt;
     private boolean status;
 }

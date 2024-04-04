@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -108,8 +109,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 //                .filter(user -> !user.getRoles().stream().anyMatch(role -> role.getName() == ERole.ROLE_ADMIN))
 //                .map(user -> modelMapper.map(user, UserDto.class))
 //                .collect(Collectors.toList());
-        return userPage.stream()
-                .filter(user -> user.getRoles().stream().noneMatch(role -> role.getName() == ERole.ROLE_ADMIN))
+       //sort by create at
+        return  userPage.stream().sorted(Comparator.comparing(User::getCreatedDate).reversed())
                 .map(user -> modelMapper.map(user, UserDto.class))
                 .collect(Collectors.toList());
     }

@@ -137,80 +137,80 @@ public class MovieServiceImpl implements MovieService {
             String newImageLink = amazonS3.getUrl(BUCKET_NAME_MOVIE, newImageName).toString();
             // Cập nhật link hình ảnh mới trong movieDTO
             movie.setImageLink(newImageLink);
-        }else{
+        } else {
             movie.setImageLink(movie.getImageLink());
         }
         // Chuyển đổi id của thể loại phim sang các đối tượng Genre
-        if(!movieDTO.getGenreIds().isEmpty()){
+        if (!movieDTO.getGenreIds().isEmpty()) {
             Set<Genre> genres = new HashSet<>();
             for (Long genreId : movieDTO.getGenreIds()) {
                 Optional<Genre> genreOptional = Optional.ofNullable(genreRepository.findById(genreId).orElseThrow(() -> new AppException("Genre not found with id: " + genreId, HttpStatus.NOT_FOUND)));
                 genreOptional.ifPresent(genres::add);
             }
             movie.setGenres(genres);
-        }else{
+        } else {
             movie.setGenres(movie.getGenres());
         }
         //Chuyển đổi id cinema sang các đối tượng Cinema
-        if(!movieDTO.getCinemaIds().isEmpty()) {
+        if (!movieDTO.getCinemaIds().isEmpty()) {
             Set<Cinema> cinemas = new HashSet<>();
             for (Long cinemeId : movieDTO.getCinemaIds()) {
                 Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
                 cinemaOptional.ifPresent(cinemas::add);
             }
             movie.setCinemas(cinemas);
-        }else{
+        } else {
             movie.setCinemas(movie.getCinemas());
         }
-        if(!movieDTO.getName().isEmpty() && !movieDTO.getName().isBlank()){
+        if (!movieDTO.getName().isEmpty() && !movieDTO.getName().isBlank()) {
             movie.setName(movieDTO.getName());
-        }else{
+        } else {
             movie.setName(movie.getName());
         }
-        if(!movieDTO.getTrailerLink().isEmpty() && !movieDTO.getTrailerLink().isBlank()){
+        if (!movieDTO.getTrailerLink().isEmpty() && !movieDTO.getTrailerLink().isBlank()) {
             movie.setTrailerLink(movieDTO.getTrailerLink());
-        }else{
+        } else {
             movie.setTrailerLink(movie.getTrailerLink());
         }
-        if(!movieDTO.getDescription().isEmpty() && !movieDTO.getDescription().isBlank()){
+        if (!movieDTO.getDescription().isEmpty() && !movieDTO.getDescription().isBlank()) {
             movie.setDescription(movieDTO.getDescription());
-        }else{
+        } else {
             movie.setDescription(movie.getDescription());
         }
-        if(movieDTO.getDurationMinutes() > 0){
+        if (movieDTO.getDurationMinutes() > 0) {
             movie.setDurationMinutes(movieDTO.getDurationMinutes());
-        }else{
+        } else {
             movie.setDurationMinutes(movie.getDurationMinutes());
         }
-        if(movieDTO.getReleaseDate() != null){
+        if (movieDTO.getReleaseDate() != null) {
             movie.setReleaseDate(movieDTO.getReleaseDate());
-        }else{
+        } else {
             movie.setReleaseDate(movie.getReleaseDate());
         }
-        if(movieDTO.isStatus() != movie.isStatus()){
+        if (movieDTO.isStatus() != movie.isStatus()) {
             movie.setStatus(movieDTO.isStatus());
-        }else{
+        } else {
             movie.setStatus(movie.isStatus());
         }
-        if(!movieDTO.getCountry().isEmpty() && !movieDTO.getCountry().isBlank()){
+        if (!movieDTO.getCountry().isEmpty() && !movieDTO.getCountry().isBlank()) {
             movie.setCountry(movieDTO.getCountry());
-        }else{
+        } else {
             movie.setCountry(movie.getCountry());
         }
-        if(!movieDTO.getDirector().isEmpty() && !movieDTO.getDirector().isBlank()){
+        if (!movieDTO.getDirector().isEmpty() && !movieDTO.getDirector().isBlank()) {
             movie.setDirector(movieDTO.getDirector());
-        }else{
+        } else {
             movie.setDirector(movie.getDirector());
         }
-        if(!movieDTO.getCast().isEmpty() && !movieDTO.getCast().isBlank()){
+        if (!movieDTO.getCast().isEmpty() && !movieDTO.getCast().isBlank()) {
             movie.setCast(movieDTO.getCast());
-        }else{
+        } else {
             movie.setCast(movie.getCast());
 
         }
-        if(!movieDTO.getProducer().isEmpty() && !movieDTO.getProducer().isBlank()){
+        if (!movieDTO.getProducer().isEmpty() && !movieDTO.getProducer().isBlank()) {
             movie.setProducer(movieDTO.getProducer());
-        }else{
+        } else {
             movie.setProducer(movie.getProducer());
         }
 
@@ -242,33 +242,44 @@ public class MovieServiceImpl implements MovieService {
         Page<Movie> movies;
         if (code != null && !code.isEmpty()) {
             movies = movieRepository.findByCodeContaining(code, pageable);
-        } else if (name != null && !name.isEmpty()) {
-            movies = movieRepository.findByNameContaining(name, pageable);
+        } else if (cinemaId != null && cinemaId != 0) {
+            if (name != null && !name.isEmpty()) {
+                movies = movieRepository.findByCinemasIdAndNameContaining(cinemaId, name, pageable);
+            } else if (genreId != null && genreId != 0) {
+                movies = movieRepository.findByCinemasIdAndGenreId(cinemaId, genreId, pageable);
+            } else {
+                movies = movieRepository.findByCinemaId(cinemaId, pageable);
+            }
         } else if (genreId != null && genreId != 0) {
             movies = movieRepository.findByGenreId(genreId, pageable);
-        } else if (cinemaId != null && cinemaId != 0) {
-            movies = movieRepository.findByCinemaId(cinemaId, pageable);
+        } else if (name != null && !name.isEmpty()) {
+            movies = movieRepository.findByNameContaining(name, pageable);
         } else {
             movies = movieRepository.findAll(pageable);
         }
-        return movies.stream().map(movie -> {
-            MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
-            Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
-            movieDTO.setGenreIds(genreIds);
-            return movieDTO;
-        }).collect(Collectors.toList());
+
+        //sort by created date
+        return movies.stream().sorted(Comparator.comparing(Movie::getCreatedDate).reversed())
+                .map(movie -> modelMapper.map(movie, MovieDto.class))
+                .collect(Collectors.toList());
     }
 
     @Override
     public long countAllMovies(String code, String name, Long genreId, Long cinemaId) {
         if (code != null && !code.isEmpty()) {
             return movieRepository.countByCodeContaining(code);
-        } else if (name != null && !name.isEmpty()) {
-            return movieRepository.countByNameContaining(name);
+        } else if (cinemaId != null && cinemaId != 0) {
+            if (name != null && !name.isEmpty()) {
+                return movieRepository.countByCinemasIdAndNameContaining(cinemaId, name);
+            } else if (genreId != null && genreId != 0) {
+                return movieRepository.countByCinemasIdAndGenreId(cinemaId, genreId);
+            } else {
+                return movieRepository.countByCinemaId(cinemaId);
+            }
         } else if (genreId != null && genreId != 0) {
             return movieRepository.countByGenreId(genreId);
-        } else if (cinemaId != null && cinemaId != 0) {
-            return movieRepository.countByCinemaId(cinemaId);
+        } else if (name != null && !name.isEmpty()) {
+            return movieRepository.countByNameContaining(name);
         } else {
             return movieRepository.count();
         }

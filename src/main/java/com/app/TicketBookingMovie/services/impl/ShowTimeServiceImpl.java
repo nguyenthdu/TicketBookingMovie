@@ -235,7 +235,8 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             showTimeDtos.add(showTimeDto);
         }
 
-        return showTimeDtos;
+        //sort by create date
+        return showTimeDtos.stream().sorted(Comparator.comparing(ShowTimeDto::getCreatedDate).reversed()).toList();
     }
 
 

@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -124,7 +125,9 @@ public class CinemaServiceImpl implements CinemaService {
             cinemaPage = cinemaRepository.findAll(pageable);
         }
 
-        return cinemaPage.map(cinema -> modelMapper.map(cinema, CinemaDto.class)).getContent();
+        return cinemaPage.stream().sorted(Comparator.comparing(Cinema::getCreatedDate).reversed())
+                .map(cinema -> modelMapper.map(cinema, CinemaDto.class))
+                .toList();
     }
 
     @Override

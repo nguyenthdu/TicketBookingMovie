@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -224,7 +225,9 @@ public class FoodServiceImpl implements FoodService {
         } else {
             food = foodRepository.findAll(pageable);
         }
-        return food.map(f -> modelMapper.map(f, FoodDto.class)).getContent();
+        return food.stream().sorted(Comparator.comparing(Food::getCreatedDate).reversed())
+                .map(food1 -> modelMapper.map(food1, FoodDto.class))
+                .toList();
 
     }
 

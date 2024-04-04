@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -190,7 +191,10 @@ public class RoomServiceImpl implements RoomService {
         } else {
             roomPage = roomRepository.findAll(pageable);
         }
-        return roomPage.map(room -> modelMapper.map(room, RoomDto.class)).getContent();
+        //sort by created date
+        return roomPage.stream().sorted(Comparator.comparing(Room::getCreatedDate).reversed())
+                .map(room -> modelMapper.map(room, RoomDto.class))
+                .toList();
     }
 
     @Override

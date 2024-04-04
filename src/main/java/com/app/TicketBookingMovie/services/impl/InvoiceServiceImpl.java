@@ -260,7 +260,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             //thêm vào danh sách
             invoiceDtos.add(invoiceDto);
         }
-        return invoiceDtos;
+        return invoiceDtos.stream().sorted(Comparator.comparing(InvoiceDto::getCreatedDate).reversed())
+                .toList();
     }
 
     @Override

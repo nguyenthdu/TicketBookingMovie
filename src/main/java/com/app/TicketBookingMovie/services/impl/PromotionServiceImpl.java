@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,6 +55,7 @@ public class PromotionServiceImpl implements PromotionService {
                 throw new AppException("Chương trình khuyến mãi khác đã tồn tại trong khoảng thời gian từ " + startDate + " đến " + endDate + ". Vui lòng chọn khoảng thời gian khác", HttpStatus.BAD_REQUEST);
             }
         }
+        promotion.setCreatedAt(LocalDateTime.now());
         promotion.setStatus(false);
         promotionRepository.save(promotion);
     }
@@ -214,7 +216,10 @@ public class PromotionServiceImpl implements PromotionService {
             promotions = promotionRepository.findAllByStatus(status, pageable);
 
         }
-        return promotions.stream().map(promotion -> modelMapper.map(promotion, PromotionDto.class)).collect(Collectors.toList());
+        //sort by  create at
+        return promotions.stream().sorted(Comparator.comparing(Promotion::getCreatedAt).reversed())
+                .map(promotion -> modelMapper.map(promotion, PromotionDto.class))
+                .collect(Collectors.toList());
     }
 
     @Override

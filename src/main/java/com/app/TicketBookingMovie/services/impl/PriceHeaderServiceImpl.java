@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -176,8 +177,9 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
             pageSalePrice = priceHeaderRepository.findAllByOrderByCreatedDateDesc(pageable);
         }
         //sort by  created date
-        return pageSalePrice.map(priceHeader -> modelMapper.map(priceHeader, PriceHeaderDto.class)).getContent();
-
+return  pageSalePrice.stream().sorted(Comparator.comparing(PriceHeader::getCreatedDate).reversed())
+                .map(priceHeader -> modelMapper.map(priceHeader, PriceHeaderDto.class))
+                .toList();
     }
 
     @Override

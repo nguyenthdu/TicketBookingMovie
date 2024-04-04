@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -84,7 +85,9 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
         } else {
             pageCategory = cateogryFoodRepository.findAll(pageable);
         }
-        return pageCategory.map(categoryFood -> modelMapper.map(categoryFood, CategoryFoodDto.class)).getContent();
+        return pageCategory.stream().sorted(Comparator.comparing(CategoryFood::getCreatedDate).reversed())
+                .map(categoryFood -> modelMapper.map(categoryFood, CategoryFoodDto.class))
+                .toList();
     }
 
     @Override

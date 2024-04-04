@@ -28,4 +28,14 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     @Query("SELECT COUNT(m) FROM Movie m JOIN m.cinemas c WHERE c.id = ?1")
     long countByCinemaId(Long cinemaId);
+
+    @Query("SELECT m FROM Movie m JOIN m.genres g WHERE g.id = ?1 AND m.name LIKE %?2%")
+    Page<Movie> findByCinemasIdAndGenreId(Long cinemaId, Long genreId, Pageable pageable);
+
+    Page<Movie> findByCinemasIdAndNameContaining(Long cinemaId, String name, Pageable pageable);
+
+    long countByCinemasIdAndNameContaining(Long cinemaId, String name);
+
+    @Query("SELECT COUNT(m) FROM Movie m JOIN m.genres g WHERE g.id = ?2 AND m.id = ?1")
+    long countByCinemasIdAndGenreId(Long cinemaId, Long genreId);
 }

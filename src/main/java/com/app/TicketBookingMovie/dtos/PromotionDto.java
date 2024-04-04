@@ -13,5 +13,6 @@ public class PromotionDto {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private Set<PromotionLineDto> promotionLineDtos;
+    private LocalDateTime createdAt;
     private boolean status;
 }

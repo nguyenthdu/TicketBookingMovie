@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -74,8 +75,9 @@ public class GenreServiceImpl implements GenreService {
         } else {
             genres = genreRepository.findAll(pageable);
         }
-        return genres.stream().map(genre -> modelMapper
-                .map(genre, GenreDto.class)).collect(Collectors.toList());
+        return genres.stream().sorted(Comparator.comparing(Genre::getCreatedDate).reversed())
+                .map(genre -> modelMapper.map(genre, GenreDto.class))
+                .collect(Collectors.toList());
     }
 
     @Override
