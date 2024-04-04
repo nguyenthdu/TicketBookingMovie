@@ -41,40 +41,43 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         for (PriceDetailDto priceDetailDto : priceDetailDtos) {
             PriceDetail priceDetail = modelMapper.map(priceDetailDto, PriceDetail.class);
             PriceHeader priceHeader = priceHeaderRepository.findById(priceDetailDto.getPriceHeaderId())
-                    .orElseThrow(() -> new AppException("Sale Price not found with id: " + priceDetailDto.getPriceHeaderId(), HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với id: "+ priceDetailDto.getPriceHeaderId(), HttpStatus.NOT_FOUND));
             if (priceDetailDto.getTypeSeatId() != null && priceDetailDto.getTypeSeatId() > 0) {
                 boolean typeSeatExists = priceHeader.getPriceDetails().stream()
                         .anyMatch(detail -> detail.getTypeSeat() != null && detail.getTypeSeat().getId().equals(priceDetailDto.getTypeSeatId()));
                 if (typeSeatExists) {
-                    throw new AppException("Type seat is already exist in price detail for price header with id: " + priceHeader.getId(), HttpStatus.BAD_REQUEST);
+                    throw new AppException("Loại ghế : " + priceHeader.getName()+" đã tồn tại trong chương trình thay đổi giá này.", HttpStatus.BAD_REQUEST);
                 }
                 TypeSeat typeSeat = typeSeatRepository.findById(priceDetailDto.getTypeSeatId())
-                        .orElseThrow(() -> new AppException("Type seat not found", HttpStatus.NOT_FOUND));
+                        .orElseThrow(() -> new AppException("Không tìm thấy loại ghế với id: "+ priceDetailDto.getId(), HttpStatus.NOT_FOUND));
                 priceDetail.setTypeSeat(typeSeat);
                 if (priceDetailDto.getPrice() > 0) {
                     priceDetail.setPrice(priceDetailDto.getPrice());
                 } else {
-                    throw new AppException("Price decrease must be greater than 0", HttpStatus.BAD_REQUEST);
+                    throw new AppException("Giá mới phải lớn hơn 0", HttpStatus.BAD_REQUEST);
                 }
             } else if (priceDetailDto.getFoodId() != null && priceDetailDto.getFoodId() > 0) {
                 boolean foodExists = priceHeader.getPriceDetails().stream()
                         .anyMatch(detail -> detail.getFood() != null && detail.getFood().getId().equals(priceDetailDto.getFoodId()));
                 if (foodExists) {
-                    throw new AppException("Food is already exist in sale price detail for sale price with id: " + priceHeader.getId(), HttpStatus.BAD_REQUEST);
+                    throw new AppException("Đồ ăn  đã tồn tại trong chương trình thay đổi giá này.", HttpStatus.BAD_REQUEST);
                 }
                 Food food = foodRepository.findById(priceDetailDto.getFoodId())
-                        .orElseThrow(() -> new AppException("Food not found", HttpStatus.NOT_FOUND));
+                            .orElseThrow(() -> new AppException("Không tìm thấy đồ ăn với id: "+ priceDetailDto.getId(), HttpStatus.NOT_FOUND));
                 priceDetail.setFood(food);
                 if (priceDetailDto.getPrice() > 0) {
                     priceDetail.setPrice(priceDetailDto.getPrice());
                 } else {
-                    throw new AppException("Price decrease must be greater than 0", HttpStatus.BAD_REQUEST);
+                    throw new AppException("Giá mới phải lớn hơn 0", HttpStatus.BAD_REQUEST);
                 }
             } else {
-                throw new AppException("Must entry food or type seat", HttpStatus.BAD_REQUEST);
+                throw new AppException("Loại ghế hoặc đồ ăn không được để trống", HttpStatus.BAD_REQUEST);
             }
             priceDetail.setCreatedDate(LocalDateTime.now());
-
+            if(!priceHeader.isStatus()){
+                priceDetail.setStatus(false);
+            }
+            priceDetail.setPriceHeader(priceHeader);
             priceHeader.getPriceDetails().add(priceDetail);
             priceDetailRepository.save(priceDetail);
         }
@@ -84,26 +87,33 @@ public class PriceDetailServiceImpl implements PriceDetailService {
     @Override
     public PriceDetailDto getPriceDetail(Long id) {
         PriceDetail priceDetail = priceDetailRepository.findById(id)
-                .orElseThrow(() -> new AppException("Sale Price Detail not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chi tiết chương trình thay đổi giá với id: "+ id, HttpStatus.NOT_FOUND));
         return modelMapper.map(priceDetail, PriceDetailDto.class);
     }
 
     @Override
     public void updatePriceDetail(PriceDetailDto priceDetailDto) {
         PriceDetail priceDetail = priceDetailRepository.findById(priceDetailDto.getId())
-                .orElseThrow(() -> new AppException("Sale Price Detail not found with id: " + priceDetailDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chi tiết chương trình thay đổi giá với id: "+ priceDetailDto.getId(), HttpStatus.NOT_FOUND));
         //nếu ngày bắt đầu hoặc ngày kết thúc của header đã  qua thì không thể update giá
         if (priceDetail.getPriceHeader().getStartDate().isAfter(LocalDateTime.now()) ||
                 priceDetail.getPriceHeader().getEndDate().isAfter(LocalDateTime.now())) {
-            throw new AppException("program has started, cannot be updated", HttpStatus.BAD_REQUEST);
+            throw new AppException("Chương trình đã bắt đầu, không thể cập nhật", HttpStatus.BAD_REQUEST);
         }
         if (priceDetailDto.getPrice() < 0) {
-            throw new AppException("Price decrease must be greater than 0", HttpStatus.BAD_REQUEST);
+            throw new AppException("Giá mới phải lớn hơn 0", HttpStatus.BAD_REQUEST);
         }
         priceDetail.setPrice(priceDetailDto.getPrice());
-        if (!priceDetailDto.isStatus()) {
-            priceDetail.setStatus(false);
+        if(priceDetailDto.isStatus() != priceDetail.isStatus()){
+            if(priceDetailDto.isStatus() && !priceDetail.getPriceHeader().isStatus()){
+                throw new AppException("Không thể kích hoạt chi tiết chương trình khi chương trình thay đổi giá chưa được kích hoạt", HttpStatus.BAD_REQUEST);
+            }else {
+                priceDetail.setStatus(priceDetailDto.isStatus());
+            }
+        }else {
+            priceDetail.setStatus(priceDetail.isStatus());
         }
+
         priceDetailRepository.save(priceDetail);
 
     }
@@ -111,12 +121,14 @@ public class PriceDetailServiceImpl implements PriceDetailService {
     @Override
     public void deletePriceDetail(Long id) {
         PriceDetail priceDetail = priceDetailRepository.findById(id)
-                .orElseThrow(() -> new AppException("Price Detail not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chi tiết chương trình thay đổi giá với id: "+ id, HttpStatus.NOT_FOUND));
         //nếu ngày bắt đầu và kết thúc của Priceheader đã qua ngày hiện tại thì không được update
         if(priceDetail.getPriceHeader().getStartDate().isAfter(LocalDateTime.now()) ||
                 priceDetail.getPriceHeader().getEndDate().isAfter(LocalDateTime.now())){
-            throw new AppException("program has started, cannot be deleted", HttpStatus.BAD_REQUEST);
+            throw new AppException("Chương trình đã bắt đầu, không thể xóa", HttpStatus.BAD_REQUEST);
         }
+        priceDetailRepository.delete(priceDetail);
+
 
 
     }
@@ -124,7 +136,7 @@ public class PriceDetailServiceImpl implements PriceDetailService {
     @Override
     public Set<PriceDetailDto> getAllPriceDetail(Long id) {
         PriceHeader priceHeader = priceHeaderRepository.findById(id)
-                .orElseThrow(() -> new AppException("Price Header not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với id: "+ id, HttpStatus.NOT_FOUND));
         return modelMapper.map(priceHeader.getPriceDetails(), Set.class);
     }
 

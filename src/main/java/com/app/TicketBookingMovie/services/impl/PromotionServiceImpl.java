@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -37,28 +38,37 @@ public class PromotionServiceImpl implements PromotionService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = promotionDto.getStartDate();
         LocalDateTime endDate = promotionDto.getEndDate();
-        // Check if the start date is at least one day after the current date
-        if (!startDate.isAfter(now.plusDays(1))) {
-            throw new AppException("The start date must be at least one day after the current date", HttpStatus.BAD_REQUEST);
+        //ngày bắt đầu phải là ngày tiếp theo
+        if (startDate.isBefore(LocalDateTime.now()) || startDate.getDayOfMonth() == now.getDayOfMonth()) {
+            throw new AppException("Thời gian bắt đầu phải là ngày tiếp theo", HttpStatus.BAD_REQUEST);
         }
         // Check if the end date is after the start date
-        if (!endDate.isAfter(startDate)) {
-            throw new AppException("The end date must be after the start date", HttpStatus.BAD_REQUEST);
+        if (endDate.isBefore(startDate) || endDate.isEqual(startDate)) {
+            throw new AppException("Thời gian kết thúc phải sau thời gian bắt đầu", HttpStatus.BAD_REQUEST);
         }
         // Check if the promotion period overlaps with any existing promotions
         List<Promotion> existingPromotions = promotionRepository.findAll();
         for (Promotion existingPromotion : existingPromotions) {
             if ((startDate.isBefore(existingPromotion.getEndDate()) || startDate.isEqual(existingPromotion.getEndDate())) &&
                     (endDate.isAfter(existingPromotion.getStartDate()) || endDate.isEqual(existingPromotion.getStartDate()))) {
-                throw new AppException("The promotion period overlaps with an existing promotion", HttpStatus.BAD_REQUEST);
+                throw new AppException("Chương trình khuyến mãi khác đã tồn tại trong khoảng thời gian từ " + startDate + " đến " + endDate + ". Vui lòng chọn khoảng thời gian khác", HttpStatus.BAD_REQUEST);
             }
         }
+        promotion.setStatus(false);
         promotionRepository.save(promotion);
+    }
+
+    //kích hoạt trạng thái của chương trình khuyến mãi khi thời gian băắt đầu đến
+    @Scheduled(fixedRate = 60000) // This will run the method every minute
+    public void activatePromotion() {
+        LocalDateTime currentTime = LocalDateTime.now();
+        promotionRepository.updatePromotionStatus(currentTime);
+        promotionRepository.updatePromotionLineStatus(currentTime);
     }
 
     @Override
     public Promotion findPromotionById(Long id) {
-        return promotionRepository.findById(id).orElseThrow(() -> new AppException("Promotion not found", HttpStatus.NOT_FOUND));
+        return promotionRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy chương trình khuyến mãi với id: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
@@ -121,12 +131,12 @@ public class PromotionServiceImpl implements PromotionService {
 
         // Kiểm tra xem mã khuyến mãi có tồn tại không
         if (promotionLine == null) {
-            throw new AppException("Promotion line with code " + promotionLineCode + " does not exist", HttpStatus.NOT_FOUND);
+            throw new AppException("Không tìm thấy hoạt động khuyến mãi với mã " + promotionLineCode, HttpStatus.NOT_FOUND);
         }
 
         // Kiểm tra xem mã khuyến mãi có phù hợp với hóa đơn không
         if (!isValidPromotionLineCode(promotionLine, totalValueBill, applicableObject, dateTime)) {
-            throw new AppException("Promotion line with code " + promotionLineCode + " does not fit the bill", HttpStatus.BAD_REQUEST);
+            throw new AppException("Mã khuyến mãi: " + promotionLineCode + " không phù hợp với hóa đơn hiện tại", HttpStatus.BAD_REQUEST);
         }
 
         return promotionLine;
@@ -137,7 +147,7 @@ public class PromotionServiceImpl implements PromotionService {
         //nếu đã bắt đầu thì không thể xóa
         Promotion promotion = findPromotionById(id);
         if (LocalDateTime.now().isAfter(promotion.getStartDate())) {
-            throw new AppException("Promotion has started and cannot be deleted", HttpStatus.BAD_REQUEST);
+            throw new AppException("Chương trình đã bắt đầu và không thể xóa", HttpStatus.BAD_REQUEST);
         }
         promotionRepository.deleteById(id);
     }
@@ -151,14 +161,21 @@ public class PromotionServiceImpl implements PromotionService {
         } else {
             promotion.setName(promotion.getName());
         }
-        if (LocalDateTime.now().isAfter(promotion.getStartDate())) {
-            throw new AppException("Promotion has started and cannot be updated", HttpStatus.BAD_REQUEST);
-        } else {
+        if (promotionDto.getStartDate() != null && !promotionDto.getStartDate().equals(promotion.getStartDate())) {
+            if (LocalDateTime.now().isAfter(promotion.getStartDate())) {
+                throw new AppException("Chương trình đã bắt đầu và không thể cập nhật", HttpStatus.BAD_REQUEST);
+            }
+            if (promotionDto.getStartDate().isBefore(LocalDateTime.now()) && promotionDto.getStartDate().getDayOfMonth() == LocalDateTime.now().getDayOfMonth()) {
+                throw new AppException("Ngày bắt đầu phải là ngày tiếp theo", HttpStatus.BAD_REQUEST);
+            }
+
             promotion.setStartDate(promotionDto.getStartDate());
+        } else {
+            promotion.setStartDate(promotion.getStartDate());
         }
         if (promotionDto.getEndDate() != null && !promotionDto.getEndDate().equals(promotion.getEndDate())) {
             if (promotionDto.getEndDate().isBefore(LocalDateTime.now())) {
-                throw new AppException("End date must be after the current date", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ngày kết thúc phải sau ngày hiện tại", HttpStatus.BAD_REQUEST);
             }
             promotion.setEndDate(promotionDto.getEndDate());
         } else {
@@ -175,8 +192,8 @@ public class PromotionServiceImpl implements PromotionService {
             promotion.setStatus(promotion.isStatus());
         }
         promotionRepository.save(promotion);
-        if(!promotion.isStatus()){
-            for(PromotionLine promotionLine:promotion.getPromotionLines()){
+        if (!promotion.isStatus()) {
+            for (PromotionLine promotionLine : promotion.getPromotionLines()) {
                 promotionLine.setStatus(false);
             }
         }

@@ -11,8 +11,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,7 +24,7 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     private final ModelMapper modelMapper;
 
     public String randomCode() {
-        return "GG" + LocalDateTime.now().getNano();
+        return "GI" + LocalDateTime.now().getNano();
     }
 
     public PriceHeaderServiceImpl(PriceHeaderRepository priceHeaderRepository, ModelMapper modelMapper) {
@@ -37,20 +39,21 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         LocalDateTime endDate = priceHeaderDto.getEndDate();
 
         // Check if the start date is in the past
-        if (startDate.isBefore(LocalDateTime.now())) {
-            throw new AppException("Start date cannot be in the past", HttpStatus.BAD_REQUEST);
+        if (startDate.isBefore(LocalDateTime.now()) || startDate.getDayOfMonth() == LocalDate.now().getDayOfMonth()) {
+            throw new AppException("Ngày bắt đầu phải là ngày tiếp theo", HttpStatus.BAD_REQUEST);
         }
 
         // Check if the end date is after the start date
         if (endDate.isBefore(startDate) || endDate.isEqual(startDate)) {
-            throw new AppException("End date must be after start date", HttpStatus.BAD_REQUEST);
+            throw new AppException("Ngày kết thúc phải sau bắt đầu", HttpStatus.BAD_REQUEST);
         }
 
         // Check if the time period is already occupied
         boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, startDate);
         if (exists) {
-            throw new AppException("A sale price already exists within the specified time period. Start date:", HttpStatus.BAD_REQUEST);
+            throw new AppException("Một chương trình thay đổi giá khác đã tồn tại trong khoản thời gian từ " + startDate + " đến " + endDate + " vui lòng chọn khoản thời gian khác", HttpStatus.BAD_REQUEST);
         }
+
 
         // Map the priceHeaderDto to a PriceHeader entity
         PriceHeader priceHeader = modelMapper.map(priceHeaderDto, PriceHeader.class);
@@ -58,8 +61,20 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         // Generate a random code for the priceHeader
         priceHeader.setCode(randomCode());
         priceHeader.setCreatedDate(LocalDateTime.now());
+        priceHeader.setStatus(false);
         // Save the priceHeader to the database
         priceHeaderRepository.save(priceHeader);
+    }
+
+    //TODO: khi tạo thì mặc định status = false nhưng nếu ngày bắt đâu >= ngày hiện tại thì status = true
+    //tự động cập nhật status khi ngày bắt đầu >= ngày hiện tại
+//    @Async - số lượng khuyến mãi không nhiều nên không cần chạy đồng thời
+    @Scheduled(fixedRate = 60000) // This will run the method every minute
+    public void activePriceHeader() {
+        LocalDateTime currentTime = LocalDateTime.now();
+
+        priceHeaderRepository.updatePriceHeadersStatus(currentTime);
+        priceHeaderRepository.updatePriceDetailsStatus(currentTime);
     }
 
     //TODO: update không cập nhật ngày bắt đầu
@@ -71,31 +86,40 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
 
         // Find the sale price by its ID
         PriceHeader priceHeader = priceHeaderRepository.findById(priceHeaderDto.getId())
-                .orElseThrow(() -> new AppException("Sale price not found with id: " + priceHeaderDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với mã là: " + priceHeaderDto.getId(), HttpStatus.NOT_FOUND));
 
         // Update the fields of the existing sale price with the new values
-        if (!priceHeaderDto.getName().isEmpty() && !priceHeaderDto.getName().isBlank()) {
+        if (!priceHeaderDto.getName().isEmpty() && !priceHeaderDto.getName().isBlank() && !priceHeaderDto.getName().equals(priceHeader.getName())) {
             priceHeader.setName(priceHeaderDto.getName());
         } else {
             priceHeader.setName(priceHeader.getName());
         }
-        if (!priceHeaderDto.getDescription().isEmpty() && !priceHeaderDto.getDescription().isBlank()) {
+        if (!priceHeaderDto.getDescription().isEmpty() && !priceHeaderDto.getDescription().isBlank() && !priceHeaderDto.getDescription().equals(priceHeader.getDescription())) {
             priceHeader.setDescription(priceHeaderDto.getDescription());
         } else {
             priceHeader.setDescription(priceHeader.getDescription());
         }
-        if (priceHeaderDto.getEndDate() != null) {
+        //nếu chưa bắt đầu:
+        if (priceHeader.getStartDate().isAfter(LocalDateTime.now())) {
+            if (priceHeaderDto.getStartDate() != null && !priceHeaderDto.getStartDate().equals(priceHeader.getStartDate())) {
+                priceHeader.setStartDate(priceHeaderDto.getStartDate());
+            } else {
+                priceHeader.setStartDate(priceHeader.getStartDate());
+
+            }
+        }
+        if (priceHeaderDto.getEndDate() != null && !priceHeaderDto.getEndDate().equals(priceHeader.getEndDate())) {
             // Check if the end date is after the start date
             if (!endDate.isAfter(priceHeader.getStartDate())) {
-                throw new AppException("End date must be after start date", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ngày kết thúc phải sau ngày hiện tại", HttpStatus.BAD_REQUEST);
             }
             if (endDate.isBefore(LocalDateTime.now())) {
-                throw new AppException("End date must be after current date", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ngày kết thúc phải sau ngày hiện tại", HttpStatus.BAD_REQUEST);
             }
             // Check if the time period is already occupied
             boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, priceHeaderDto.getStartDate());
             if (exists) {
-                throw new AppException("A sale price already exists within the specified time period. Start date:", HttpStatus.BAD_REQUEST);
+                throw new AppException("Một chương trình thay đổi giá khác đã tồn tại trong khoản thời gian từ " + priceHeaderDto.getStartDate() + " đến " + endDate + " vui lòng chọn khoản thời gian khác.", HttpStatus.BAD_REQUEST);
             }
             priceHeader.setEndDate(priceHeaderDto.getEndDate());
         } else {
@@ -108,8 +132,8 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         }
         // Save the updated sale price to the database
         priceHeaderRepository.save(priceHeader);
-        if(!priceHeader.isStatus()){
-            for(PriceDetail priceDetail:priceHeader.getPriceDetails()){
+        if (!priceHeader.isStatus()) {
+            for (PriceDetail priceDetail : priceHeader.getPriceDetails()) {
                 priceDetail.setStatus(false);
             }
         }
@@ -119,7 +143,7 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     @Override
     public PriceHeaderDto getPriceHeaderById(Long id) {
         PriceHeader priceHeader = priceHeaderRepository.findById(id)
-                .orElseThrow(() -> new AppException("Sale price not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với mã là: " + id, HttpStatus.NOT_FOUND));
         //lấy danh sách price detail của price header
         return modelMapper.map(priceHeader, PriceHeaderDto.class);
     }
@@ -127,9 +151,9 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     @Override
     public void deletePriceHeaderById(Long id) {
         PriceHeader priceHeader = priceHeaderRepository.findById(id)
-                .orElseThrow(() -> new AppException("Sale price not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với mã là: " + id, HttpStatus.NOT_FOUND));
         if (priceHeader.isStatus()) {
-            throw new AppException("Sale price is active, can't delete", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể xóa chương trình thay đổi giá đang hoạt động", HttpStatus.BAD_REQUEST);
         } else {
             priceHeaderRepository.delete(priceHeader);
         }
@@ -146,11 +170,14 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
             pageSalePrice = priceHeaderRepository.findByNameContaining(name, pageable);
 
         } else if (startDate != null && endDate != null) {
+            //sort
             pageSalePrice = priceHeaderRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, startDate, pageable);
         } else {
-            pageSalePrice = priceHeaderRepository.findAll(pageable);
+            pageSalePrice = priceHeaderRepository.findAllByOrderByCreatedDateDesc(pageable);
         }
+        //sort by  created date
         return pageSalePrice.map(priceHeader -> modelMapper.map(priceHeader, PriceHeaderDto.class)).getContent();
+
     }
 
     @Override

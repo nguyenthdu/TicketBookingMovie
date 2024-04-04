@@ -17,6 +17,6 @@ public class PromotionLineDto {
     private Long usePerUser;
     private Long usePerPromotion;
     private Long  promotionId;
-    private PromotionDetailDto promotionDetailDtos;
+    private PromotionDetailDto promotionDetailDto;
     private boolean status;
 }

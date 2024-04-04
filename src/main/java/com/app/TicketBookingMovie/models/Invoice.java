@@ -36,5 +36,6 @@ public class Invoice {
     @ManyToOne
     @JsonIgnore
     private Promotion  promotion;
+    private String qrCode;
     private boolean status;
 }

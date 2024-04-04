@@ -23,6 +23,7 @@ public class InvoiceDto {
     private String movieName;
     private String userName;
     private String staffName;
+    private String qrCode;
 
 
 

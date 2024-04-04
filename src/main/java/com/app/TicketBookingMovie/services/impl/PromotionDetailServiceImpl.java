@@ -35,7 +35,7 @@ public class PromotionDetailServiceImpl implements PromotionDetailService {
         if (isProductAdded) {
             // Nếu sản phẩm đã tồn tại, bạn có thể trả về null hoặc ném ra một ngoại lệ
             // Ở đây, tôi sẽ ném ra một ngoại lệ để báo hiệu rằng sản phẩm đã tồn tại và không thể thêm vào nữa
-            throw new AppException("The product is already added in another promotion line within the same promotion", HttpStatus.BAD_REQUEST);
+            throw new AppException("Đồ ăn này đã tồn tại trong chương trình khuyến mãi này, vui lòng chọn đồ ăn khác", HttpStatus.BAD_REQUEST);
         }
 
         // Nếu sản phẩm chưa tồn tại, tiếp tục tạo PromotionDetail
@@ -43,6 +43,8 @@ public class PromotionDetailServiceImpl implements PromotionDetailService {
         Food food = foodService.findById(promotionDetailDto.getFoodId());
         promotionDetail.setFood(food);
         promotionDetail.setDiscountValue(0);
+
+        //neu trang thai cua header la false thi se set gia tri cua promotion detail la 0
         return promotionDetailRepository.save(promotionDetail);
     }
 
