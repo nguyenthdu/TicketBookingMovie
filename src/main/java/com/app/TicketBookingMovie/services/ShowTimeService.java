@@ -19,5 +19,7 @@ public interface ShowTimeService {
     long countAllShowTimes(String code,Long cinemaId, Long movieId, LocalDate date, Long roomId);
     void deleteShowTime(Long id);
     List<ShowTimeSeatDto> getShowTimeSeatById(Long id);
+    Set<LocalDate> getShowDatesByMovieId(Long movieId);
+
 
 }

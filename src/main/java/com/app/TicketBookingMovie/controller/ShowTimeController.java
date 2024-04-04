@@ -52,8 +52,8 @@ public class ShowTimeController {
                                                                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                                                      @RequestParam(required = false) Long roomId) {
         PageResponse<ShowTimeDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(showTimeService.getAllShowTimes(page, size, code,cinemaId, movieId, date, roomId));
-        pageResponse.setTotalElements(showTimeService.countAllShowTimes(code,cinemaId, movieId, date, roomId));
+        pageResponse.setContent(showTimeService.getAllShowTimes(page, size, code, cinemaId, movieId, date, roomId));
+        pageResponse.setTotalElements(showTimeService.countAllShowTimes(code, cinemaId, movieId, date, roomId));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -83,6 +83,7 @@ public class ShowTimeController {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<MessageResponseDto> deleteShowTime(@PathVariable Long id) {
         try {
@@ -92,9 +93,16 @@ public class ShowTimeController {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
-     @GetMapping("/seat/{id}")
+
+    @GetMapping("/seat/{id}")
     public ResponseEntity<List<ShowTimeSeatDto>> getShowTimeSeatById(@PathVariable Long id) {
         List<ShowTimeSeatDto> showTimeSeatDtos = showTimeService.getShowTimeSeatById(id);
         return ResponseEntity.ok(showTimeSeatDtos);
-     }
+    }
+
+    @GetMapping("/dates/{movieId}")
+    public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@PathVariable Long movieId) {
+        Set<LocalDate> showDates = showTimeService.getShowDatesByMovieId(movieId);
+        return ResponseEntity.ok(showDates);
+    }
 }

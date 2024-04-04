@@ -14,4 +14,8 @@ public interface MovieService {
     List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId, Long cinemaId);
 
     long countAllMovies(String code, String name, Long genreId, Long cinemaId);
+    //lấy danh sách phim chưa chiếu:
+    List<MovieDto> getMoviesNotShowed(Integer page, Integer size);
+    //lấy danh sách phim đang chiếu:
+    List<MovieDto> getMoviesShowing(Integer page, Integer size);
 }

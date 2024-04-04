@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -15,16 +16,15 @@ public class MovieDto {
     private String trailerLink;
     private String description;
     private int durationMinutes;
-    private Set<Long> genreIds;
     private LocalDate releaseDate;
     private String country;
     private String director;
     private String cast;
     private String producer;
-    private Set<Long> showTimeIds;
+    private Set<Long> genreIds;
     private Set<Long> cinemaIds;
     private boolean status;
     private LocalDateTime createdDate;
-    private String genres;
+    private List<GenreDto> genres;
 }
 

@@ -46,8 +46,10 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
     Page<ShowTime> findByMovieIdAndShowDate(Long movieId, LocalDate date, Pageable pageable);
 
     @Query("SELECT s FROM ShowTime s WHERE s.movie.id = :movieId AND s.room.cinema.id = :cinemaId AND s.room.id = :roomId")
-
     Page<ShowTime> findByMovieIdAndCinemaIdAndRoomId(Long movieId, Long cinemaId, Long roomId, Pageable pageable);
+
     @Query("SELECT s FROM ShowTime s WHERE s.movie.id = :movieId AND s.room.cinema.id = :cinemaId AND s.room.id = :roomId AND s.showDate = :date")
     Page<ShowTime> findByMovieIdAndCinemaIdAndRoomIdAndShowDate(Long movieId, Long cinemaId, Long roomId, LocalDate date, Pageable pageable);
+
+
 }

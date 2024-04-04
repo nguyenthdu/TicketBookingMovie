@@ -53,20 +53,20 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
         for (ShowTimeDto showTimeDto : showTimeDtos) {
             Room room = roomRepository.findById(showTimeDto.getRoomId())
-                    .orElseThrow(() -> new AppException("Room not found with id: " + showTimeDto.getRoomId(), HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new AppException("Không tìm thấy phòng chiếu với id: " + showTimeDto.getRoomId(), HttpStatus.NOT_FOUND));
             Movie movie = movieRepository.findById(showTimeDto.getMovieId())
-                    .orElseThrow(() -> new AppException("Movie not found with id: " + showTimeDto.getMovieId(), HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + showTimeDto.getMovieId(), HttpStatus.NOT_FOUND));
             LocalDate showDate = showTimeDto.getShowDate();
 
             // Kiểm tra xem ngày chiếu có phải là sau ngày hiện tại không
             if (showDate.isBefore(currentDate)) {
-                throw new AppException("Show date must be after the current date.", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ngày chiếu phải sau ngày hiện tại.", HttpStatus.BAD_REQUEST);
             }
             if (!movie.isStatus()) {
-                throw new AppException("The movie is not available for scheduling.", HttpStatus.BAD_REQUEST);
+                throw new AppException("Trạng thái phim không hoạt động.", HttpStatus.BAD_REQUEST);
             }
             if (!room.isStatus()) {
-                throw new AppException("The room is not available for scheduling.", HttpStatus.BAD_REQUEST);
+                throw new AppException("Trạng thái phòng chiếu không hoạt động.", HttpStatus.BAD_REQUEST);
             }
 
             //TODO: xử lý khoảng thời gian giữa các lịch chiếu trong cùng 1 ngày cùng 1 phòng
@@ -79,7 +79,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 LocalTime existingShowTimeStart = existingShowTime.getShowTime();
                 LocalTime existingShowTimeEnd = existingShowTimeStart.plusMinutes(existingShowTime.getMovie().getDurationMinutes()).plusMinutes(60);
                 if (newShowTimeStart.isBefore(existingShowTimeEnd) && newShowTimeEnd.isAfter(existingShowTimeStart)) {
-                    throw new AppException("Showtime is overlapped with existing showtime.", HttpStatus.BAD_REQUEST);
+                    throw new AppException("Không thể tạo lịch chiếu mới vì trùng với lịch chiếu đã có.", HttpStatus.BAD_REQUEST);
                 }
             }
 
@@ -125,7 +125,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     public void updateShowTime(ShowTimeDto showTimeDto) {
         // Lấy thông tin lịch chiếu từ cơ sở dữ liệu
         ShowTime showTime = showTimeRepository.findById(showTimeDto.getId())
-                .orElseThrow(() -> new AppException("Showtime not found with id: " + showTimeDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + showTimeDto.getId(), HttpStatus.NOT_FOUND));
 
         // Kiểm tra nếu thời gian lịch chiếu đã qua, không thể cập nhật
         LocalDate currentDate = LocalDate.now();
@@ -134,7 +134,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         LocalTime showTimeStart = showTime.getShowTime();
         boolean isShowTimePassed = showDate.isBefore(currentDate) || (showDate.isEqual(currentDate) && showTimeStart.isBefore(currentTime));
         if (isShowTimePassed) {
-            throw new AppException("Cannot update past showtime.", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể cập nhật lịch chiếu đã qua.", HttpStatus.BAD_REQUEST);
         }
 
         // Kiểm tra nếu có ghế đã được đặt, chỉ được cập nhật trạng thái
@@ -150,12 +150,12 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 }
                 // Cập nhật phòng chiếu và phim
                 showTime.setRoom(roomRepository.findById(showTimeDto.getRoomId())
-                        .orElseThrow(() -> new AppException("Room not found with id: " + showTimeDto.getRoomId(), HttpStatus.NOT_FOUND)));
+                        .orElseThrow(() -> new AppException("Không tìm thấy phòng chiếu với id: " + showTimeDto.getRoomId(), HttpStatus.NOT_FOUND)));
                 showTime.setMovie(movieRepository.findById(showTimeDto.getMovieId())
-                        .orElseThrow(() -> new AppException("Movie not found with id: " + showTimeDto.getMovieId(), HttpStatus.NOT_FOUND)));
+                        .orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + showTimeDto.getMovieId(), HttpStatus.NOT_FOUND)));
                 showTime.setStatus(showTimeDto.isStatus());
             } else {
-                throw new AppException("Cannot update showtime before the current date.", HttpStatus.BAD_REQUEST);
+                throw new AppException("Không thể cập nhật lịch chiếu đang hoạt động.", HttpStatus.BAD_REQUEST);
             }
         }
 
@@ -290,6 +290,18 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         }
 
         return showTimeSeatDtos;
+    }
+
+    @Override
+    public Set<LocalDate> getShowDatesByMovieId(Long movieId) {
+        List<ShowTime> showTimes = showTimeRepository.findAll();
+        Set<LocalDate> showDates = new HashSet<>();
+        for (ShowTime showTime : showTimes) {
+            if (showTime.getMovie().getId().equals(movieId)) {
+                showDates.add(showTime.getShowDate());
+            }
+        }
+        return showDates;
     }
 
 

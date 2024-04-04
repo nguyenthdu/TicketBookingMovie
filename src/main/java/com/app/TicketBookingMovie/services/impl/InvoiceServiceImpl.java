@@ -337,11 +337,13 @@ public class InvoiceServiceImpl implements InvoiceService {
         movieDto.setDirector(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDirector());
         movieDto.setProducer(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getProducer());
         movieDto.setCast(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getCast());
-        StringBuilder genres = new StringBuilder();
+        //convert genresdto
+        List<GenreDto> genreDtos = new ArrayList<>();
         for (Genre genre : invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getGenres()) {
-            genres.append(genre.getName()).append(", ");
+            GenreDto genreDto = modelMapper.map(genre, GenreDto.class);
+            genreDtos.add(genreDto);
         }
-        movieDto.setGenres(genres.toString());
+        movieDto.setGenres(genreDtos);
         return movieDto;
     }
 
