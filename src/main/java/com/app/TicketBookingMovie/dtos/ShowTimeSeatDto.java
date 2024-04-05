@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class ShowTimeSeatDto {
     private Long id;
-    private Long seatId;
+    private SeatDto seat;
     private Long showTimeId;
     private boolean status;
 }
