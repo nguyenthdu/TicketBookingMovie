@@ -41,6 +41,7 @@ public class InvoiceController {
                 emailUser = jwtUtils.getEmailFromJwtToken(jwt);
             }
         }
+
         try {
             invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId, promotionIds);
             return ResponseEntity.ok("Invoice created successfully");

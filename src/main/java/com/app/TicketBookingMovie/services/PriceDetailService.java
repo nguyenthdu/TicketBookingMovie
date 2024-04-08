@@ -1,13 +1,14 @@
 package com.app.TicketBookingMovie.services;
 
 import com.app.TicketBookingMovie.dtos.PriceDetailDto;
+import com.app.TicketBookingMovie.models.PriceDetail;
 
 import java.util.Set;
 
 public interface PriceDetailService {
-    void createPriceDetail(Set<PriceDetailDto> priceDetailDto);
+    PriceDetail createPriceDetail(PriceDetailDto priceDetailDto);
     PriceDetailDto getPriceDetail(Long id);
-    void updatePriceDetail(PriceDetailDto priceDetailDto);
+    PriceDetail updatePriceDetail(PriceDetailDto priceDetailDto);
     void deletePriceDetail(Long id);
     Set<PriceDetailDto> getAllPriceDetail(Long id);
 

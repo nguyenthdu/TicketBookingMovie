@@ -10,10 +10,11 @@ public class FoodDto {
     private String code;
     private String name;
     private String image;
-    private double price;
+    private PriceDetailDto priceDetail;
     private int quantity;
     private String size;
-    private Long CategoryId;
+    private Long categoryId;
+    private String categoryName;
     private boolean status;
     private LocalDateTime createdDate;
 }

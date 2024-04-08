@@ -2,18 +2,16 @@ package com.app.TicketBookingMovie.services;
 
 import com.app.TicketBookingMovie.dtos.FoodDto;
 import com.app.TicketBookingMovie.models.Food;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 public interface FoodService {
-    void createFood(FoodDto foodDto, MultipartFile file) throws IOException;
+    void createFood(FoodDto foodDto);
 
     FoodDto getFoodById(Long id);
     Food findById(Long id);
 
-    void updateFood(FoodDto foodDto, MultipartFile multipartFile) throws IOException;
+    void updateFood(FoodDto foodDto);
 
     void deleteFoodById(Long id);
 

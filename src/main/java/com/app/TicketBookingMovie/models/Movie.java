@@ -56,7 +56,7 @@ public class Movie {
 	@OneToMany
 	private Set<ShowTime> showTimes;
 	private boolean status;
-	private LocalDateTime createdDate ;
+	private LocalDateTime createdDate= LocalDateTime.now();
 	public Movie() {
 	}
 

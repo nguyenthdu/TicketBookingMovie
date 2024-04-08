@@ -1,6 +1,7 @@
 package com.app.TicketBookingMovie.services;
 
 import com.app.TicketBookingMovie.dtos.PriceHeaderDto;
+import com.app.TicketBookingMovie.models.PriceHeader;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,6 +13,7 @@ public interface PriceHeaderService {
     void updatePriceHeader(PriceHeaderDto priceHeaderDto);
 
     PriceHeaderDto getPriceHeaderById(Long id);
+    PriceHeader findPriceHeaderById(Long id);
 
     void deletePriceHeaderById(Long id);
 

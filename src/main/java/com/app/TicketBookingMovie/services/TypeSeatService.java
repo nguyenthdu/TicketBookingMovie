@@ -5,7 +5,7 @@ import com.app.TicketBookingMovie.dtos.TypeSeatDto;
 import java.util.Set;
 
 public interface TypeSeatService {
-    void createTypeSeat();
+    void createTypeSeat(TypeSeatDto typeSeatDto, Long priceHeaderId);
 
     TypeSeatDto getTypeSeatById(Long id);
 

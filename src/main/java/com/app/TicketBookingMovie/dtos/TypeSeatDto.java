@@ -7,7 +7,7 @@ public class TypeSeatDto {
     private Long id;
     private String code;
     private String name;
-    private double price;
+    private  PriceDetailDto priceDetailDto;
 
 
 }

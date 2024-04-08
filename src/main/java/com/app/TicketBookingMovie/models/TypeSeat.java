@@ -2,7 +2,6 @@ package com.app.TicketBookingMovie.models;
 
 import com.app.TicketBookingMovie.models.enums.ETypeSeat;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,14 +16,11 @@ public class TypeSeat {
     private String code;
     @Enumerated(EnumType.STRING)
     private ETypeSeat name;
-    @NotNull
-    private double price;
+    @ManyToOne
+    private PriceDetail price;
 
     public TypeSeat() {
     }
 
-    public TypeSeat(ETypeSeat name, double price) {
-        this.name = name;
-        this.price = price;
-    }
+
 }

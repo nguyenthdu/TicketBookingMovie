@@ -26,7 +26,7 @@ public class Genre {
     private String name;
     @ManyToMany(mappedBy = "genres")
     private Set<Movie> movies;
-    private LocalDateTime createdDate;
+    private LocalDateTime createdDate= LocalDateTime.now();
     public Genre() {
     }
 }

@@ -51,6 +51,11 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
     }
 
     @Override
+    public CategoryFood findCategoryFoodById(Long id) {
+        return cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Category not found with id: " + id, HttpStatus.NOT_FOUND));
+    }
+
+    @Override
     public void updateCategoryFood(CategoryFoodDto categoryFoodDto) {
         CategoryFood categoryFood = cateogryFoodRepository.findById(categoryFoodDto.getId()).orElseThrow(() -> new AppException("Category not found with id: " + categoryFoodDto.getId(), HttpStatus.NOT_FOUND));
 

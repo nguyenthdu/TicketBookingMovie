@@ -96,15 +96,15 @@ public class PriceController {
     }
 
 
-    @PostMapping("/detail")
-    public ResponseEntity<MessageResponseDto> createSalePriceDetail(@RequestBody Set<PriceDetailDto> priceDetailDtos) {
-        try {
-            priceDetailService.createPriceDetail(priceDetailDtos);
-            return ResponseEntity.ok(new MessageResponseDto("Tạo chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
-        } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
-        }
-    }
+//    @PostMapping("/detail")
+//    public ResponseEntity<MessageResponseDto> createSalePriceDetail(@RequestBody Set<PriceDetailDto> priceDetailDtos) {
+//        try {
+//            priceDetailService.createPriceDetail(priceDetailDtos);
+//            return ResponseEntity.ok(new MessageResponseDto("Tạo chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+//        } catch (AppException e) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+//        }
+//    }
 
     @GetMapping("/detail/{id}")
     public ResponseEntity<PriceDetailDto> getSalePriceDetail(@PathVariable("id") Long id) {

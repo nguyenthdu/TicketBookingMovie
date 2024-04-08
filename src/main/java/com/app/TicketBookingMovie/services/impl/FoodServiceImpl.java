@@ -1,118 +1,90 @@
 package com.app.TicketBookingMovie.services.impl;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.app.TicketBookingMovie.dtos.FoodDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.CategoryFood;
 import com.app.TicketBookingMovie.models.Food;
 import com.app.TicketBookingMovie.models.enums.ESize;
-import com.app.TicketBookingMovie.repository.CateogryFoodRepository;
 import com.app.TicketBookingMovie.repository.FoodRepository;
-import com.app.TicketBookingMovie.repository.MovieRepository;
+import com.app.TicketBookingMovie.services.AwsService;
+import com.app.TicketBookingMovie.services.CategoryFoodService;
 import com.app.TicketBookingMovie.services.FoodService;
+import com.app.TicketBookingMovie.services.PriceDetailService;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class FoodServiceImpl implements FoodService {
-    @Value("${S3_BUCKET_NAME_FOOD}")
-    private String BUCKET_NAME_FOOD;
     private final ModelMapper modelMapper;
-    private final MovieRepository movieRepository;
-    private final AmazonS3 amazonS3;
     private final FoodRepository foodRepository;
-    private final CateogryFoodRepository cateogryFoodRepository;
-    private static final long MAX_SIZE = 10 * 1024 * 1024;
+    private final CategoryFoodService categoryFoodService;
+    private final PriceDetailService priceDetailService;
+    private final AwsService awsService;
 
-    public FoodServiceImpl(ModelMapper modelMapper, MovieRepository movieRepository, AmazonS3 amazonS3, FoodRepository foodRepository, CateogryFoodRepository cateogryFoodRepository) {
+
+    public FoodServiceImpl(ModelMapper modelMapper, FoodRepository foodRepository, PriceDetailService priceDetailService, CategoryFoodService categoryFoodService, AwsService awsService) {
         this.modelMapper = modelMapper;
-        this.movieRepository = movieRepository;
-        this.amazonS3 = amazonS3;
         this.foodRepository = foodRepository;
-        this.cateogryFoodRepository = cateogryFoodRepository;
+        this.priceDetailService = priceDetailService;
+        this.categoryFoodService = categoryFoodService;
+        this.awsService = awsService;
     }
 
     public String randomCode() {
-        return "DA"+LocalDateTime.now().getNano();
+        return "DA" + LocalDateTime.now().getNano();
     }
 
-    public void checkFileType(MultipartFile multipartFile) {
-        String fileName = Objects.requireNonNull(multipartFile.getOriginalFilename());
-        String fileType = fileName.substring(fileName.lastIndexOf("."));
-        if (!fileType.equals(".jpg") && !fileType.equals(".png")) {
-            throw new AppException("Only .jpg and .png files are allowed", HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    private File convertMultiPartFileToFile(MultipartFile multipartFile) throws IOException {
-        File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-        try (FileOutputStream outputStream = new FileOutputStream(file)) {
-            outputStream.write(multipartFile.getBytes());
-        }
-        return file;
-    }
 
     @Override
-    public void createFood(FoodDto foodDto, MultipartFile multipartFile) throws IOException {
+    public void createFood(FoodDto foodDto) {
         if (foodRepository.findByName(foodDto.getName()).isPresent()) {
             throw new AppException("name: " + foodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
         }
-        if (multipartFile == null || multipartFile.isEmpty()) {
-            throw new AppException("Image is required", HttpStatus.BAD_REQUEST);
-        }
-        String code = randomCode();
-        checkFileType(multipartFile);
-        if (multipartFile.getSize() > MAX_SIZE) {
-            throw new AppException("File size is too large. must < 10mb", HttpStatus.BAD_REQUEST);
-        }
-        String image = Objects.requireNonNull(multipartFile.getOriginalFilename());
-        String fileType = image.substring(image.lastIndexOf("."));
-        String fileName = code + "_" + LocalDateTime.now() + fileType;
-        File file = convertMultiPartFileToFile(multipartFile);
-        amazonS3.putObject(new PutObjectRequest(BUCKET_NAME_FOOD, fileName, file));
-        file.delete();
-        String uploadLink = amazonS3.getUrl(BUCKET_NAME_FOOD, fileName).toString();
-        Food food = modelMapper.map(foodDto, Food.class);
-
-        if (foodDto.getSize().equalsIgnoreCase("SMALL")) {
-            food.setSize(ESize.SMALL);
-        }
-        if (foodDto.getSize().equalsIgnoreCase("MEDIUM")) {
-            food.setSize(ESize.MEDIUM);
-        }
-        if (foodDto.getSize().equalsIgnoreCase("LARGE")) {
-            food.setSize(ESize.LARGE);
-        }
-        food.setCode(code);
-        food.setImage(uploadLink);
+        Food food = new Food();
+        getSize(foodDto, food);
+        food.setCode(randomCode());
+        food.setName(foodDto.getName());
+        food.setStatus(foodDto.isStatus());
+        food.setImage(foodDto.getImage());
         food.setQuantity(foodDto.getQuantity());
         food.setCreatedDate(LocalDateTime.now());
-        food.setCategoryFood(cateogryFoodRepository.findById(foodDto.getCategoryId())
-                .orElseThrow(() -> new AppException("Category not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND)));
+        food.setCategoryFood(categoryFoodService.findCategoryFoodById(foodDto.getCategoryId()));
+        food.setPrice(priceDetailService.createPriceDetail(foodDto.getPriceDetail()));
+        food.setCreatedDate(LocalDateTime.now());
         foodRepository.save(food);
-        modelMapper.map(food, FoodDto.class);
+    }
+
+    private void getSize(FoodDto foodDto, Food food) {
+        switch (foodDto.getSize()) {
+            case "SMALL":
+                food.setSize(ESize.SMALL);
+                break;
+            case "MEDIUM":
+                food.setSize(ESize.MEDIUM);
+                break;
+            case "LARGE":
+                food.setSize(ESize.LARGE);
+                break;
+        }
     }
 
     @Override
     public FoodDto getFoodById(Long id) {
         Food food = foodRepository.findById(id)
                 .orElseThrow(() -> new AppException("Food not found with id: " + id, HttpStatus.NOT_FOUND));
-        return modelMapper.map(food, FoodDto.class);
+        //xử lý in ra tên category
+        FoodDto foodDto = modelMapper.map(food, FoodDto.class);
+        foodDto.setCategoryName(food.getCategoryFood().getName());
+        return foodDto;
+
 
     }
 
@@ -123,33 +95,15 @@ public class FoodServiceImpl implements FoodService {
 
     }
 
-    private String getFileExtension(String fileName) {
-        return fileName.substring(fileName.lastIndexOf("."));
-    }
+//    private String getFileExtension(String fileName) {
+//        return fileName.substring(fileName.lastIndexOf("."));
+//    }
 
     @Override
-    public void updateFood(FoodDto foodDto, MultipartFile multipartFile) throws IOException {
+    public void updateFood(FoodDto foodDto) {
         Food food = foodRepository.findById(foodDto.getId())
                 .orElseThrow(() -> new AppException("Food not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND));
-        if (multipartFile != null && !multipartFile.isEmpty()) {
-            // Xóa hình ảnh cũ trên AWS
-            String imageUrl = food.getImage();
-            String imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            imageKey = imageKey.replace("%3A", ":");
-            amazonS3.deleteObject(BUCKET_NAME_FOOD, imageKey);
-            // Lưu hình ảnh mới lên AWS
-            String newImageName = food.getCode() + "_" + LocalDateTime.now() + getFileExtension(multipartFile.getOriginalFilename());
-            File newImageFile = convertMultiPartFileToFile(multipartFile);
-            amazonS3.putObject(new PutObjectRequest(BUCKET_NAME_FOOD, newImageName, newImageFile));
-            newImageFile.delete();
-            String newImageLink = amazonS3.getUrl(BUCKET_NAME_FOOD, newImageName).toString();
-            // Cập nhật link hình ảnh mới trong movieDTO
-            food.setImage(newImageLink);
-        } else {
-            food.setImage(food.getImage());
-        }
-
-        if (!foodDto.getName().isEmpty() && !foodDto.getName().isBlank()) {
+        if (!foodDto.getName().isEmpty() && !foodDto.getName().isBlank() && !foodDto.getName().equalsIgnoreCase(food.getName())) {
             if (foodRepository.findByName(foodDto.getName()).isPresent()) {
                 throw new AppException("name: " + foodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
             }
@@ -157,21 +111,8 @@ public class FoodServiceImpl implements FoodService {
         } else {
             food.setName(food.getName());
         }
-        if (foodDto.getPrice() > 0) {
-            food.setPrice(foodDto.getPrice());
-        } else {
-            food.setPrice(food.getPrice());
-        }
         if (!foodDto.getSize().isEmpty() && !foodDto.getSize().isBlank()) {
-            if (foodDto.getSize().equalsIgnoreCase("SMALL")) {
-                food.setSize(ESize.SMALL);
-            }
-            if (foodDto.getSize().equalsIgnoreCase("MEDIUM")) {
-                food.setSize(ESize.MEDIUM);
-            }
-            if (foodDto.getSize().equalsIgnoreCase("LARGE")) {
-                food.setSize(ESize.LARGE);
-            }
+            getSize(foodDto, food);
         } else {
             food.setSize(food.getSize());
         }
@@ -182,8 +123,7 @@ public class FoodServiceImpl implements FoodService {
         }
 
         if (foodDto.getCategoryId() > 0) {
-            CategoryFood categoryFood = cateogryFoodRepository.findById(foodDto.getCategoryId())
-                    .orElseThrow(() -> new AppException("Category not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND));
+            CategoryFood categoryFood = categoryFoodService.findCategoryFoodById(foodDto.getCategoryId());
             food.setCategoryFood(categoryFood);
         } else {
             food.setCategoryFood(food.getCategoryFood());
@@ -192,6 +132,23 @@ public class FoodServiceImpl implements FoodService {
             food.setQuantity(foodDto.getQuantity());
         } else {
             food.setQuantity(food.getQuantity());
+        }
+        if (!foodDto.getImage().isEmpty() && !foodDto.getImage().isBlank() && !foodDto.getImage().equalsIgnoreCase(food.getImage())) {
+            awsService.deleteImage(food.getImage());
+            food.setImage(foodDto.getImage());
+        } else {
+            food.setImage(food.getImage());
+        }
+
+        if (foodDto.getPriceDetail().getPrice() > 0 && foodDto.getPriceDetail().getPrice() != food.getPrice().getPrice()) {
+            food.getPrice().setPrice(foodDto.getPriceDetail().getPrice());
+        } else {
+           food.getPrice().setPrice(food.getPrice().getPrice());
+        }
+        if(foodDto.getPriceDetail().isStatus() != food.getPrice().isStatus()) {
+            food.getPrice().setStatus(foodDto.getPriceDetail().isStatus());
+        }else {
+            food.getPrice().setStatus(food.getPrice().isStatus());
         }
         foodRepository.save(food);
         modelMapper.map(food, FoodDto.class);
@@ -202,10 +159,7 @@ public class FoodServiceImpl implements FoodService {
     public void deleteFoodById(Long id) {
         Food food = foodRepository.findById(id)
                 .orElseThrow(() -> new AppException("Food not found with id: " + id, HttpStatus.NOT_FOUND));
-        String imageUrl = food.getImage();
-        String imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-        imageKey = imageKey.replace("%3A", ":");
-        amazonS3.deleteObject(BUCKET_NAME_FOOD, imageKey);
+        awsService.deleteImage(food.getImage());
         foodRepository.deleteById(id);
     }
 
@@ -225,9 +179,16 @@ public class FoodServiceImpl implements FoodService {
         } else {
             food = foodRepository.findAll(pageable);
         }
+
+        //in ra category name
         return food.stream().sorted(Comparator.comparing(Food::getCreatedDate).reversed())
-                .map(food1 -> modelMapper.map(food1, FoodDto.class))
-                .toList();
+                .map(f -> {
+
+                    FoodDto foodDto = modelMapper.map(f, FoodDto.class);
+                    foodDto.setCategoryName(f.getCategoryFood().getName());
+                    return foodDto;
+                }).toList();
+
 
     }
 

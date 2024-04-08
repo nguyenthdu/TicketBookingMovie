@@ -21,12 +21,8 @@ public class Cinema {
     private int totalRoom;
     @OneToOne(cascade = CascadeType.REMOVE) // Add CascadeType.REMOVE here
     private Address address;
-//    @OneToMany(mappedBy = "cinema")
-//    private Set<Room> rooms;
-//    @ManyToMany(mappedBy = "cinemas")
-//    private Set<Movie> movies;
     private boolean status = true;
-    private LocalDateTime   createdDate;
+    private LocalDateTime   createdDate = LocalDateTime.now();
 
     public Cinema() {
     }

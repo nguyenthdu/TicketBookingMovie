@@ -16,10 +16,6 @@ public class PriceDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private double price;
-    @ManyToOne
-    private TypeSeat typeSeat;
-    @ManyToOne
-    private Food food;
     @JsonIgnore
     @ManyToOne
     private PriceHeader priceHeader;

@@ -150,6 +150,12 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     }
 
     @Override
+    public PriceHeader findPriceHeaderById(Long id) {
+        return priceHeaderRepository.findById(id)
+                .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với mã là: " + id, HttpStatus.NOT_FOUND));
+    }
+
+    @Override
     public void deletePriceHeaderById(Long id) {
         PriceHeader priceHeader = priceHeaderRepository.findById(id)
                 .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với mã là: " + id, HttpStatus.NOT_FOUND));

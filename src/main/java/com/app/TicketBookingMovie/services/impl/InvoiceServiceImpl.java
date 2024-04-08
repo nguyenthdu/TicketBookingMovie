@@ -66,19 +66,20 @@ public class InvoiceServiceImpl implements InvoiceService {
             InvoiceTicketDetail ticketDetail = new InvoiceTicketDetail();
             ticketDetail.setTicket(ticket);
             ticketDetail.setQuantity(1); // Mỗi vé là 1 sản phẩm
-            Optional<PriceDetail> saleDetail = currentPriceDetails.stream()
-                    .filter(s -> s.getTypeSeat().getId().equals(ticket.getSeat().getSeatType().getId()))
-                    .findFirst();
-            if (saleDetail.isPresent() && saleDetail.get().isStatus()) {
-                ticketDetail.setPrice(saleDetail.get().getPrice() + ticket.getShowTime().getRoom().getPrice());
-                if (saleDetail.get().getPrice() > ticket.getSeat().getSeatType().getPrice()) {
-                    ticketDetail.setNote("Tăng giá");
-                } else {
-                    ticketDetail.setNote("Giảm giá");
-                }
-            } else {
-                ticketDetail.setPrice(ticket.getSeat().getSeatType().getPrice() + ticket.getShowTime().getRoom().getPrice());
-            }
+//            Optional<PriceDetail> saleDetail = currentPriceDetails.stream()
+//                    .filter(s -> s.getTypeSeat().getId().equals(ticket.getSeat().getSeatType().getId()))
+//                    .findFirst();
+//            if (saleDetail.isPresent() && saleDetail.get().isStatus()) {
+//                ticketDetail.setPrice(saleDetail.get().getPrice() + ticket.getShowTime().getRoom().getPrice());
+//                if (saleDetail.get().getPrice() > ticket.getSeat().getSeatType().getPrice()) {
+//                    ticketDetail.setNote("Tăng giá");
+//                } else {
+//                    ticketDetail.setNote("Giảm giá");
+//                }
+//            } else {
+//                ticketDetail.setPrice(ticket.getSeat().getSeatType().getPrice() + ticket.getShowTime().getRoom().getPrice());
+//            }
+            ticketDetail.setPrice(ticket.getSeat().getSeatType().getPrice().getPrice() + ticket.getShowTime().getRoom().getPrice());
             invoiceTicketDetails.add(ticketDetail);
         }
         invoice.setInvoiceTicketDetails(invoiceTicketDetails);
@@ -103,22 +104,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             if (food.getQuantity() < quantity) {
                 throw new AppException("Not enough stock for food: " + food.getName(), HttpStatus.BAD_REQUEST);
             }
-            InvoiceFoodDetail foodDetail = new InvoiceFoodDetail();
-            foodDetail.setFood(food);
-            foodDetail.setQuantity(quantity);
-            Optional<PriceDetail> salePriceDetail = currentPriceDetails.stream()
-                    .filter(salePrice -> salePrice.getFood().getId().equals(foodId))
-                    .findFirst();
-            if (salePriceDetail.isPresent() && salePriceDetail.get().isStatus()) {
-                foodDetail.setPrice(salePriceDetail.get().getPrice() * quantity);
-                if (salePriceDetail.get().getPrice() > food.getPrice()) {
-                    foodDetail.setNote("Tăng giá");
-                } else {
-                    foodDetail.setNote("Giảm giá");
-                }
-            } else {
-                foodDetail.setPrice(food.getPrice() * quantity);
-            }
+            // Tạo chi tiết hóa đơn cho từng loại đồ ăn, thông tin loại đồ ăn
+            InvoiceFoodDetail foodDetail = getInvoiceFoodDetail(food, quantity);
             invoiceFoodDetails.add(foodDetail);
         }
         invoice.setInvoiceFoodDetails(invoiceFoodDetails);
@@ -151,6 +138,14 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         // Lưu hóa đơn vào cơ sở dữ liệu
         invoiceRepository.save(invoice);
+    }
+
+    private static InvoiceFoodDetail getInvoiceFoodDetail(Food food, int quantity) {
+        InvoiceFoodDetail foodDetail = new InvoiceFoodDetail();
+        foodDetail.setFood(food);
+        foodDetail.setQuantity(quantity);
+        foodDetail.setPrice(food.getPrice().getPrice() * quantity);
+        return foodDetail;
     }
 
 
@@ -380,7 +375,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             InvoiceFoodDetailDto invoiceFoodDetailDto = modelMapper.map(invoiceFoodDetail, InvoiceFoodDetailDto.class);
             invoiceFoodDetailDto.setFoodName(invoiceFoodDetail.getFood().getName());
             invoiceFoodDetailDto.setQuantity(invoiceFoodDetail.getQuantity());
-            invoiceFoodDetailDto.setPriceItem(invoiceFoodDetail.getFood().getPrice());
+            invoiceFoodDetailDto.setPriceItem(invoiceFoodDetail.getFood().getPrice().getPrice());
             invoiceFoodDetailDto.setPrice(invoiceFoodDetail.getPrice());
             invoiceFoodDetailDto.setNote(invoiceFoodDetail.getNote());
             invoiceFoodDetailDtos.add(invoiceFoodDetailDto);
@@ -404,7 +399,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             String typeSeat = String.valueOf(invoiceTicketDetail.getTicket().getSeat().getSeatType().getName());
             invoiceTicketDetailDto.setSeatType(typeSeat);
             invoiceTicketDetailDto.setPrice(invoiceTicketDetail.getPrice());
-            invoiceTicketDetailDto.setPriceItem(invoiceTicketDetail.getTicket().getSeat().getSeatType().getPrice());
+            invoiceTicketDetailDto.setPriceItem(invoiceTicketDetail.getTicket().getSeat().getSeatType().getPrice().getPrice());
             invoiceTicketDetailDto.setQuantity(invoiceTicketDetail.getQuantity());
             invoiceTicketDetailDto.setNote(invoiceTicketDetail.getNote());
             invoiceTicketDetailDtos.add(invoiceTicketDetailDto);
