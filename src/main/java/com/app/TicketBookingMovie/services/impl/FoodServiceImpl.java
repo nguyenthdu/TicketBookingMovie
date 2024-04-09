@@ -9,7 +9,6 @@ import com.app.TicketBookingMovie.repository.FoodRepository;
 import com.app.TicketBookingMovie.services.AwsService;
 import com.app.TicketBookingMovie.services.CategoryFoodService;
 import com.app.TicketBookingMovie.services.FoodService;
-import com.app.TicketBookingMovie.services.PriceDetailService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,14 +25,12 @@ public class FoodServiceImpl implements FoodService {
     private final ModelMapper modelMapper;
     private final FoodRepository foodRepository;
     private final CategoryFoodService categoryFoodService;
-    private final PriceDetailService priceDetailService;
     private final AwsService awsService;
 
 
-    public FoodServiceImpl(ModelMapper modelMapper, FoodRepository foodRepository, PriceDetailService priceDetailService, CategoryFoodService categoryFoodService, AwsService awsService) {
+    public FoodServiceImpl(ModelMapper modelMapper, FoodRepository foodRepository, CategoryFoodService categoryFoodService, AwsService awsService) {
         this.modelMapper = modelMapper;
         this.foodRepository = foodRepository;
-        this.priceDetailService = priceDetailService;
         this.categoryFoodService = categoryFoodService;
         this.awsService = awsService;
     }
@@ -57,7 +54,6 @@ public class FoodServiceImpl implements FoodService {
         food.setQuantity(foodDto.getQuantity());
         food.setCreatedDate(LocalDateTime.now());
         food.setCategoryFood(categoryFoodService.findCategoryFoodById(foodDto.getCategoryId()));
-        food.setPrice(priceDetailService.createPriceDetail(foodDto.getPriceDetail()));
         food.setCreatedDate(LocalDateTime.now());
         foodRepository.save(food);
     }
@@ -95,9 +91,7 @@ public class FoodServiceImpl implements FoodService {
 
     }
 
-//    private String getFileExtension(String fileName) {
-//        return fileName.substring(fileName.lastIndexOf("."));
-//    }
+
 
     @Override
     public void updateFood(FoodDto foodDto) {
@@ -140,16 +134,7 @@ public class FoodServiceImpl implements FoodService {
             food.setImage(food.getImage());
         }
 
-        if (foodDto.getPriceDetail().getPrice() > 0 && foodDto.getPriceDetail().getPrice() != food.getPrice().getPrice()) {
-            food.getPrice().setPrice(foodDto.getPriceDetail().getPrice());
-        } else {
-           food.getPrice().setPrice(food.getPrice().getPrice());
-        }
-        if(foodDto.getPriceDetail().isStatus() != food.getPrice().isStatus()) {
-            food.getPrice().setStatus(foodDto.getPriceDetail().isStatus());
-        }else {
-            food.getPrice().setStatus(food.getPrice().isStatus());
-        }
+
         foodRepository.save(food);
         modelMapper.map(food, FoodDto.class);
 

@@ -12,12 +12,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Set;
 
 @RestController
-@RequestMapping("api/salePrice")
+@RequestMapping("api/price")
 public class PriceController {
     private final PriceHeaderService priceHeaderService;
     private final PriceDetailService priceDetailService;
@@ -34,7 +35,7 @@ public class PriceController {
             @RequestParam("description") String description,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
-            @RequestParam(value = "status",required = false) boolean status) {
+            @RequestParam(value = "status", required = false) boolean status) {
         PriceHeaderDto priceHeaderDto = new PriceHeaderDto();
         priceHeaderDto.setName(name);
         priceHeaderDto.setDescription(description);
@@ -86,7 +87,7 @@ public class PriceController {
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate) {
         {
             PageResponse<PriceHeaderDto> pageResponse = new PageResponse<>();
-            pageResponse.setContent(priceHeaderService.getAllPriceHeader(page, size, code, name,  startDate, endDate));
+            pageResponse.setContent(priceHeaderService.getAllPriceHeader(page, size, code, name, startDate, endDate));
             pageResponse.setTotalElements(priceHeaderService.countAllPriceHeader(code, name, startDate, endDate));
             pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
             pageResponse.setCurrentPage(page);
@@ -96,15 +97,16 @@ public class PriceController {
     }
 
 
-//    @PostMapping("/detail")
-//    public ResponseEntity<MessageResponseDto> createSalePriceDetail(@RequestBody Set<PriceDetailDto> priceDetailDtos) {
-//        try {
-//            priceDetailService.createPriceDetail(priceDetailDtos);
-//            return ResponseEntity.ok(new MessageResponseDto("Tạo chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
-//        } catch (AppException e) {
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
-//        }
-//    }
+    @PostMapping("/detail")
+    public ResponseEntity<MessageResponseDto> createPriceDetail(
+            @RequestBody Set<PriceDetailDto> priceDetailDto) {
+        try {
+            priceDetailService.createPriceDetail(priceDetailDto);
+            return ResponseEntity.ok(new MessageResponseDto("Tạo chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
+    }
 
     @GetMapping("/detail/{id}")
     public ResponseEntity<PriceDetailDto> getSalePriceDetail(@PathVariable("id") Long id) {
@@ -114,23 +116,37 @@ public class PriceController {
     @PutMapping("/detail")
     public ResponseEntity<MessageResponseDto> updatePriceDetail(
             @RequestParam("id") Long id,
-            @RequestParam("price") double price,
+            @RequestParam("price") BigDecimal price,
             @RequestParam("status") boolean status) {
         PriceDetailDto priceDetailDto = new PriceDetailDto();
         priceDetailDto.setId(id);
         priceDetailDto.setPrice(price);
         priceDetailDto.setStatus(status);
         try {
-            priceDetailService.updatePriceDetail(priceDetailDto);
+            priceDetailService.updatePriceDetail(price, status, id);
             return ResponseEntity.ok(new MessageResponseDto("Cập nhật chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
-    @GetMapping("/{id}/detail")
-    public ResponseEntity<Set<PriceDetailDto>> getAllSalePriceDetail(@PathVariable Long id) {
-        return ResponseEntity.ok(priceDetailService.getAllPriceDetail(id));
+    @GetMapping("/detail")
+    public ResponseEntity<PageResponse<PriceDetailDto>> getAllSalePriceDetail(
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") int size,
+            @RequestParam("priceHeaderId") Long id,
+            @RequestParam(value = "typeDetail", required = false) String typeDetail,
+            @RequestParam(value = "foodCode", required = false) String foodCode,
+            @RequestParam(value = "roomCode", required = false) String roomCode,
+            @RequestParam(value = "typeSeatCode", required = false) String typeSeat
+    ) {
+        PageResponse<PriceDetailDto> pageResponse = new PageResponse<>();
+        pageResponse.setContent(priceDetailService.getAllPriceDetail(page, size, id, typeDetail, foodCode, roomCode, typeSeat));
+        pageResponse.setTotalElements(priceDetailService.countAllPriceDetail(id, typeDetail, foodCode, roomCode, typeSeat));
+        pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
+        pageResponse.setCurrentPage(page);
+        pageResponse.setPageSize(size);
+        return ResponseEntity.ok(pageResponse);
     }
 
     @DeleteMapping("/{id}")

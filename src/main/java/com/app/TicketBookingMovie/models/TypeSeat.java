@@ -16,9 +16,6 @@ public class TypeSeat {
     private String code;
     @Enumerated(EnumType.STRING)
     private ETypeSeat name;
-    @ManyToOne
-    private PriceDetail price;
-
     public TypeSeat() {
     }
 

@@ -1,10 +1,7 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.services.AwsService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -18,11 +15,17 @@ public class AwsController {
         this.awsService = awsService;
     }
 
-    @PostMapping("/upload")
+    @PostMapping
     public String uploadImage(
             @RequestParam("file") MultipartFile file
     ) throws IOException {
         return awsService.uploadImage(file);
+    }
+    @DeleteMapping
+    public void deleteImage(
+            @RequestParam("imageUrl") String imageUrl
+    ) {
+        awsService.deleteImage(imageUrl);
     }
 
 //    @PutMapping("/update")

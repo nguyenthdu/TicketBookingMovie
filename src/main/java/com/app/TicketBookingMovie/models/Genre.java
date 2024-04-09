@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -24,8 +23,8 @@ public class Genre {
     private String code;
     @NotEmpty(message = "Name is not empty")
     private String name;
-    @ManyToMany(mappedBy = "genres")
-    private Set<Movie> movies;
+//    @ManyToMany(mappedBy = "genres")
+//    private Set<Movie> movies;
     private LocalDateTime createdDate= LocalDateTime.now();
     public Genre() {
     }

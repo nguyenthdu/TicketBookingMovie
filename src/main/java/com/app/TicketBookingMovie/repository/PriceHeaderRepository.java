@@ -33,4 +33,7 @@ public interface PriceHeaderRepository extends JpaRepository<PriceHeader, Long> 
     @Transactional
     @Modifying
     @Query("UPDATE PriceDetail pd SET pd.status = true WHERE pd.priceHeader.startDate <= :currentTime AND pd.status = false")
-    void updatePriceDetailsStatus(LocalDateTime currentTime);}
+    void updatePriceDetailsStatus(LocalDateTime currentTime);
+
+    boolean existsByStatus(boolean b);
+}

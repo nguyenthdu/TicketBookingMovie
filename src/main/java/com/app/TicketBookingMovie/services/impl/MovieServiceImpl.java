@@ -1,7 +1,5 @@
 package com.app.TicketBookingMovie.services.impl;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.app.TicketBookingMovie.dtos.MovieDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Cinema;
@@ -10,40 +8,33 @@ import com.app.TicketBookingMovie.models.Movie;
 import com.app.TicketBookingMovie.repository.CinemaRepository;
 import com.app.TicketBookingMovie.repository.GenreRepository;
 import com.app.TicketBookingMovie.repository.MovieRepository;
+import com.app.TicketBookingMovie.services.AwsService;
 import com.app.TicketBookingMovie.services.MovieService;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class MovieServiceImpl implements MovieService {
-    @Value("${S3_BUCKET_NAME_MOVIE}")
-    private String BUCKET_NAME_MOVIE;
+
     private final ModelMapper modelMapper;
     private final MovieRepository movieRepository;
     private final GenreRepository genreRepository;
     private final CinemaRepository cinemaRepository;
-    private final AmazonS3 amazonS3;
-    private static final long MAX_SIZE = 10 * 1024 * 1024;
+    private final AwsService awsService;
 
-    public MovieServiceImpl(ModelMapper modelMapper, MovieRepository movieRepository, GenreRepository genreRepository, AmazonS3 amazonS3, CinemaRepository cinemaRepository) {
+    public MovieServiceImpl(ModelMapper modelMapper, MovieRepository movieRepository, GenreRepository genreRepository, CinemaRepository cinemaRepository, AwsService awsService) {
         this.modelMapper = modelMapper;
         this.movieRepository = movieRepository;
         this.genreRepository = genreRepository;
-        this.amazonS3 = amazonS3;
+        this.awsService = awsService;
         this.cinemaRepository = cinemaRepository;
     }
 
@@ -53,40 +44,14 @@ public class MovieServiceImpl implements MovieService {
         return "PI" + LocalDateTime.now().getNano();
     }
 
-    //methods check type file
-    public void checkFileType(MultipartFile multipartFile) {
-        String fileName = Objects.requireNonNull(multipartFile.getOriginalFilename());
-        String fileType = fileName.substring(fileName.lastIndexOf("."));
-        if (!fileType.equals(".jpg") && !fileType.equals(".png")) {
-            throw new AppException("Only .jpg and .png files are allowed", HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    private File convertMultiPartFileToFile(MultipartFile multipartFile) throws IOException {
-        File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-        try (FileOutputStream outputStream = new FileOutputStream(file)) {
-            outputStream.write(multipartFile.getBytes());
-        }
-        return file;
-    }
 
     @Override
-    public void createMovie(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
-        String code = randomCode();
-        checkFileType(multipartFile);
-        if (multipartFile.getSize() > MAX_SIZE) {
-            throw new AppException("File size is too large. must < 10mb", HttpStatus.BAD_REQUEST);
-        }
-        String image = Objects.requireNonNull(multipartFile.getOriginalFilename());
-        String fileType = image.substring(image.lastIndexOf("."));
-        String fileName = code + "_" + LocalDateTime.now() + fileType;
-        File file = convertMultiPartFileToFile(multipartFile);
-        amazonS3.putObject(new PutObjectRequest(BUCKET_NAME_MOVIE, fileName, file));
-        file.delete();
-        String uploadLink = amazonS3.getUrl(BUCKET_NAME_MOVIE, fileName).toString();
+    public void createMovie(MovieDto movieDTO) {
+
+
         Movie movie = modelMapper.map(movieDTO, Movie.class);
-        movie.setCode(code);
-        movie.setImageLink(uploadLink);
+        movie.setCode(randomCode());
+        movie.setImageLink(movieDTO.getImageLink());
         // Chuyển đổi id của thể loại phim sang các đối tượng Genre
         Set<Genre> genres = new HashSet<>();
         for (Long genreId : movieDTO.getGenreIds()) {
@@ -100,7 +65,6 @@ public class MovieServiceImpl implements MovieService {
             Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
             cinemaOptional.ifPresent(cinemas::add);
         }
-
         movie.setCinemas(cinemas);
         movie.setStatus(movieDTO.isStatus());
         movie.setCreatedDate(LocalDateTime.now());
@@ -119,25 +83,14 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public void updateMovieById(MovieDto movieDTO, MultipartFile multipartFile) throws IOException {
+    public void updateMovieById(MovieDto movieDTO) {
         Movie movie = movieRepository.findById(movieDTO.getId())
                 .orElseThrow(() -> new AppException("Movie not found with id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));
 
-        // Kiểm tra xem có hình ảnh mới được cung cấp không
-        if (multipartFile != null && !multipartFile.isEmpty()) {
-            // Xóa hình ảnh cũ trên AWS
-            String imageUrl = movie.getImageLink();
-            String imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            imageKey = imageKey.replace("%3A", ":");
-            amazonS3.deleteObject(BUCKET_NAME_MOVIE, imageKey);
-            // Lưu hình ảnh mới lên AWS
-            String newImageName = movie.getCode() + "_" + LocalDateTime.now() + getFileExtension(multipartFile.getOriginalFilename());
-            File newImageFile = convertMultiPartFileToFile(multipartFile);
-            amazonS3.putObject(new PutObjectRequest(BUCKET_NAME_MOVIE, newImageName, newImageFile));
-            newImageFile.delete();
-            String newImageLink = amazonS3.getUrl(BUCKET_NAME_MOVIE, newImageName).toString();
-            // Cập nhật link hình ảnh mới trong movieDTO
-            movie.setImageLink(newImageLink);
+        // Xử lý ảnh
+        if (!movieDTO.getImageLink().isEmpty() && !movieDTO.getImageLink().isBlank() && !movieDTO.getImageLink().equals(movie.getImageLink())) {
+            awsService.deleteImage(movie.getImageLink());
+            movie.setImageLink(movieDTO.getImageLink());
         } else {
             movie.setImageLink(movie.getImageLink());
         }
@@ -168,7 +121,7 @@ public class MovieServiceImpl implements MovieService {
         } else {
             movie.setName(movie.getName());
         }
-        if (!movieDTO.getTrailerLink().isEmpty() && !movieDTO.getTrailerLink().isBlank()) {
+        if (!movieDTO.getTrailerLink().isEmpty() && !movieDTO.getTrailerLink().isBlank() && !movieDTO.getTrailerLink().equals(movie.getTrailerLink())) {
             movie.setTrailerLink(movieDTO.getTrailerLink());
         } else {
             movie.setTrailerLink(movie.getTrailerLink());
@@ -219,20 +172,11 @@ public class MovieServiceImpl implements MovieService {
         modelMapper.map(movie, MovieDto.class);
     }
 
-    // Hàm tiện ích để lấy phần mở rộng của file
-    private String getFileExtension(String fileName) {
-        return fileName.substring(fileName.lastIndexOf("."));
-    }
-
     @Override
     public void deleteMovieById(Long id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new AppException("Movie not found with id: " + id, HttpStatus.NOT_FOUND));
-        // Xóa hình ảnh của phim trên AWS
-        String imageUrl = movie.getImageLink();
-        String imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-        imageKey = imageKey.replace("%3A", ":");
-        amazonS3.deleteObject(BUCKET_NAME_MOVIE, imageKey);
+        awsService.deleteImage(movie.getImageLink());
         // Xóa phim từ cơ sở dữ liệu
         movieRepository.delete(movie);
     }
@@ -288,43 +232,41 @@ public class MovieServiceImpl implements MovieService {
         }
     }
 
-    @Override
-    public List<MovieDto> getMoviesNotShowed(Integer page, Integer size) {
-        // Lấy danh sách tất cả các phim
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Movie> allMovies = movieRepository.findAll(pageable);
-
-        // Lọc ra các phim sắp chiếu
-        List<Movie> moviesNotShowed = allMovies.stream()
-                .filter(movie -> movie.getShowTimes().stream()
-                        .allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
-                .toList();
-
-        // Chuyển đổi sang MovieDto và trả về
-        return moviesNotShowed.stream()
-                .map(movie -> modelMapper.map(movie, MovieDto.class))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<MovieDto> getMoviesShowing(Integer page, Integer size) {
-        // Lấy danh sách tất cả các phim
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Movie> allMovies = movieRepository.findAll(pageable);
-
-        // Lọc ra các phim đang chiếu
-        List<Movie> moviesShowing = allMovies.stream()
-                .filter(movie -> movie.getShowTimes().stream()
-                        .anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
-                .toList();
-
-        // Chuyển đổi sang MovieDto và trả về
-        return moviesShowing.stream()
-                .map(movie -> modelMapper.map(movie, MovieDto.class))
-                .collect(Collectors.toList());
-    }
-
-
+//    @Override
+//    public List<MovieDto> getMoviesNotShowed(Integer page, Integer size) {
+//        // Lấy danh sách tất cả các phim
+//        Pageable pageable = PageRequest.of(page, size);
+//        Page<Movie> allMovies = movieRepository.findAll(pageable);
+//
+//        // Lọc ra các phim sắp chiếu
+//        List<Movie> moviesNotShowed = allMovies.stream()
+//                .filter(movie -> movie.getShowTimes().stream()
+//                        .allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
+//                .toList();
+//
+//        // Chuyển đổi sang MovieDto và trả về
+//        return moviesNotShowed.stream()
+//                .map(movie -> modelMapper.map(movie, MovieDto.class))
+//                .collect(Collectors.toList());
+//    }
+//
+//    @Override
+//    public List<MovieDto> getMoviesShowing(Integer page, Integer size) {
+//        // Lấy danh sách tất cả các phim
+//        Pageable pageable = PageRequest.of(page, size);
+//        Page<Movie> allMovies = movieRepository.findAll(pageable);
+//
+//        // Lọc ra các phim đang chiếu
+//        List<Movie> moviesShowing = allMovies.stream()
+//                .filter(movie -> movie.getShowTimes().stream()
+//                        .anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
+//                .toList();
+//
+//        // Chuyển đổi sang MovieDto và trả về
+//        return moviesShowing.stream()
+//                .map(movie -> modelMapper.map(movie, MovieDto.class))
+//                .collect(Collectors.toList());
+//    }
 
 
 }

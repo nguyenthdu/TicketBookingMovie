@@ -51,35 +51,23 @@ public class RoomServiceImpl implements RoomService {
 
         room.setCode(randomCode());
         Cinema cinema = cinemaRepository.findById(roomDto.getCinemaId())
-                .orElseThrow(() -> new AppException("Cinema not found with id:" + roomDto.getCinemaId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy rạp với id:" + roomDto.getCinemaId(), HttpStatus.NOT_FOUND));
         //nếu tên rạp trong cinema đã tồn tại thì thông báo lỗi
         if (roomRepository.findByName(roomDto.getName()).isPresent()) {
-            throw new AppException("name: " + roomDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+            throw new AppException("Tên phòng : " + roomDto.getName() + " đã tồn tại", HttpStatus.BAD_REQUEST);
         }
         room.setCinema(cinema);
         //handle type
-        if (roomDto.getType().equals("2D")) {
-            room.setType(ETypeRoom.ROOM2D);
-        } else if (roomDto.getType().equals("3D")) {
-            room.setType(ETypeRoom.ROOM3D);
-        } else {
-            room.setType(ETypeRoom.ROOM4D);
-        }
+        getTypeRoom(roomDto, room);
         // Create seats and add them to the room
         Set<Seat> seats = new HashSet<>();
         for (SeatDto seatDto : roomDto.getSeats()) {
             SeatDto seat = seatService.createSeat(seatDto);
             seats.add(modelMapper.map(seat, Seat.class));
         }
-        if(roomDto.getPrice()<0){
-            throw new AppException("Price must be greater than 0", HttpStatus.BAD_REQUEST);
-        }else{
-            room.setPrice(roomDto.getPrice());
-        }
         room.setSeats(seats);
         room.setTotalSeats(room.getSeats().size());
         room.setCreatedDate(LocalDateTime.now());
-        // Save the room
         roomRepository.save(room);
         cinemaService.countTotalRooms(roomDto.getCinemaId(), 1);
         // Create seats and add them to the room
@@ -87,7 +75,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     public String randomCode() {
-       return "PH"+ LocalDateTime.now().getNano();
+        return "PH" + LocalDateTime.now().getNano();
 
     }
 
@@ -95,10 +83,10 @@ public class RoomServiceImpl implements RoomService {
     public void updateRoom(RoomDto roomDto) {
         // Retrieve the existing Room
         Room room = roomRepository.findById(roomDto.getId())
-                .orElseThrow(() -> new AppException("Room not found with id:" + roomDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy phòng với  id:" + roomDto.getId(), HttpStatus.NOT_FOUND));
         //nếu tên rạp trong cinema đã tồn tại thì thông báo lỗi
         if (roomRepository.findByName(roomDto.getName()).isPresent()) {
-            throw new AppException("name: " + roomDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+            throw new AppException("Tên phòng: " + roomDto.getName() + " đã tồn tại", HttpStatus.BAD_REQUEST);
         }
         // Create a set to hold the seats to be removed
         Set<Seat> seatsToRemove = new HashSet<>(room.getSeats());
@@ -128,56 +116,66 @@ public class RoomServiceImpl implements RoomService {
             seatService.deleteSeatById(seatToRemove.getId());
         }
 
-        if(!roomDto.getName().isEmpty() && !roomDto.getName().isBlank()) {
+        if (!roomDto.getName().isEmpty() && !roomDto.getName().isBlank()) {
             room.setName(roomDto.getName());
-        }else{
+        } else {
             room.setName(room.getName());
         }
-        if(roomDto.isStatus() != room.isStatus()){
+        if (roomDto.isStatus() != room.isStatus()) {
             room.setStatus(roomDto.isStatus());
-        }else {
+        } else {
             room.setStatus(room.isStatus());
         }
-        if(roomDto.getPrice() != room.getPrice() && roomDto.getPrice() >= 0){
-            room.setPrice(roomDto.getPrice());
-        }else {
-            room.setPrice(room.getPrice());
-        }
-        if(!roomDto.getType().isEmpty() && !roomDto.getType().isBlank()) {
-            if (roomDto.getType().equals("2D")) {
-                room.setType(ETypeRoom.ROOM2D);
-            } else if (roomDto.getType().equals("3D")) {
-                room.setType(ETypeRoom.ROOM3D);
-            } else {
-                room.setType(ETypeRoom.ROOM4D);
-            }
-        }else{
+
+        if (!roomDto.getType().isEmpty() && !roomDto.getType().isBlank()) {
+            getTypeRoom(roomDto, room);
+        } else {
             room.setType(room.getType());
         }
-            room.setTotalSeats(room.getSeats().size());
+        room.setTotalSeats(room.getSeats().size());
         // Save the updated room
         roomRepository.save(room);
         // Map Room to RoomDto and return
         modelMapper.map(room, RoomDto.class);
     }
 
+    private void getTypeRoom(RoomDto roomDto, Room room) {
+        switch (roomDto.getType()) {
+            case "3D":
+                 room.setType(ETypeRoom.ROOM3D);
+                 break;
+             case "4D":
+                 room.setType(ETypeRoom.ROOM4D);
+                 break;
+             default:
+                 room.setType(ETypeRoom.ROOM2D);
+         }
+    }
+
     @Override
     public RoomDto getRoomById(Long id) {
         // Retrieve the room
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new AppException("Room not found with id:" + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy phòng với id:" + id, HttpStatus.NOT_FOUND));
         // Map Room to RoomDto and return
         return modelMapper.map(room, RoomDto.class);
     }
 
     @Override
+    public Room findById(Long id) {
+        return roomRepository.findById(id)
+                .orElseThrow(() -> new AppException("Không tìm thấy phòng với id:" + id, HttpStatus.NOT_FOUND));
+    }
+
+    @Override
     public void deleteRoom(Long id) {
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new AppException("Room not found with id:" + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy phòng với id:" + id, HttpStatus.NOT_FOUND));
         // Delete the room
         roomRepository.delete(room);
         cinemaService.countTotalRooms(room.getCinema().getId(), -1);
     }
+
     @Override
     public List<RoomDto> getAllRoomsPage(Integer page, Integer size, String code, String name, Long cinemaId) {
         Pageable pageable = PageRequest.of(page, size);

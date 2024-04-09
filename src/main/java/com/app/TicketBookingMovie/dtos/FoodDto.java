@@ -10,7 +10,7 @@ public class FoodDto {
     private String code;
     private String name;
     private String image;
-    private PriceDetailDto priceDetail;
+    private double price;
     private int quantity;
     private String size;
     private Long categoryId;

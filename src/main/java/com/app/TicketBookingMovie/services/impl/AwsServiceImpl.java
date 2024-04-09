@@ -44,16 +44,16 @@ public class AwsServiceImpl implements AwsService {
 
     @Override
     public void deleteImage(String imageUrl) {
+        if(imageUrl == null || imageUrl.isEmpty()){
+            return;
+        }
         String imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
         imageKey = imageKey.replace("%3A", ":");
         amazonS3.deleteObject(BUCKET_NAME_MOVIE, imageKey);
+
     }
 
-//    @Override
-//    public String updateImage(MultipartFile file, String imageUrl) throws IOException {
-//        deleteImage(imageUrl);
-//        return uploadImage(file);
-//    }
+
 
     private void checkFileType(MultipartFile file) {
         String fileName = Objects.requireNonNull(file.getOriginalFilename());

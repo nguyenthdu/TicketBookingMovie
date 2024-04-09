@@ -10,9 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
@@ -47,7 +45,7 @@ public class MovieController {
     @PostMapping
     public ResponseEntity<MessageResponseDto> createMovie(
             @RequestParam("name") String name,
-            @RequestParam("image") MultipartFile image,
+            @RequestParam("image") String image,
             @RequestParam("trailer") String trailer,
             @RequestParam("description") String description,
             @RequestParam("duration") int duration,
@@ -61,6 +59,7 @@ public class MovieController {
             @RequestParam("status") boolean status) {
         MovieDto movieDTO = new MovieDto();
         movieDTO.setName(name);
+        movieDTO.setImageLink(image);
         movieDTO.setTrailerLink(trailer);
         movieDTO.setDescription(description);
         movieDTO.setDurationMinutes(duration);
@@ -73,10 +72,8 @@ public class MovieController {
         movieDTO.setCinemaIds(cinemaId);
         movieDTO.setStatus(status);
         try {
-            movieService.createMovie(movieDTO, image);
+            movieService.createMovie(movieDTO);
             return ResponseEntity.ok().body(new MessageResponseDto("Movie created successfully with movie name: " + name, HttpStatus.CREATED.value(), Instant.now().toString()));
-        } catch (IOException e) {
-            return ResponseEntity.badRequest().build();
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -94,7 +91,7 @@ public class MovieController {
     public ResponseEntity<MessageResponseDto> updateMovie(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
-            @RequestParam("image") MultipartFile image,
+            @RequestParam("image") String image,
             @RequestParam("trailer") String trailer,
             @RequestParam("description") String description,
             @RequestParam("duration") int duration,
@@ -109,6 +106,7 @@ public class MovieController {
         MovieDto movieDTO = new MovieDto();
         movieDTO.setId(id);
         movieDTO.setName(name);
+        movieDTO.setImageLink(image);
         movieDTO.setTrailerLink(trailer);
         movieDTO.setDescription(description);
         movieDTO.setDurationMinutes(duration);
@@ -121,10 +119,9 @@ public class MovieController {
         movieDTO.setCinemaIds(cinemaId);
         movieDTO.setStatus(status);
         try {
-            movieService.updateMovieById(movieDTO, image);
+            movieService.updateMovieById(movieDTO);
             return ResponseEntity.ok().body(new MessageResponseDto("Movie updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
-        } catch (IOException e) {
-            return ResponseEntity.badRequest().build();
+
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -141,29 +138,29 @@ public class MovieController {
         }
 
     }
-    @GetMapping("/not-showed")
-    public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
-
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        PageResponse<MovieDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(movieService.getMoviesNotShowed(page, size));
-        pageResponse.setTotalElements(movieService.getMoviesNotShowed(page, size).size());
-        pageResponse.setTotalPages(page);
-        pageResponse.setPageSize(size);
-        return ResponseEntity.ok(pageResponse);
-    }
-    @GetMapping("/showing")
-    public ResponseEntity<PageResponse<MovieDto>> getMoviesShowing(
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        PageResponse<MovieDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(movieService.getMoviesShowing(page, size));
-        pageResponse.setTotalElements(movieService.getMoviesShowing(page, size).size());
-        pageResponse.setTotalPages(page);
-        pageResponse.setPageSize(size);
-        return ResponseEntity.ok(pageResponse);
-    }
+//    @GetMapping("/not-showed")
+//    public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
+//
+//            @RequestParam(defaultValue = "0") Integer page,
+//            @RequestParam(defaultValue = "10") Integer size) {
+//        PageResponse<MovieDto> pageResponse = new PageResponse<>();
+//        pageResponse.setContent(movieService.getMoviesNotShowed(page, size));
+//        pageResponse.setTotalElements(movieService.getMoviesNotShowed(page, size).size());
+//        pageResponse.setTotalPages(page);
+//        pageResponse.setPageSize(size);
+//        return ResponseEntity.ok(pageResponse);
+//    }
+//    @GetMapping("/showing")
+//    public ResponseEntity<PageResponse<MovieDto>> getMoviesShowing(
+//            @RequestParam(defaultValue = "0") Integer page,
+//            @RequestParam(defaultValue = "10") Integer size) {
+//        PageResponse<MovieDto> pageResponse = new PageResponse<>();
+//        pageResponse.setContent(movieService.getMoviesShowing(page, size));
+//        pageResponse.setTotalElements(movieService.getMoviesShowing(page, size).size());
+//        pageResponse.setTotalPages(page);
+//        pageResponse.setPageSize(size);
+//        return ResponseEntity.ok(pageResponse);
+//    }
 
 
 }

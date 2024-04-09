@@ -4,6 +4,7 @@ import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.TypeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.services.TypeSeatService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,10 +21,10 @@ public class TypeSeatController {
         this.typeSeatService = typeSeatService;
     }
 
-//    @PostConstruct
-//    public void init() {
-//        typeSeatService.createTypeSeat();
-//    }
+    @PostConstruct
+    public void init() {
+        typeSeatService.createTypeSeat();
+    }
 
 
     @GetMapping("/{id}")

@@ -13,7 +13,7 @@ public interface PriceHeaderService {
     void updatePriceHeader(PriceHeaderDto priceHeaderDto);
 
     PriceHeaderDto getPriceHeaderById(Long id);
-    PriceHeader findPriceHeaderById(Long id);
+    PriceHeader findById(Long id);
 
     void deletePriceHeaderById(Long id);
 

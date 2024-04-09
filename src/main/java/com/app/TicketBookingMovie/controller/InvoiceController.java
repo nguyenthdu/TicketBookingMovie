@@ -33,7 +33,7 @@ public class InvoiceController {
                                                 @RequestParam("foodIds") List<Long> foodIds,
                                                 @RequestParam(value = "emailUser", required = false) String emailUser,
                                                 @RequestParam("staffId") Long staffId,
-                                                @RequestParam("promotionIds") Set<Long> promotionIds
+                                                @RequestParam(value = "promotionIds" ,required = false) Set<Long> promotionIds
             , HttpServletRequest request) {
         String jwt = jwtUtils.getJwtFromCookies(request);
         if (emailUser.isEmpty()) {

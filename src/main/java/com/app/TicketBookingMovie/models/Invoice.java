@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,7 +18,7 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String code;
-    private double totalPrice;
+    private BigDecimal totalPrice;
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     private User user;
@@ -36,6 +37,5 @@ public class Invoice {
     @ManyToOne
     @JsonIgnore
     private Promotion  promotion;
-    private String qrCode;
     private boolean status;
 }

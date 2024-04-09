@@ -22,12 +22,23 @@ public class FoodController {
 
     @PostMapping
     public ResponseEntity<MessageResponseDto> createFood(
-            @RequestBody FoodDto foodDto) {
+            @RequestParam("name") String name,
+            @RequestParam("image") String image,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam("sizeFood") String sizeFood,
+            @RequestParam("quantity") int quantity,
+            @RequestParam("status") boolean status) {
 
-
+        FoodDto foodDto = new FoodDto();
+        foodDto.setImage(image);
+        foodDto.setName(name);
+        foodDto.setCategoryId(categoryId);
+        foodDto.setSize(sizeFood);
+        foodDto.setQuantity(quantity);
+        foodDto.setStatus(status);
         try {
             foodService.createFood(foodDto);
-            return ResponseEntity.ok(new MessageResponseDto("Create food success with name: " + foodDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Create food success with name: " + name, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -40,7 +51,22 @@ public class FoodController {
 
     @PutMapping
     public ResponseEntity<MessageResponseDto> updateFood(
-            @RequestBody  FoodDto foodDto){
+            @RequestParam Long id,
+            @RequestParam("name") String name,
+            @RequestParam("image") String image,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam("sizeFood") String sizeFood,
+            @RequestParam("quantity") int quantity,
+            @RequestParam("status") boolean status) {
+        FoodDto foodDto = new FoodDto();
+        foodDto.setId(id);
+        foodDto.setImage(image);
+        foodDto.setName(name);
+        foodDto.setCategoryId(categoryId);
+        foodDto.setSize(sizeFood);
+        foodDto.setQuantity(quantity);
+        foodDto.setStatus(status);
+
         try {
             foodService.updateFood(foodDto);
             return ResponseEntity.ok(new MessageResponseDto("Update food success with name: " + foodDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));

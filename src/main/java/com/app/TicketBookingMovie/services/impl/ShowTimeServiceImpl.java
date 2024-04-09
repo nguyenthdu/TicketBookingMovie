@@ -116,7 +116,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     @Override
     public ShowTimeDto getShowTimeById(Long id) {
         ShowTime showTime = showTimeRepository.findById(id)
-                .orElseThrow(() -> new AppException("Showtime not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
         return modelMapper.map(showTime, ShowTimeDto.class);
     }
 
