@@ -138,6 +138,13 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         return priceDetailDto;
     }
 
+    @Override
+    public PriceDetail getPriceDetailByFood(Food food) {
+        //tìm price detail của food
+        return priceDetailRepository.findByFood(food);
+    }
+
+
 
     @Override
     public void updatePriceDetail(BigDecimal price, boolean status, Long id) {

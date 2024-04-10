@@ -11,21 +11,29 @@ import java.util.Optional;
 
 @Repository
 public interface FoodRepository extends JpaRepository<Food, Long> {
-    Page<Food> findAllByCodeContaining(String code, Pageable pageable);
 
-    Page<Food> findAllByNameContaining(String name, Pageable pageable);
-
-    Page<Food> findAllByCategoryFoodId(Long categoryId, Pageable pageable);
-
-    Page<Food> findAllBySize(ESize eSize, Pageable pageable);
-
-    long countAllByCodeContaining(String code);
-
-    long countAllByNameContaining(String name);
-
-    long countAllByCategoryFoodId(Long categoryId);
-
-    long countAllBySize(ESize eSize);
 
     Optional<Food> findByName(String name);
+
+    Page<Food> findByCinemaIdAndCodeContaining(Long cinemaId, String code, Pageable pageable);
+
+    Page<Food> findByCinemaIdAndNameContaining(Long cinemaId, String name, Pageable pageable);
+
+    Page<Food> findByCinemaIdAndCategoryFoodId(Long cinemaId, Long categoryId, Pageable pageable);
+
+    Page<Food> findByCinemaIdAndSize(Long cinemaId, ESize eSize, Pageable pageable);
+
+    Page<Food> findByCinemaId(Long cinemaId, Pageable pageable);
+
+    long countByCinemaIdAndCodeContaining(Long cinemaId, String code);
+
+    long countByCinemaIdAndNameContaining(Long cinemaId, String name);
+
+    long countByCinemaIdAndCategoryFoodId(Long cinemaId, Long categoryId);
+
+    long countByCinemaIdAndSize(Long cinemaId, ESize eSize);
+
+    long countByCinemaId(Long cinemaId);
+
+    Optional<Object> findByNameAndCinemaId(String name, Long cinemaId);
 }

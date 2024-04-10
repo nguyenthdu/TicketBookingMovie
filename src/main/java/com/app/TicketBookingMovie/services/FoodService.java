@@ -15,7 +15,7 @@ public interface FoodService {
 
     void deleteFoodById(Long id);
 
-    List<FoodDto> getAllFood(Integer page, Integer size, String code, String name, Long categoryId, String sizeFood);
+    List<FoodDto> getAllFood(Integer page, Integer size,Long cinemaId, String code, String name, Long categoryId, String sizeFood);
 
-    long countAllFood(String code, String name, Long categoryId, String sizeFood);
+    long countAllFood(Long cinemaId,String code, String name, Long categoryId, String sizeFood);
 }

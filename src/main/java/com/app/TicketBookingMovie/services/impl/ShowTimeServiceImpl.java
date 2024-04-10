@@ -1,6 +1,7 @@
 package com.app.TicketBookingMovie.services.impl;
 
 
+import com.app.TicketBookingMovie.dtos.SeatDto;
 import com.app.TicketBookingMovie.dtos.ShowTimeDto;
 import com.app.TicketBookingMovie.dtos.ShowTimeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
@@ -117,7 +118,9 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     public ShowTimeDto getShowTimeById(Long id) {
         ShowTime showTime = showTimeRepository.findById(id)
                 .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
-        return modelMapper.map(showTime, ShowTimeDto.class);
+        ShowTimeDto showTimeDto = modelMapper.map(showTime, ShowTimeDto.class);
+        showTimeDto.setCinemaName(showTime.getRoom().getCinema().getName());
+        return showTimeDto;
     }
 
 
@@ -208,7 +211,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         } else {
             showTimes = showTimeRepository.findAll(pageable);
         }
-
         // Tạo một danh sách chứa các DTO ShowTimeDto
         List<ShowTimeDto> showTimeDtos = new ArrayList<>();
 
@@ -221,7 +223,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             if (movie != null) {
                 showTimeDto.setMovieName(movie.getName());
             }
-
             // Lấy ra cinemaName và roomName từ room và cinemaId
             Room room = showTime.getRoom();
             if (room != null) {
@@ -231,22 +232,21 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                     showTimeDto.setCinemaName(cinema.getName());
                 }
             }
-
             showTimeDtos.add(showTimeDto);
         }
-
         //sort by create date
         return showTimeDtos.stream().sorted(Comparator.comparing(ShowTimeDto::getCreatedDate).reversed()).toList();
     }
-
 
     @Override
     public long countAllShowTimes(String code, Long cinemaId, Long movieId, LocalDate date, Long roomId) {
         if (code != null && !code.isEmpty()) {
             return showTimeRepository.countByCode(code);
         } else if (movieId != null && movieId > 0 && cinemaId != null && cinemaId > 0) {
-            if (date != null && !date.toString().isEmpty() && roomId != null && roomId > 0) {
-                return showTimeRepository.countByMovieIdAndShowDateAndRoomId(movieId, date, roomId);
+            if (roomId != null && roomId > 0 && date != null && !date.toString().isEmpty()) {
+                return showTimeRepository.countByMovieIdAndCinemaIdAndRoomIdAndShowDate(movieId, cinemaId, roomId, date);
+            } else if (roomId != null && roomId > 0) {
+                return showTimeRepository.countByMovieIdAndCinemaIdAndRoomId(movieId, cinemaId, roomId);
             } else if (date != null && !date.toString().isEmpty()) {
                 return showTimeRepository.countByMovieIdAndShowDate(movieId, date);
             } else {
@@ -256,6 +256,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             return showTimeRepository.count();
         }
     }
+
 
     @Override
     public void deleteShowTime(Long id) {
@@ -285,7 +286,14 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
         List<ShowTimeSeatDto> showTimeSeatDtos = new ArrayList<>();
         for (ShowTimeSeat showTimeSeat : showTimeSeats) {
-            ShowTimeSeatDto showTimeSeatDto = modelMapper.map(showTimeSeat, ShowTimeSeatDto.class);
+            ShowTimeSeatDto showTimeSeatDto = new ShowTimeSeatDto();
+            showTimeSeatDto.setId(showTimeSeat.getId());
+            showTimeSeatDto.setShowTimeId(showTimeSeat.getShowTime().getId());
+            showTimeSeatDto.setStatus(showTimeSeat.isStatus());
+            showTimeSeatDto.setSeat(modelMapper.map(showTimeSeat.getSeat(), SeatDto.class));
+            showTimeSeat.getSeat().getSeatType().getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
+                showTimeSeatDto.getSeat().setPrice(priceDetail.getPrice());
+            });
             showTimeSeatDtos.add(showTimeSeatDto);
         }
 

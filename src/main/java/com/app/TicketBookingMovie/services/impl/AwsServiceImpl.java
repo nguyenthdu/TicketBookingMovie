@@ -1,7 +1,6 @@
 package com.app.TicketBookingMovie.services.impl;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.services.AwsService;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +19,7 @@ public class AwsServiceImpl implements AwsService {
 
     private final AmazonS3 amazonS3;
     @Value("${S3_BUCKET_NAME_MOVIE}")
-    private  String BUCKET_NAME_MOVIE;
+    private String BUCKET_NAME_MOVIE;
     private static final long MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 
@@ -29,22 +28,25 @@ public class AwsServiceImpl implements AwsService {
     }
 
     @Override
-    public String uploadImage(MultipartFile file) throws IOException {
+    public String uploadImage(MultipartFile file)   {
         checkFileType(file);
         checkFileSize(file);
-        File imageFile = convertMultiPartFileToFile(file);
-        String fileName = generateFileName(file);
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(file.getContentType());
-        metadata.setContentLength(file.getSize());
-        amazonS3.putObject(BUCKET_NAME_MOVIE, fileName, imageFile);
-        imageFile.delete();
-        return amazonS3.getUrl(BUCKET_NAME_MOVIE, fileName).toString();
+        try {
+            File convertedFile = convertMultiPartFileToFile(file);
+            String fileName = generateFileName(file);
+            amazonS3.putObject(BUCKET_NAME_MOVIE, fileName, convertedFile);
+            convertedFile.delete();
+            return amazonS3.getUrl(BUCKET_NAME_MOVIE, fileName).toString();
+        } catch (IOException e) {
+            throw new AppException("Upload image failed", HttpStatus.BAD_REQUEST);
+        }
+
+
     }
 
     @Override
     public void deleteImage(String imageUrl) {
-        if(imageUrl == null || imageUrl.isEmpty()){
+        if (imageUrl == null || imageUrl.isEmpty()) {
             return;
         }
         String imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
@@ -52,7 +54,6 @@ public class AwsServiceImpl implements AwsService {
         amazonS3.deleteObject(BUCKET_NAME_MOVIE, imageKey);
 
     }
-
 
 
     private void checkFileType(MultipartFile file) {
@@ -69,6 +70,7 @@ public class AwsServiceImpl implements AwsService {
         }
         return convertedFile;
     }
+
     private void checkFileSize(MultipartFile file) {
         if (file.getSize() > MAX_SIZE) {
             throw new AppException("File size is too large. must < 10mb", HttpStatus.BAD_REQUEST);

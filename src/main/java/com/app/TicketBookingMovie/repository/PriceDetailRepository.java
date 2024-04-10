@@ -1,5 +1,6 @@
 package com.app.TicketBookingMovie.repository;
 
+import com.app.TicketBookingMovie.models.Food;
 import com.app.TicketBookingMovie.models.PriceDetail;
 import com.app.TicketBookingMovie.models.PriceHeader;
 import com.app.TicketBookingMovie.models.enums.EDetailType;
@@ -81,4 +82,6 @@ public interface PriceDetailRepository extends JpaRepository<PriceDetail, Long> 
     long countAllByTypeSeatCode(Long priceHeaderId, String typeSeatCode);
 
     long countAllByPriceHeaderId(Long priceHeaderId);
+
+     PriceDetail findByFood(Food food);
 }

@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -16,8 +18,8 @@ public class TypeSeat {
     private String code;
     @Enumerated(EnumType.STRING)
     private ETypeSeat name;
+    @OneToMany(mappedBy = "typeSeat")
+    private Set<PriceDetail>priceDetails;
     public TypeSeat() {
     }
-
-
 }

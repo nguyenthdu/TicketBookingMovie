@@ -43,7 +43,7 @@ public class InvoiceController {
         }
 
         try {
-            invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId, promotionIds);
+            invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId);
             return ResponseEntity.ok("Invoice created successfully");
         } catch (AppException e) {
             return ResponseEntity.status(e.getStatus()).body(e.getMessage());

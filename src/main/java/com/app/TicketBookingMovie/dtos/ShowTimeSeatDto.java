@@ -8,4 +8,5 @@ public class ShowTimeSeatDto {
     private SeatDto seat;
     private Long showTimeId;
     private boolean status;
+
 }

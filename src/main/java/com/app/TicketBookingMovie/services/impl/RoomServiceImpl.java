@@ -19,12 +19,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.function.support.RouterFunctionMapping;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class RoomServiceImpl implements RoomService {
@@ -33,15 +35,16 @@ public class RoomServiceImpl implements RoomService {
     private final SeatService seatService;
     private final CinemaRepository cinemaRepository;
     private final CinemaService cinemaService;
+    private final RouterFunctionMapping routerFunctionMapping;
 
     @Autowired
-    public RoomServiceImpl(ModelMapper modelMapper, RoomRepository roomRepository, SeatService seatService, CinemaRepository cinemaRepository, CinemaService cinemaService) {
+    public RoomServiceImpl(ModelMapper modelMapper, RoomRepository roomRepository, SeatService seatService, CinemaRepository cinemaRepository, CinemaService cinemaService, RouterFunctionMapping routerFunctionMapping) {
         this.modelMapper = modelMapper;
         this.roomRepository = roomRepository;
         this.seatService = seatService;
         this.cinemaRepository = cinemaRepository;
         this.cinemaService = cinemaService;
-
+        this.routerFunctionMapping = routerFunctionMapping;
     }
 
     @Override
@@ -142,14 +145,14 @@ public class RoomServiceImpl implements RoomService {
     private void getTypeRoom(RoomDto roomDto, Room room) {
         switch (roomDto.getType()) {
             case "3D":
-                 room.setType(ETypeRoom.ROOM3D);
-                 break;
-             case "4D":
-                 room.setType(ETypeRoom.ROOM4D);
-                 break;
-             default:
-                 room.setType(ETypeRoom.ROOM2D);
-         }
+                room.setType(ETypeRoom.ROOM3D);
+                break;
+            case "4D":
+                room.setType(ETypeRoom.ROOM4D);
+                break;
+            default:
+                room.setType(ETypeRoom.ROOM2D);
+        }
     }
 
     @Override
@@ -158,7 +161,33 @@ public class RoomServiceImpl implements RoomService {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new AppException("Không tìm thấy phòng với id:" + id, HttpStatus.NOT_FOUND));
         // Map Room to RoomDto and return
-        return modelMapper.map(room, RoomDto.class);
+        RoomDto roomDto = new RoomDto();
+        roomDto.setId(room.getId());
+        roomDto.setCode(room.getCode());
+        roomDto.setName(room.getName());
+        roomDto.setType(room.getType().name());
+
+        roomDto.setTotalSeats(room.getTotalSeats());
+        roomDto.setStatus(room.isStatus());
+        roomDto.setSeats(room.getSeats().stream().map(seat -> modelMapper.map(seat, SeatDto.class)).collect(Collectors.toSet()));
+        roomDto.setCreatedDate(room.getCreatedDate());
+
+        //lấy giá
+        room.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
+            roomDto.setPrice(priceDetail.getPrice());
+        });
+// Map each seat to a SeatDto and set the price according to the chair type
+        roomDto.setSeats(room.getSeats().stream().map(seat -> {
+            SeatDto seatDto = modelMapper.map(seat, SeatDto.class);
+            seat.getSeatType().getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
+                seatDto.setPrice(priceDetail.getPrice());
+            });
+            return seatDto;
+        }).collect(Collectors.toSet()));
+
+        roomDto.setCinemaName(room.getCinema().getName());
+        roomDto.setCinemaId(room.getCinema().getId());
+        return roomDto;
     }
 
     @Override
@@ -191,8 +220,23 @@ public class RoomServiceImpl implements RoomService {
         }
         //sort by created date
         return roomPage.stream().sorted(Comparator.comparing(Room::getCreatedDate).reversed())
-                .map(room -> modelMapper.map(room, RoomDto.class))
-                .toList();
+                .map(room -> {
+
+
+                    RoomDto roomDto = new RoomDto();
+                    roomDto.setId(room.getId());
+                    roomDto.setCode(room.getCode());
+                    roomDto.setName(room.getName());
+                    roomDto.setType(room.getType().name());
+                    roomDto.setTotalSeats(room.getTotalSeats());
+                    roomDto.setStatus(room.isStatus());
+//                    roomDto.setSeats(room.getSeats().stream().map(seat -> modelMapper.map(seat, SeatDto.class)).collect(Collectors.toSet()));
+                    roomDto.setSeats(null);
+                    roomDto.setCreatedDate(room.getCreatedDate());
+                    roomDto.setCinemaName(room.getCinema().getName());
+                    roomDto.setCinemaId(room.getCinema().getId());
+                    return roomDto;
+                }).toList();
     }
 
     @Override

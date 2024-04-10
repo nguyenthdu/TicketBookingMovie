@@ -3,11 +3,13 @@ package com.app.TicketBookingMovie.services.impl;
 import com.app.TicketBookingMovie.dtos.FoodDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.CategoryFood;
+import com.app.TicketBookingMovie.models.Cinema;
 import com.app.TicketBookingMovie.models.Food;
 import com.app.TicketBookingMovie.models.enums.ESize;
 import com.app.TicketBookingMovie.repository.FoodRepository;
 import com.app.TicketBookingMovie.services.AwsService;
 import com.app.TicketBookingMovie.services.CategoryFoodService;
+import com.app.TicketBookingMovie.services.CinemaService;
 import com.app.TicketBookingMovie.services.FoodService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -26,13 +28,18 @@ public class FoodServiceImpl implements FoodService {
     private final FoodRepository foodRepository;
     private final CategoryFoodService categoryFoodService;
     private final AwsService awsService;
+    private final CinemaService cinemaService;
 
-
-    public FoodServiceImpl(ModelMapper modelMapper, FoodRepository foodRepository, CategoryFoodService categoryFoodService, AwsService awsService) {
+    public FoodServiceImpl(ModelMapper modelMapper,
+                           FoodRepository foodRepository,
+                           CategoryFoodService categoryFoodService,
+                           AwsService awsService,
+                           CinemaService cinemaService) {
         this.modelMapper = modelMapper;
         this.foodRepository = foodRepository;
         this.categoryFoodService = categoryFoodService;
         this.awsService = awsService;
+        this.cinemaService = cinemaService;
     }
 
     public String randomCode() {
@@ -42,8 +49,10 @@ public class FoodServiceImpl implements FoodService {
 
     @Override
     public void createFood(FoodDto foodDto) {
-        if (foodRepository.findByName(foodDto.getName()).isPresent()) {
-            throw new AppException("name: " + foodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+        //nếu tên food trong 1 cinema đã tồn tại
+        Cinema cinema = cinemaService.findById(foodDto.getCinemaId());
+        if (foodRepository.findByNameAndCinemaId(foodDto.getName(), foodDto.getCinemaId()).isPresent()) {
+            throw new AppException("Tên " + foodDto.getName() + "đã tồn tại trong rạp " + cinema.getName() + "!!!", HttpStatus.BAD_REQUEST);
         }
         Food food = new Food();
         getSize(foodDto, food);
@@ -54,6 +63,8 @@ public class FoodServiceImpl implements FoodService {
         food.setQuantity(foodDto.getQuantity());
         food.setCreatedDate(LocalDateTime.now());
         food.setCategoryFood(categoryFoodService.findCategoryFoodById(foodDto.getCategoryId()));
+        //lấy danh sách rạp
+        food.setCinema(cinemaService.findById(foodDto.getCinemaId()));
         food.setCreatedDate(LocalDateTime.now());
         foodRepository.save(food);
     }
@@ -72,34 +83,40 @@ public class FoodServiceImpl implements FoodService {
         }
     }
 
+//    //get price food
+//    public BigDecimal getPriceFood(Food food) {
+//        List<PriceDetail> currentPriceDetails = priceDetailService.priceActive();
+//        Optional<PriceDetail> foodPriceDetailOptional = currentPriceDetails.stream()
+//                .filter(detail -> detail.getType() == EDetailType.FOOD && Objects.equals(detail.getFood().getId(), food.getId()))
+//                .findFirst();
+//        return foodPriceDetailOptional.map(PriceDetail::getPrice).orElse(BigDecimal.ZERO);
+//    }
+
     @Override
     public FoodDto getFoodById(Long id) {
         Food food = foodRepository.findById(id)
-                .orElseThrow(() -> new AppException("Food not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy: " + id, HttpStatus.NOT_FOUND));
         //xử lý in ra tên category
-        FoodDto foodDto = modelMapper.map(food, FoodDto.class);
-        foodDto.setCategoryName(food.getCategoryFood().getName());
-        return foodDto;
 
+        return convertFoodDto(food);
 
     }
 
     @Override
     public Food findById(Long id) {
         return foodRepository.findById(id)
-                .orElseThrow(() -> new AppException("Food not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy: " + id, HttpStatus.NOT_FOUND));
 
     }
 
-
-
     @Override
     public void updateFood(FoodDto foodDto) {
+        Cinema cinema = cinemaService.findById(foodDto.getCinemaId());
         Food food = foodRepository.findById(foodDto.getId())
-                .orElseThrow(() -> new AppException("Food not found with id: " + foodDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy: " + foodDto.getId(), HttpStatus.NOT_FOUND));
         if (!foodDto.getName().isEmpty() && !foodDto.getName().isBlank() && !foodDto.getName().equalsIgnoreCase(food.getName())) {
-            if (foodRepository.findByName(foodDto.getName()).isPresent()) {
-                throw new AppException("name: " + foodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+            if (foodRepository.findByNameAndCinemaId(foodDto.getName(), foodDto.getCinemaId()).isPresent()) {
+                throw new AppException("Tên " + foodDto.getName() + "đã tồn tại trong rạp " + cinema.getName(), HttpStatus.BAD_REQUEST);
             }
             food.setName(foodDto.getName());
         } else {
@@ -133,8 +150,7 @@ public class FoodServiceImpl implements FoodService {
         } else {
             food.setImage(food.getImage());
         }
-
-
+        food.setCinema(cinemaService.findById(foodDto.getCinemaId()));
         foodRepository.save(food);
         modelMapper.map(food, FoodDto.class);
 
@@ -150,43 +166,64 @@ public class FoodServiceImpl implements FoodService {
 
 
     @Override
-    public List<FoodDto> getAllFood(Integer page, Integer size, String code, String name, Long categoryId, String sizeFood) {
+    public List<FoodDto> getAllFood(Integer page, Integer size, Long cinemaId, String code, String name, Long categoryId, String sizeFood) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Food> food;
-        if (code != null && !code.isEmpty()) {
-            food = foodRepository.findAllByCodeContaining(code, pageable);
-        } else if (name != null && !name.isEmpty()) {
-            food = foodRepository.findAllByNameContaining(name, pageable);
-        } else if (categoryId != null) {
-            food = foodRepository.findAllByCategoryFoodId(categoryId, pageable);
-        } else if (sizeFood != null && !sizeFood.isEmpty()) {
-            food = foodRepository.findAllBySize(ESize.valueOf(sizeFood), pageable);
+        if (cinemaId != null) {
+            if (code != null && !code.isEmpty()) {
+                food = foodRepository.findByCinemaIdAndCodeContaining(cinemaId, code, pageable);
+            } else if (name != null && !name.isEmpty()) {
+                food = foodRepository.findByCinemaIdAndNameContaining(cinemaId, name, pageable);
+            } else if (categoryId != null) {
+                food = foodRepository.findByCinemaIdAndCategoryFoodId(cinemaId, categoryId, pageable);
+            } else if (sizeFood != null && !sizeFood.isEmpty()) {
+                food = foodRepository.findByCinemaIdAndSize(cinemaId, ESize.valueOf(sizeFood), pageable);
+            } else {
+                food = foodRepository.findByCinemaId(cinemaId, pageable);
+            }
         } else {
             food = foodRepository.findAll(pageable);
+
         }
 
         //in ra category name
         return food.stream().sorted(Comparator.comparing(Food::getCreatedDate).reversed())
-                .map(f -> {
-
-                    FoodDto foodDto = modelMapper.map(f, FoodDto.class);
-                    foodDto.setCategoryName(f.getCategoryFood().getName());
-                    return foodDto;
-                }).toList();
+                .map(this::convertFoodDto).toList();
 
 
     }
 
+    private FoodDto convertFoodDto(Food f) {
+        FoodDto foodDto = new FoodDto();
+        foodDto.setId(f.getId());
+        foodDto.setCode(f.getCode());
+        foodDto.setName(f.getName());
+        foodDto.setImage(f.getImage());
+        foodDto.setQuantity(f.getQuantity());
+        foodDto.setSize(f.getSize().name());
+        foodDto.setCategoryId(f.getCategoryFood().getId());
+        foodDto.setCategoryName(f.getCategoryFood().getName());
+        foodDto.setCinemaId(f.getCinema().getId());
+        foodDto.setStatus(f.isStatus());
+        foodDto.setCreatedDate(f.getCreatedDate());
+        f.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> foodDto.setPrice(priceDetail.getPrice()));
+        return foodDto;
+    }
+
     @Override
-    public long countAllFood(String code, String name, Long categoryId, String sizeFood) {
-        if (code != null && !code.isEmpty()) {
-            return foodRepository.countAllByCodeContaining(code);
-        } else if (name != null && !name.isEmpty()) {
-            return foodRepository.countAllByNameContaining(name);
-        } else if (categoryId != null) {
-            return foodRepository.countAllByCategoryFoodId(categoryId);
-        } else if (sizeFood != null && !sizeFood.isEmpty()) {
-            return foodRepository.countAllBySize(ESize.valueOf(sizeFood));
+    public long countAllFood(Long cinemaId, String code, String name, Long categoryId, String sizeFood) {
+        if (cinemaId != null) {
+            if (code != null && !code.isEmpty()) {
+                return foodRepository.countByCinemaIdAndCodeContaining(cinemaId, code);
+            } else if (name != null && !name.isEmpty()) {
+                return foodRepository.countByCinemaIdAndNameContaining(cinemaId, name);
+            } else if (categoryId != null) {
+                return foodRepository.countByCinemaIdAndCategoryFoodId(cinemaId, categoryId);
+            } else if (sizeFood != null && !sizeFood.isEmpty()) {
+                return foodRepository.countByCinemaIdAndSize(cinemaId, ESize.valueOf(sizeFood));
+            } else {
+                return foodRepository.countByCinemaId(cinemaId);
+            }
         } else {
             return foodRepository.count();
         }

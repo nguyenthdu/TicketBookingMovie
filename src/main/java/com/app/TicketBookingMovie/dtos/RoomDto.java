@@ -2,6 +2,7 @@ package com.app.TicketBookingMovie.dtos;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -13,9 +14,10 @@ public class RoomDto   {
     private Long id;
     private String code;
     private String name;
-    private double price;
+    private BigDecimal price;
     private String type;
     private int totalSeats;
+    private String cinemaName;
     private Long cinemaId;
     private boolean status = true;
     private Set<SeatDto> seats;

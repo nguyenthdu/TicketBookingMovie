@@ -33,8 +33,6 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
 
     long countByCode(String code);
 
-    long countByMovieIdAndShowDateAndRoomId(Long movieId, LocalDate date, Long roomId);
-
 
     @Query("SELECT s FROM ShowTime s WHERE s.movie.id = :movieId AND s.room.cinema.id = :cinemaId")
     Page<ShowTime> findByMovieIdAndCinemaId(@Param("movieId") Long movieId, @Param("cinemaId") Long cinemaId, Pageable pageable);
@@ -51,5 +49,9 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
     @Query("SELECT s FROM ShowTime s WHERE s.movie.id = :movieId AND s.room.cinema.id = :cinemaId AND s.room.id = :roomId AND s.showDate = :date")
     Page<ShowTime> findByMovieIdAndCinemaIdAndRoomIdAndShowDate(Long movieId, Long cinemaId, Long roomId, LocalDate date, Pageable pageable);
 
+    @Query("select count(s) from ShowTime s where s.movie.id = ?1 and s.room.cinema.id = ?2 and s.room.id = ?3 and s.showDate = ?4")
+    long countByMovieIdAndCinemaIdAndRoomIdAndShowDate(Long movieId, Long cinemaId, Long roomId, LocalDate date);
 
+    @Query("select count(s) from ShowTime s where s.movie.id = ?1 and s.room.cinema.id = ?2 and s.room.id = ?3")
+    long countByMovieIdAndCinemaIdAndRoomId(Long movieId, Long cinemaId, Long roomId);
 }

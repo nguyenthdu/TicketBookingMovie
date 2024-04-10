@@ -25,6 +25,7 @@ public class FoodController {
             @RequestParam("name") String name,
             @RequestParam("image") String image,
             @RequestParam("categoryId") Long categoryId,
+            @RequestParam("cinemaIds") Long cinemaIds,
             @RequestParam("sizeFood") String sizeFood,
             @RequestParam("quantity") int quantity,
             @RequestParam("status") boolean status) {
@@ -33,12 +34,13 @@ public class FoodController {
         foodDto.setImage(image);
         foodDto.setName(name);
         foodDto.setCategoryId(categoryId);
+        foodDto.setCinemaId(cinemaIds);
         foodDto.setSize(sizeFood);
         foodDto.setQuantity(quantity);
         foodDto.setStatus(status);
         try {
             foodService.createFood(foodDto);
-            return ResponseEntity.ok(new MessageResponseDto("Create food success with name: " + name, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Thêm thành công" + name, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -55,6 +57,7 @@ public class FoodController {
             @RequestParam("name") String name,
             @RequestParam("image") String image,
             @RequestParam("categoryId") Long categoryId,
+            @RequestParam("cinemaIds") Long cinemaIds,
             @RequestParam("sizeFood") String sizeFood,
             @RequestParam("quantity") int quantity,
             @RequestParam("status") boolean status) {
@@ -63,13 +66,14 @@ public class FoodController {
         foodDto.setImage(image);
         foodDto.setName(name);
         foodDto.setCategoryId(categoryId);
+        foodDto.setCinemaId(cinemaIds);
         foodDto.setSize(sizeFood);
         foodDto.setQuantity(quantity);
         foodDto.setStatus(status);
 
         try {
             foodService.updateFood(foodDto);
-            return ResponseEntity.ok(new MessageResponseDto("Update food success with name: " + foodDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Cập nhật thành công " + foodDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -79,7 +83,7 @@ public class FoodController {
     public ResponseEntity<MessageResponseDto> deleteFood(@PathVariable Long id) {
         try {
             foodService.deleteFoodById(id);
-            return ResponseEntity.ok(new MessageResponseDto("Delete food success with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto("Xóa thành công!!", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -92,10 +96,11 @@ public class FoodController {
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "cinemaId", required = false) Long cinemaId,
             @RequestParam(value = "sizeFood", required = false) String sizeFood) {
         PageResponse<FoodDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(foodService.getAllFood(page, size, code, name, categoryId, sizeFood));
-        pageResponse.setTotalElements(foodService.countAllFood(code, name, categoryId, sizeFood));
+        pageResponse.setContent(foodService.getAllFood(page, size,cinemaId, code, name, categoryId, sizeFood));
+        pageResponse.setTotalElements(foodService.countAllFood(cinemaId,code, name, categoryId, sizeFood));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);

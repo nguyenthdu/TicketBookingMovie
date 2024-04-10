@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -25,8 +26,14 @@ public class Food {
     @ManyToOne
     @JoinColumn(name = "category_food_id")
     private CategoryFood categoryFood;
+    @ManyToOne
+    @JoinColumn(name = "cinema_id")
+    private Cinema cinema;
+   @OneToMany(mappedBy = "food")
+    private Set<PriceDetail> priceDetails;
     private boolean status;
     private LocalDateTime createdDate;
+
     public Food() {
     }
 }

@@ -14,7 +14,6 @@ public interface PriceHeaderService {
 
     PriceHeaderDto getPriceHeaderById(Long id);
     PriceHeader findById(Long id);
-
     void deletePriceHeaderById(Long id);
 
     List<PriceHeaderDto> getAllPriceHeader(Integer page, Integer size, String code, String name, LocalDateTime startDate, LocalDateTime endDate);

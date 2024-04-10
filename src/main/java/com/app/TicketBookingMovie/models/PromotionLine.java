@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.models;
 
-import com.app.TicketBookingMovie.models.enums.EApplicableObject;
 import com.app.TicketBookingMovie.models.enums.ETypePromotion;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -24,13 +23,9 @@ public class PromotionLine {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     @Enumerated(EnumType.STRING)
-    private EApplicableObject applicableObject;
-    @Enumerated(EnumType.STRING)
     private ETypePromotion typePromotion;
-    private Long usePerUser;
-    private Long usePerPromotion;
     @OneToOne
-    private PromotionDetail promotionDetail;
+    private PromotionDiscountDetail promotionDiscountDetail;
     @ManyToOne
     @JoinColumn(name = "promotion_id")
     @JsonIgnore

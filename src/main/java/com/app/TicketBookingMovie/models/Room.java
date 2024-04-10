@@ -25,6 +25,8 @@ public class Room {
     private Cinema cinema;
     @OneToMany
     private Set<Seat> seats;
+    @OneToMany(mappedBy = "room")
+    private Set<PriceDetail> priceDetails;
     private boolean status = true;
     private LocalDateTime createdDate ;
     public Room() {

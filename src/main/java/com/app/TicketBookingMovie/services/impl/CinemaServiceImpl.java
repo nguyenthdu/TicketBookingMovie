@@ -37,7 +37,7 @@ public class CinemaServiceImpl implements CinemaService {
     @Override
     public void createCinema(CinemaDto cinemaDto) {
         if (cinemaRepository.findByName(cinemaDto.getName()).isPresent()) {
-            throw new AppException("name: " + cinemaDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+            throw new AppException("Tên rạp: " + cinemaDto.getName() + " đã tồn tại!!!", HttpStatus.BAD_REQUEST);
         }
         Cinema cinema = new Cinema();
         cinema.setCode(randomCode());
@@ -59,19 +59,25 @@ public class CinemaServiceImpl implements CinemaService {
     @Override
     public CinemaDto getCinemaById(Long id) {
         Cinema cinema = cinemaRepository.findById(id).orElseThrow(
-                () -> new AppException("Cinema not found with id: " + id, HttpStatus.NOT_FOUND));
+                () -> new AppException("Không tìm thấy rạp với id: " + id, HttpStatus.NOT_FOUND));
         return modelMapper.map(cinema, CinemaDto.class);
 
     }
 
     @Override
+    public Cinema findById(Long id) {
+        return cinemaRepository.findById(id).orElseThrow(
+                () -> new AppException("Không tìm thấy rạp với id: " + id, HttpStatus.NOT_FOUND));
+    }
+
+    @Override
     public void updateCinema(CinemaDto cinemaDto) {
         Cinema cinema = cinemaRepository.findById(cinemaDto.getId()).orElseThrow(
-                () -> new AppException("Cinema not found with id: " + cinemaDto.getId(), HttpStatus.NOT_FOUND));
+                () -> new AppException("Không tìm thấy rạp với id: " + cinemaDto.getId(), HttpStatus.NOT_FOUND));
 
         if (!cinemaDto.getName().isEmpty() && !cinemaDto.getName().isBlank() && !cinemaDto.getName().equals(cinema.getName())) {
             if (cinemaRepository.findByName(cinemaDto.getName()).isPresent()) {
-                throw new AppException("name: " + cinemaDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+                throw new AppException("Tên rạp: " + cinemaDto.getName() + " đã tồn tại!!!", HttpStatus.BAD_REQUEST);
             }
             cinema.setName(cinemaDto.getName());
         } else {
@@ -94,10 +100,10 @@ public class CinemaServiceImpl implements CinemaService {
     @Override
     public void deleteCinemaById(Long id) {
         Cinema cinema = cinemaRepository.findById(id).orElseThrow(
-                () -> new AppException("Cinema not found with id: " + id, HttpStatus.NOT_FOUND));
+                () -> new AppException("Không tìm thấy rạp với id: " + id, HttpStatus.NOT_FOUND));
         //nếu trạng thái là true thì không thể xóa
         if (cinema.isStatus()) {
-            throw new AppException("Cinema is active, can't delete", HttpStatus.BAD_REQUEST);
+            throw new AppException("Rạp đang hoạt động, không thể xóa!!!", HttpStatus.BAD_REQUEST);
         }
         cinemaRepository.delete(cinema);
 
@@ -133,7 +139,7 @@ public class CinemaServiceImpl implements CinemaService {
     @Override
     public void countTotalRooms(Long id, int number) {
         Cinema cinema = cinemaRepository.findById(id).orElseThrow(
-                () -> new AppException("Cinema not found with id: " + id, HttpStatus.NOT_FOUND));
+                () -> new AppException("Không tìm thấy rạp với id: " + id, HttpStatus.NOT_FOUND));
         cinema.setTotalRoom(cinema.getTotalRoom() + number);
         cinemaRepository.save(cinema);
     }

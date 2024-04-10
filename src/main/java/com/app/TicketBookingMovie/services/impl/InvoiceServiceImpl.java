@@ -6,7 +6,6 @@ import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.models.enums.EDetailType;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
-import com.app.TicketBookingMovie.repository.PromotionLineRepository;
 import com.app.TicketBookingMovie.services.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -30,24 +29,23 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final FoodService foodService;
     private final UserService userService;
     private final PriceDetailService priceDetailService;
-    private final PromotionLineRepository promotionLineRepository;
+
     private final ModelMapper modelMapper;
 
 
-    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailService priceDetailService, PromotionLineRepository promotionLineRepository, ModelMapper modelMapper) {
+    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailService priceDetailService, ModelMapper modelMapper) {
         this.invoiceRepository = invoiceRepository;
         this.ticketService = ticketService;
         this.foodService = foodService;
         this.userService = userService;
         this.priceDetailService = priceDetailService;
-        this.promotionLineRepository = promotionLineRepository;
         this.modelMapper = modelMapper;
     }
 
 
     @Override
     @Transactional
-    public void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId, Set<Long> promotionLineIds) {
+    public void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId) {
         // Tạo một đối tượng Invoice mới
         Invoice invoice = new Invoice();
         invoice.setCode(randomCode()); // Tạo mã hóa đơn
@@ -74,8 +72,8 @@ public class InvoiceServiceImpl implements InvoiceService {
                 PriceDetail seatPriceDetail = seatPriceDetailOptional.get();
                 PriceDetail roomPriceDetail = roomPriceDetailOptional.get();
                 ticketDetail.setPrice(seatPriceDetail.getPrice().add(roomPriceDetail.getPrice()));
-            }else{
-              throw  new AppException("Giá của "+ticket.getSeat().getSeatType().getName()+" hoặc "+ticket.getShowTime().getRoom().getName()+" không sẵn sàng, vui lòng liên hệ quản trị viên",HttpStatus.BAD_REQUEST);
+            } else {
+                throw new AppException("Giá của " + ticket.getSeat().getSeatType().getName() + " hoặc " + ticket.getShowTime().getRoom().getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
             }
             invoiceTicketDetails.add(ticketDetail);
         }
@@ -128,9 +126,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         for (InvoiceFoodDetail foodDetail : invoiceFoodDetails) {
             total = total.add(foodDetail.getPrice().multiply(new BigDecimal(foodDetail.getQuantity())));
         }
-
         // Áp dụng khuyến mãi và cập nhật tổng giá của hóa đơn
-//            total = applyPromotions(promotionLineIds, invoice, total);
+        // tìm những promtion line trong khoản thời gian hiện tại
+//        List<PromotionLine>promotionLines = promotionService.getAllPromotionFitBill(total, "ALL");
+//        total = applyPromotions(promotionLines, invoice, total);
         invoice.setTotalPrice(total);
 
         // Lưu hóa đơn vào cơ sở dữ liệu
@@ -149,63 +148,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (foodPriceDetailOptional.isPresent()) {
             PriceDetail foodPriceDetail = foodPriceDetailOptional.get();
             foodDetail.setPrice(foodPriceDetail.getPrice());
-        }else {
-            throw new AppException("Giá của "+food.getName()+" không sẵn sàng, vui lòng liên hệ quản trị viên",HttpStatus.BAD_REQUEST);
+        } else {
+            throw new AppException("Giá của " + food.getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
         }
         return foodDetail;
     }
-//        private double applyPromotions (Set < Long > promotionLineIds, Invoice invoice,BigDecimal total){
-//            List<PromotionLine> promotionLines = promotionLineRepository.findAllById(promotionLineIds);
-//
-//            for (PromotionLine promotionLine : promotionLines) {
-//                PromotionDetail promotionDetail = promotionLine.getPromotionDetail();
-//                if (promotionDetail == null) {
-//                    throw new AppException("Promotion detail not found for promotion line: " + promotionLine.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
-//                }
-//
-//                if (promotionLine.getTypePromotion() == ETypePromotion.GIFT) {
-//                    // Áp dụng khuyến mãi loại GIFT
-//                    applyGiftPromotion(promotionLine, promotionDetail, invoice);
-//                } else if (promotionLine.getTypePromotion() == ETypePromotion.DISCOUNT) {
-//                    // Áp dụng khuyến mãi loại DISCOUNT và cập nhật tổng giá trị hóa đơn
-//                    total = applyDiscountPromotion(promotionLine, promotionDetail, total);
-//                }
-//            }
-//            invoice.setPromotion(promotionLines.get(0).getPromotion());
-//            // Trả về tổng giá trị hóa đơn sau khi áp dụng các khuyến mãi
-//            return total;
-//        }
-
-
-//        private void applyGiftPromotion (PromotionLine promotionLine, PromotionDetail promotionDetail, Invoice invoice){
-//            //tì đồ ăn trong khuyến mãi và  trừ đi số lượng của đồ ăn đó
-//            Food food = promotionDetail.getFood();
-//            int quantity = promotionDetail.getMaxValue();
-//            if (food.getQuantity() < quantity) {
-//                throw new AppException("Not enough stock for food: " + food.getName(), HttpStatus.BAD_REQUEST);
-//            }
-//            InvoiceFoodDetail foodDetail = new InvoiceFoodDetail();
-//            foodDetail.setFood(food);
-//            foodDetail.setQuantity(quantity);
-//            foodDetail.setPrice(0);
-//            foodDetail.setNote("Quà tặng");
-//            invoice.getInvoiceFoodDetails().add(foodDetail);
-//            food.setQuantity(food.getQuantity() - quantity);
-//            // Giảm số lượng khuyến mãi còn lại của promotion line
-//            promotionLine.setUsePerPromotion(promotionLine.getUsePerPromotion() - quantity);
-//        }
-
-
-//        private double applyDiscountPromotion (PromotionLine promotionLine, PromotionDetail promotionDetail,BigDecimal total)
-//        {
-//            double discountValue = promotionDetail.getDiscountValue();
-//            if (promotionDetail.getTypeDiscount() == ETypeDiscount.PERCENT) {
-//                discountValue = total * discountValue / 100;
-//            }
-//            promotionLine.setUsePerPromotion(promotionLine.getUsePerPromotion() - 1);
-//            // Trả về giá trị mới của tổng giá trị hóa đơn sau khi áp dụng giảm giá
-//            return total - discountValue;
-//        }
 
     @Override
     public InvoiceDto getInvoiceById(Long id) {
