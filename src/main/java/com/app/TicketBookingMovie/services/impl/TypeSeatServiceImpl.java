@@ -47,9 +47,15 @@ public class TypeSeatServiceImpl implements TypeSeatService {
 
     @Override
     public TypeSeatDto getTypeSeatById(Long id) {
-        return typeSeatRepository.findById(id)
-                .map(typeSeat -> modelMapper.map(typeSeat, TypeSeatDto.class))
+        TypeSeat typeSeat = typeSeatRepository.findById(id)
                 .orElseThrow(() -> new AppException("TypeSeat not found with id: " + id, HttpStatus.NOT_FOUND));
+        TypeSeatDto typeSeatDto = new TypeSeatDto();
+        typeSeatDto.setId(typeSeat.getId());
+        typeSeatDto.setCode(typeSeat.getCode());
+        typeSeatDto.setName(String.valueOf(typeSeat.getName()));
+        typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
+        return typeSeatDto;
+
 
     }
 
@@ -72,8 +78,16 @@ public class TypeSeatServiceImpl implements TypeSeatService {
     @Override
     public Set<TypeSeatDto> getAllTypeSeats() {
         return typeSeatRepository.findAll().stream()
-                .map(typeSeat -> modelMapper.map(typeSeat, TypeSeatDto.class))
-                .collect(Collectors.toSet());
+                .map(typeSeat -> {
+                    TypeSeatDto typeSeatDto = new TypeSeatDto();
+                    typeSeatDto.setId(typeSeat.getId());
+                    typeSeatDto.setCode(typeSeat.getCode());
+                    typeSeatDto.setName(String.valueOf(typeSeat.getName()));
+                    typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
+                    return typeSeatDto;
+                }).collect(Collectors.toSet());
+
+
     }
 
 
