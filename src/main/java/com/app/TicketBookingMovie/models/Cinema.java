@@ -23,7 +23,6 @@ public class Cinema {
     private Address address;
     private boolean status = true;
     private LocalDateTime   createdDate = LocalDateTime.now();
-
     public Cinema() {
     }
 

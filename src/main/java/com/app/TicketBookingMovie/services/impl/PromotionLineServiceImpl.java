@@ -1,28 +1,101 @@
-//package com.app.TicketBookingMovie.services.impl;
-//
-//import com.app.TicketBookingMovie.dtos.PromotionDetailDto;
-//import com.app.TicketBookingMovie.dtos.PromotionLineDto;
-//import com.app.TicketBookingMovie.exception.AppException;
-//import com.app.TicketBookingMovie.models.PromotionLine;
-//import com.app.TicketBookingMovie.models.enums.EApplicableObject;
-//import com.app.TicketBookingMovie.models.enums.ETypePromotion;
-//import com.app.TicketBookingMovie.repository.PromotionLineRepository;
-//import com.app.TicketBookingMovie.services.PromotionDetailService;
-//import com.app.TicketBookingMovie.services.PromotionLineService;
-//import com.app.TicketBookingMovie.services.PromotionService;
-//import org.modelmapper.ModelMapper;
-//import org.springframework.data.domain.Page;
-//import org.springframework.data.domain.PageRequest;
-//import org.springframework.data.domain.Pageable;
-//import org.springframework.http.HttpStatus;
-//import org.springframework.stereotype.Service;
-//import org.springframework.transaction.annotation.Transactional;
-//
-//import java.time.LocalDateTime;
-//import java.util.List;
-//
-//@Service
-//public class PromotionLineServiceImpl implements PromotionLineService {
+package com.app.TicketBookingMovie.services.impl;
+
+import com.app.TicketBookingMovie.dtos.PromotionLineDto;
+import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.models.Promotion;
+import com.app.TicketBookingMovie.models.PromotionDiscountDetail;
+import com.app.TicketBookingMovie.models.PromotionLine;
+import com.app.TicketBookingMovie.models.enums.ETypePromotion;
+import com.app.TicketBookingMovie.repository.PromotionLineRepository;
+import com.app.TicketBookingMovie.services.PromotionDiscountDetailService;
+import com.app.TicketBookingMovie.services.PromotionLineService;
+import com.app.TicketBookingMovie.services.PromotionService;
+import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class PromotionLineServiceImpl implements PromotionLineService {
+    private final PromotionLineRepository promotionLineRepository;
+    private final ModelMapper modelMapper;
+    private final PromotionDiscountDetailService promotionDiscountDetailService;
+    private final PromotionService promotionService;
+
+    public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionService promotionService) {
+        this.promotionLineRepository = promotionLineRepository;
+        this.modelMapper = modelMapper;
+        this.promotionDiscountDetailService = promotionDiscountDetailService;
+        this.promotionService = promotionService;
+    }   public String randomCode() {
+        return "KM" + LocalDateTime.now().getNano();
+    }
+
+    @Override
+    @Transactional
+    public void createPromotionLine(PromotionLineDto promotionLineDto) {
+        Promotion promotion = promotionService.findPromotionById(promotionLineDto.getPromotionId());
+        if(promotionLineDto.getStartDate().isBefore(promotion.getStartDate()) || promotionLineDto.getEndDate().isAfter(promotion.getEndDate())){
+            throw new AppException("Thời gian hoạt động khuyến mãi phải nằm trong thời gian khuyến mãi của: " + promotion.getName() + " là từ ngày: " + promotion.getStartDate() + " đến " + promotion.getEndDate(), HttpStatus.BAD_REQUEST);
+        }
+        if(promotionLineDto.getStartDate().isAfter(promotionLineDto.getEndDate())){
+            throw new AppException("Ngày bắt đầu không thể sau ngày kết thúc", HttpStatus.BAD_REQUEST);
+        }
+
+        PromotionLine promotionLine = modelMapper.map(promotionLineDto, PromotionLine.class);
+        switch (promotionLineDto.getTypePromotion()){
+            case "DISCOUNT":
+                //kiểm tra xem ngày bắt đầu và ngày kết thúc có trùng với promotion line có cùng loại và cùng 1 promotion
+                // Kiểm tra xem ngày bắt đầu và ngày kết thúc có trùng với promotion line có cùng loại và cùng 1 promotion
+                if (promotionLineRepository.existsByStartDateAndEndDateAndTypePromotionAndPromotion(
+                        promotionLineDto.getStartDate(),
+                        promotionLineDto.getEndDate(),
+                        ETypePromotion.DISCOUNT, // Chuyển đổi sang ETypePromotion
+                        promotion)) {
+                    throw new AppException("Khuyến mãi đã tồn tại", HttpStatus.BAD_REQUEST);
+                }
+
+                PromotionDiscountDetail promotionDiscountDetail = promotionDiscountDetailService.createPromotionDiscountDetail(promotionLineDto.getPromotionDiscountDetailDto());
+                promotionLine.setPromotionDiscountDetail(promotionDiscountDetail);
+                promotionLine.setTypePromotion(ETypePromotion.valueOf("DISCOUNT"));
+                break;
+//            case "FOOD":
+//                promotionLineDto.setStatus(true);
+//                promotionLineDto.setPromotionDiscountDetailDto(promotionDiscountDetailService.createPromotionDetailDiscount(promotionLineDto.getPromotionDiscountDetailDto()));
+//                break;
+//            case "TICKET":
+//                promotionLineDto.setPromotionDiscountDetailDto(promotionDiscountDetailService.createPromotionDetailGift(promotionLineDto.getPromotionDiscountDetailDto()));
+//                break;
+        }
+        promotionLine.setCode(randomCode());
+        promotionLine.setStatus(false);
+        promotionLine.setCreatedAt(LocalDateTime.now());
+        promotionLineRepository.save(promotionLine);
+
+    }
+
+    @Override
+    public PromotionLineDto getPromotionLineById(Long promotionLineId) {
+        return null;
+    }
+
+    @Override
+    public List<PromotionLineDto> getAllPromotionLineFromPromotionId(Integer page, Integer size, Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String applicableObject, String typePromotion) {
+        return List.of();
+    }
+
+    @Override
+    public long countAllPromotionLineFromPromotionId(Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String applicableObject, String typePromotion) {
+        return 0;
+    }
+
+    @Override
+    public void deletePromotionLine(Long promotionLineId) {
+
+    }
 //    private final PromotionLineRepository promotionLineRepository;
 //    private final PromotionDetailService promotionDetailService;
 //    private final PromotionService promotionService;
@@ -68,13 +141,13 @@
 ////
 ////        if (promotionLineDto.getTypePromotion().equals("GIFT")) {
 ////            promotionLine.setTypePromotion(ETypePromotion.GIFT);
-////            PromotionDiscountDetail promotionDiscountDetail = promotionDetailService.createPromotionDetailGift(promotionLineDto.getPromotionDetailDto());
+////            PromotionDiscountDetail promotionDiscountDetail = promotionDetailService.createPromotionDetailGift(promotionLineDto.getPromotionDiscountDetailDto());
 ////            promotionLine.setPromotionDiscountDetail(promotionDiscountDetail);
 ////            // Trừ đi số lượng sản phẩm
 ////            promotionDiscountDetail.getFood().setQuantity(promotionDiscountDetail.getFood().getQuantity() - promotionDiscountDetail.getMaxValue());
 ////        } else if (promotionLineDto.getTypePromotion().equals("DISCOUNT")) {
 ////            promotionLine.setTypePromotion(ETypePromotion.DISCOUNT);
-////            PromotionDiscountDetail promotionDiscountDetail = promotionDetailService.createPromotionDetailDiscount(promotionLineDto.getPromotionDetailDto());
+////            PromotionDiscountDetail promotionDiscountDetail = promotionDetailService.createPromotionDetailDiscount(promotionLineDto.getPromotionDiscountDetailDto());
 ////            promotionLine.setPromotionDiscountDetail(promotionDiscountDetail);
 ////        } else {
 ////            throw new AppException("Loại khuyến mãi không hợp lệ", HttpStatus.BAD_REQUEST);
@@ -99,9 +172,9 @@
 //    public PromotionLineDto getPromotionLineById(Long promotionLineId) {
 //        PromotionLine promotionLine = promotionLineRepository.findById(promotionLineId).orElseThrow(() -> new AppException("Không tìm thấy chương trình khuyến mãi với id: " + promotionLineId, HttpStatus.NOT_FOUND));
 //        //lấy promotiondetail
-//        PromotionDetailDto promotionDetailDto = promotionDetailService.getPromotionDetailByPromotionLineId(promotionLineId);
+//        PromotionDiscountDetailDto promotionDetailDto = promotionDetailService.getPromotionDetailByPromotionLineId(promotionLineId);
 //        PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
-//        promotionLineDto.setPromotionDetailDto(promotionDetailDto);
+//        promotionLineDto.setPromotionDiscountDetailDto(promotionDetailDto);
 //        return promotionLineDto;
 //    }
 //
@@ -143,9 +216,9 @@
 //            promotionLines = promotionLineRepository.findAll(pageable);
 //        }
 //        return promotionLines.map(promotionLine -> {
-//            PromotionDetailDto promotionDetailDto = promotionDetailService.getPromotionDetailByPromotionLineId(promotionLine.getId());
+//            PromotionDiscountDetailDto promotionDetailDto = promotionDetailService.getPromotionDetailByPromotionLineId(promotionLine.getId());
 //            PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
-//            promotionLineDto.setPromotionDetailDto(promotionDetailDto);
+//            promotionLineDto.setPromotionDiscountDetailDto(promotionDetailDto);
 //            return promotionLineDto;
 //        }).getContent();
 //    }
@@ -209,5 +282,5 @@
 //        promotionLineRepository.deleteById(promotionLineId);
 //
 //    }
-//
-//}
+
+}

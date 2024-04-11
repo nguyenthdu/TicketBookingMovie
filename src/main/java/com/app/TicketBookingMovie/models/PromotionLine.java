@@ -26,9 +26,14 @@ public class PromotionLine {
     private ETypePromotion typePromotion;
     @OneToOne
     private PromotionDiscountDetail promotionDiscountDetail;
+    @OneToOne
+    private PromotionFoodDetail promotionFoodDetail;
+    @OneToOne
+    private PromotionTicketDetail promotionTicketDetail;
     @ManyToOne
     @JoinColumn(name = "promotion_id")
     @JsonIgnore
     private Promotion promotion;
     private boolean status;
+    private LocalDateTime createdAt;
 }

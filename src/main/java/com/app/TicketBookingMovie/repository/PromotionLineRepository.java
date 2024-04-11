@@ -1,17 +1,16 @@
-//package com.app.TicketBookingMovie.repository;
-//
-//import com.app.TicketBookingMovie.models.PromotionLine;
-//import com.app.TicketBookingMovie.models.enums.EApplicableObject;
-//import com.app.TicketBookingMovie.models.enums.ETypePromotion;
-//import org.springframework.data.domain.Page;
-//import org.springframework.data.domain.Pageable;
-//import org.springframework.data.jpa.repository.JpaRepository;
-//import org.springframework.stereotype.Repository;
-//
-//import java.time.LocalDateTime;
-//
-//@Repository
-//public interface PromotionLineRepository extends JpaRepository<PromotionLine, Long> {
+package com.app.TicketBookingMovie.repository;
+
+import com.app.TicketBookingMovie.models.Promotion;
+import com.app.TicketBookingMovie.models.PromotionLine;
+import com.app.TicketBookingMovie.models.enums.ETypePromotion;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+
+@Repository
+public interface PromotionLineRepository extends JpaRepository<PromotionLine, Long> {
+    boolean existsByStartDateAndEndDateAndTypePromotionAndPromotion(LocalDateTime startDate, LocalDateTime endDate, ETypePromotion typePromotion, Promotion promotion);
 //    boolean existsByPromotionDetail_Food_Id(Long foodId);
 //
 //    PromotionLine findByCode(String promotionLineCode);
@@ -37,6 +36,6 @@
 //
 //    long countAllByTypePromotion(ETypePromotion eTypePromotion);
 //
-//
-//
-//}
+
+
+}

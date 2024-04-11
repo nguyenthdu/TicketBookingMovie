@@ -12,11 +12,11 @@ public class PromotionLineDto {
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private String applicableObject;
     private String  typePromotion;
-    private Long usePerUser;
-    private Long usePerPromotion;
     private Long  promotionId;
-    private PromotionDetailDto promotionDetailDto;
+    private PromotionDiscountDetailDto promotionDiscountDetailDto;
+    private PromotionFoodDetailDto promotionFoodDetailDto;
+    private PromotionTicketDetailDto promotionTicketDetailDto;
     private boolean status;
+    private LocalDateTime createdAt;
 }
