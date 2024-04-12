@@ -68,9 +68,14 @@ public class InvoiceServiceImpl implements InvoiceService {
             Optional<PriceDetail> roomPriceDetailOptional = currentPriceDetails.stream()
                     .filter(detail -> detail.getType() == EDetailType.ROOM && Objects.equals(detail.getRoom().getId(), ticket.getShowTime().getRoom().getId()))
                     .findFirst();
-            if (seatPriceDetailOptional.isPresent() && roomPriceDetailOptional.isPresent()) {
+            if (seatPriceDetailOptional.isPresent() && roomPriceDetailOptional.isPresent() ) {
                 PriceDetail seatPriceDetail = seatPriceDetailOptional.get();
                 PriceDetail roomPriceDetail = roomPriceDetailOptional.get();
+              //nếu trạng thái của pricedetail là false hoặc thời gian hiện tại không năm trong khoản thời gian của price header của pricedetail thì không thể tạo hóa đơn
+                if (!seatPriceDetail.isStatus() || !roomPriceDetail.isStatus() || currentTime.isBefore(seatPriceDetail.getPriceHeader().getStartDate()) || currentTime.isAfter(seatPriceDetail.getPriceHeader().getEndDate()) || currentTime.isBefore(roomPriceDetail.getPriceHeader().getStartDate()) || currentTime.isAfter(roomPriceDetail.getPriceHeader().getEndDate())) {
+                    throw new AppException("Giá sản phẩm không sẵn sàng để tại hóa đơn, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
+                }
+
                 ticketDetail.setPrice(seatPriceDetail.getPrice().add(roomPriceDetail.getPrice()));
             } else {
                 throw new AppException("Giá của " + ticket.getSeat().getSeatType().getName() + " hoặc " + ticket.getShowTime().getRoom().getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
@@ -130,6 +135,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         // tìm những promtion line trong khoản thời gian hiện tại
 //        List<PromotionLine>promotionLines = promotionService.getAllPromotionFitBill(total, "ALL");
 //        total = applyPromotions(promotionLines, invoice, total);
+        //tìm promotionLine có loại là discount nằm trong khoản thời gian hiện tại
+
         invoice.setTotalPrice(total);
 
         // Lưu hóa đơn vào cơ sở dữ liệu

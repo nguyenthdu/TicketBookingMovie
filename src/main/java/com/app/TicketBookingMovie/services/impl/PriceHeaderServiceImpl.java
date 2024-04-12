@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -126,25 +127,27 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         } else {
             priceHeader.setEndDate(priceHeader.getEndDate());
         }
-        if (priceHeaderDto.isStatus()) {
-            boolean existsStatus = priceHeaderRepository.existsByStatus(true);
-            if (existsStatus) {
-                throw new AppException("Không thể tạo mới chương trình thay đổi giá khi đã có chương trình đang hoạt động", HttpStatus.BAD_REQUEST);
+        if (priceHeaderDto.isStatus() != priceHeader.isStatus()) {
+            if (priceHeaderDto.isStatus()) {
+                boolean existsStatus = priceHeaderRepository.existsByStatus(true);
+                if (existsStatus) {
+                    throw new AppException("Không thể kích hoạt chương trình thay đổi giá khi đã có chương trình đang hoạt động", HttpStatus.BAD_REQUEST);
+                }
             }
             priceHeader.setStatus(priceHeaderDto.isStatus());
+            if (!priceHeader.isStatus()) {
+                for (PriceDetail priceDetail : priceHeader.getPriceDetails()) {
+                    priceDetail.setStatus(false);
+
+                }
+
+            }
         } else {
             priceHeader.setStatus(priceHeader.isStatus());
         }
         // Save the updated sale price to the database
         priceHeaderRepository.save(priceHeader);
         //khi tắt chương trình thì tắt tất cả các chi tiết giá
-        if (!priceHeader.isStatus()) {
-            for (PriceDetail priceDetail : priceHeader.getPriceDetails()) {
-                priceDetail.setStatus(false);
-
-            }
-
-        }
 
 
     }
@@ -154,9 +157,11 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     public PriceHeaderDto getPriceHeaderById(Long id) {
         PriceHeader priceHeader = priceHeaderRepository.findById(id)
                 .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với mã là: " + id, HttpStatus.NOT_FOUND));
-        //lấy danh sách price detail của price header
-        return modelMapper.map(priceHeader, PriceHeaderDto.class);
+        PriceHeaderDto priceHeaderDto = modelMapper.map(priceHeader, PriceHeaderDto.class);
+        priceHeaderDto.setPriceDetails(Collections.emptySet());
+        return priceHeaderDto;
     }
+
 
     @Override
     public PriceHeader findById(Long id) {
@@ -193,8 +198,12 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         }
         //sort by  created date
         return pageSalePrice.stream().sorted(Comparator.comparing(PriceHeader::getCreatedDate).reversed())
-                .map(priceHeader -> modelMapper.map(priceHeader, PriceHeaderDto.class))
-                .toList();
+                .map(priceHeader ->
+                {
+                    PriceHeaderDto priceHeaderDto = modelMapper.map(priceHeader, PriceHeaderDto.class);
+                    priceHeaderDto.setPriceDetails(Collections.emptySet());
+                    return priceHeaderDto;
+                }).toList();
     }
 
     @Override

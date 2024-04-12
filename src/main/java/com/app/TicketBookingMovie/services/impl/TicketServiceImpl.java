@@ -42,31 +42,35 @@ public class TicketServiceImpl implements TicketService {
     public List<Ticket> createTickets(Long showTimeId, Set<Long> seatIds) throws AppException {
 
         if (showTimeId == null || showTimeId <= 0) {
-            throw new AppException("Showtime id is invalid", HttpStatus.BAD_REQUEST);
+            throw new AppException("Vui lòng chọn lịch chiếu", HttpStatus.BAD_REQUEST);
         }
 
         if (seatIds == null || seatIds.isEmpty()) {
-            throw new AppException("Seat list is empty", HttpStatus.BAD_REQUEST);
+            throw new AppException("Vui lòng chọn ghế", HttpStatus.BAD_REQUEST);
         }
 
         ShowTime showTime = showTimeRepository.findById(showTimeId)
-                .orElseThrow(() -> new AppException("Showtime not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu", HttpStatus.NOT_FOUND));
 
         if (!showTime.isStatus()) {
-            throw new AppException("Showtime is not available", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể đặt lịch chiếu này", HttpStatus.BAD_REQUEST);
+        }
+        //nếu như trên 8 ghế thì không cho đặt
+        if (seatIds.size() > 8) {
+            throw new AppException("Chỉ có thể chọn tối đa 8 ghế", HttpStatus.BAD_REQUEST);
         }
         //Bước 3:kiểm tra xem danh sách id ghế nhập vào có tồn tại trong danh sách ghế của Showtim đó hay không, nếu có thì kiểm tra tiếp trạng thái của nó trong ShowTimeSeat
         Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
         List<Seat> seats = new ArrayList<>();
         for (Long seatId : seatIds) {
             Seat seat = seatRepository.findById(seatId)
-                    .orElseThrow(() -> new AppException("Seat not found with id: " + seatId, HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new AppException("Không tìm thấy ghế : " + seatId, HttpStatus.NOT_FOUND));
 
             boolean isExist = showTimeSeats.stream()
                     .anyMatch(showTimeSeat -> showTimeSeat.getSeat().getId().equals(seatId));
 
             if (!isExist) {
-                throw new AppException("Seat " + seat.getCode() + " is not exist in showtime", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ghế " + seat.getCode() + " không nằm trong lịch chiếu này", HttpStatus.BAD_REQUEST);
             }
 
             seats.add(seat);
@@ -80,12 +84,12 @@ public class TicketServiceImpl implements TicketService {
                     .isStatus();
 
             if (!isBooked) {
-                throw new AppException("Seat " + seat.getCode() + " has been booked", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ghế " + seat.getName() + " đã được đặt", HttpStatus.BAD_REQUEST);
             }
         }
         int totalSeatsBooked = showTime.getSeatsBooked() + seats.size();
         if (totalSeatsBooked > showTime.getRoom().getTotalSeats()) {
-            throw new AppException("Exceed the maximum number of seats", HttpStatus.BAD_REQUEST);
+            throw new AppException("Tất cả ghế trong lịch chiếu này đã được đặt, vui lòng chọn lịch chiếu khác", HttpStatus.BAD_REQUEST);
         }
 
 

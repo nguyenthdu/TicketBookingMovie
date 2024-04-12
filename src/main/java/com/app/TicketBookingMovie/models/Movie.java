@@ -53,8 +53,8 @@ public class Movie {
 	private String cast;
 	@NotEmpty
 	private String producer;
-//	@OneToMany
-//	private Set<ShowTime> showTimes;
+	@OneToMany
+	private Set<ShowTime> showTimes;
 	private boolean status;
 	private LocalDateTime createdDate= LocalDateTime.now();
 	public Movie() {

@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -34,6 +35,8 @@ public class PromotionLine {
     @JoinColumn(name = "promotion_id")
     @JsonIgnore
     private Promotion promotion;
+    @ManyToMany(mappedBy = "promotionLines")
+    private Set<Invoice> invoices;
     private boolean status;
     private LocalDateTime createdAt;
 }

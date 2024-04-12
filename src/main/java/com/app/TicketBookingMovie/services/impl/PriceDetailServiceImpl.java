@@ -123,16 +123,16 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         PriceDetailDto priceDetailDto = modelMapper.map(priceDetail, PriceDetailDto.class);
         switch (priceDetail.getType()) {
             case FOOD:
-                priceDetailDto.setItemName(priceDetail.getFood().getName());
-                priceDetailDto.setItemCode(priceDetail.getFood().getCode());
+                priceDetailDto.setName(priceDetail.getFood().getName());
+                priceDetailDto.setCode(priceDetail.getFood().getCode());
                 break;
             case ROOM:
-                priceDetailDto.setItemName(priceDetail.getRoom().getName());
-                priceDetailDto.setItemCode(priceDetail.getRoom().getCode());
+                priceDetailDto.setName(priceDetail.getRoom().getName());
+                priceDetailDto.setCode(priceDetail.getRoom().getCode());
                 break;
             case TYPE_SEAT:
-                priceDetailDto.setItemName(String.valueOf(priceDetail.getTypeSeat().getName()));
-                priceDetailDto.setItemCode(priceDetail.getTypeSeat().getCode());
+                priceDetailDto.setName(String.valueOf(priceDetail.getTypeSeat().getName()));
+                priceDetailDto.setCode(priceDetail.getTypeSeat().getCode());
                 break;
         }
         return priceDetailDto;
@@ -184,6 +184,9 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         if (priceDetail.getPriceHeader().getEndDate().isBefore(LocalDateTime.now())) {
             throw new AppException("Chương trình đã kết thúc, không thể xóa", HttpStatus.BAD_REQUEST);
         }
+        if(priceDetail.isStatus()){
+            throw new AppException("Không thể xóa chi tiết chương trình đang kích hoạt", HttpStatus.BAD_REQUEST);
+        }
         priceDetailRepository.delete(priceDetail);
 
 
@@ -221,18 +224,18 @@ public class PriceDetailServiceImpl implements PriceDetailService {
                     switch (priceDetail.getType()) {
                         case FOOD:
                             priceDetailDto.setType("FOOD");
-                            priceDetailDto.setItemName(priceDetail.getFood().getName());
-                            priceDetailDto.setItemCode(priceDetail.getFood().getCode());
+                            priceDetailDto.setName(priceDetail.getFood().getName());
+                            priceDetailDto.setCode(priceDetail.getFood().getCode());
                             break;
                         case ROOM:
                             priceDetailDto.setType("ROOM");
-                            priceDetailDto.setItemName(priceDetail.getRoom().getName());
-                            priceDetailDto.setItemCode(priceDetail.getRoom().getCode());
+                            priceDetailDto.setName(priceDetail.getRoom().getName());
+                            priceDetailDto.setCode(priceDetail.getRoom().getCode());
                             break;
                         case TYPE_SEAT:
                             priceDetailDto.setType("TYPE_SEAT");
-                            priceDetailDto.setItemName(String.valueOf(priceDetail.getTypeSeat().getName()));
-                            priceDetailDto.setItemCode(priceDetail.getTypeSeat().getCode());
+                            priceDetailDto.setName(String.valueOf(priceDetail.getTypeSeat().getName()));
+                            priceDetailDto.setCode(priceDetail.getTypeSeat().getCode());
                             break;
                     }
                     return priceDetailDto;

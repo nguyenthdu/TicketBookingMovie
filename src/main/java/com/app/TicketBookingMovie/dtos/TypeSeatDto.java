@@ -10,4 +10,5 @@ public class TypeSeatDto {
     private String code;
     private String name;
     private BigDecimal price;
+    private boolean active_price;
 }

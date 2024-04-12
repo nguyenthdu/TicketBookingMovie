@@ -9,7 +9,6 @@ import java.util.List;
 public interface PromotionLineService {
     @Transactional
     void createPromotionLine(PromotionLineDto promotionLineDto);
-
     PromotionLineDto getPromotionLineById(Long promotionLineId);
     List<PromotionLineDto> getAllPromotionLineFromPromotionId(Integer page, Integer size, Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String applicableObject, String typePromotion);
     long countAllPromotionLineFromPromotionId(Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String applicableObject, String typePromotion);

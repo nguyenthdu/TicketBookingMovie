@@ -207,6 +207,7 @@ public class FoodServiceImpl implements FoodService {
         foodDto.setStatus(f.isStatus());
         foodDto.setCreatedDate(f.getCreatedDate());
         f.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> foodDto.setPrice(priceDetail.getPrice()));
+        f.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> foodDto.setActive_price(priceDetail.isStatus()));
         return foodDto;
     }
 

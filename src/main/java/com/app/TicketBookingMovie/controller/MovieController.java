@@ -138,29 +138,29 @@ public class MovieController {
         }
 
     }
-//    @GetMapping("/not-showed")
-//    public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
-//
-//            @RequestParam(defaultValue = "0") Integer page,
-//            @RequestParam(defaultValue = "10") Integer size) {
-//        PageResponse<MovieDto> pageResponse = new PageResponse<>();
-//        pageResponse.setContent(movieService.getMoviesNotShowed(page, size));
-//        pageResponse.setTotalElements(movieService.getMoviesNotShowed(page, size).size());
-//        pageResponse.setTotalPages(page);
-//        pageResponse.setPageSize(size);
-//        return ResponseEntity.ok(pageResponse);
-//    }
-//    @GetMapping("/showing")
-//    public ResponseEntity<PageResponse<MovieDto>> getMoviesShowing(
-//            @RequestParam(defaultValue = "0") Integer page,
-//            @RequestParam(defaultValue = "10") Integer size) {
-//        PageResponse<MovieDto> pageResponse = new PageResponse<>();
-//        pageResponse.setContent(movieService.getMoviesShowing(page, size));
-//        pageResponse.setTotalElements(movieService.getMoviesShowing(page, size).size());
-//        pageResponse.setTotalPages(page);
-//        pageResponse.setPageSize(size);
-//        return ResponseEntity.ok(pageResponse);
-//    }
+    @GetMapping("/not-showed")
+    public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
+
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageResponse<MovieDto> pageResponse = new PageResponse<>();
+        pageResponse.setContent(movieService.getMoviesUpcoming(page, size));
+        pageResponse.setTotalElements(movieService.getMoviesUpcoming(page, size).size());
+        pageResponse.setTotalPages(page);
+        pageResponse.setPageSize(size);
+        return ResponseEntity.ok(pageResponse);
+    }
+    @GetMapping("/showing")
+    public ResponseEntity<PageResponse<MovieDto>> getMoviesShowing(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageResponse<MovieDto> pageResponse = new PageResponse<>();
+        pageResponse.setContent(movieService.getMoviesShowing(page, size));
+        pageResponse.setTotalElements(movieService.getMoviesShowing(page, size).size());
+        pageResponse.setTotalPages(page);
+        pageResponse.setPageSize(size);
+        return ResponseEntity.ok(pageResponse);
+    }
 
 
 }

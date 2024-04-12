@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -232,41 +233,41 @@ public class MovieServiceImpl implements MovieService {
         }
     }
 
-//    @Override
-//    public List<MovieDto> getMoviesNotShowed(Integer page, Integer size) {
-//        // Lấy danh sách tất cả các phim
-//        Pageable pageable = PageRequest.of(page, size);
-//        Page<Movie> allMovies = movieRepository.findAll(pageable);
-//
-//        // Lọc ra các phim sắp chiếu
-//        List<Movie> moviesNotShowed = allMovies.stream()
-//                .filter(movie -> movie.getShowTimes().stream()
-//                        .allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
-//                .toList();
-//
-//        // Chuyển đổi sang MovieDto và trả về
-//        return moviesNotShowed.stream()
-//                .map(movie -> modelMapper.map(movie, MovieDto.class))
-//                .collect(Collectors.toList());
-//    }
-//
-//    @Override
-//    public List<MovieDto> getMoviesShowing(Integer page, Integer size) {
-//        // Lấy danh sách tất cả các phim
-//        Pageable pageable = PageRequest.of(page, size);
-//        Page<Movie> allMovies = movieRepository.findAll(pageable);
-//
-//        // Lọc ra các phim đang chiếu
-//        List<Movie> moviesShowing = allMovies.stream()
-//                .filter(movie -> movie.getShowTimes().stream()
-//                        .anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
-//                .toList();
-//
-//        // Chuyển đổi sang MovieDto và trả về
-//        return moviesShowing.stream()
-//                .map(movie -> modelMapper.map(movie, MovieDto.class))
-//                .collect(Collectors.toList());
-//    }
+    @Override
+    public List<MovieDto> getMoviesUpcoming(Integer page, Integer size) {
+        // Lấy danh sách tất cả các phim
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Movie> allMovies = movieRepository.findAll(pageable);
+
+        // Lọc ra các phim sắp chiếu
+        List<Movie> moviesNotShowed = allMovies.stream()
+                .filter(movie -> movie.getShowTimes().stream()
+                        .allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
+                .toList();
+
+        // Chuyển đổi sang MovieDto và trả về
+        return moviesNotShowed.stream()
+                .map(movie -> modelMapper.map(movie, MovieDto.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MovieDto> getMoviesShowing(Integer page, Integer size) {
+        // Lấy danh sách tất cả các phim
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Movie> allMovies = movieRepository.findAll(pageable);
+
+        // Lọc ra các phim đang chiếu
+        List<Movie> moviesShowing = allMovies.stream()
+                .filter(movie -> movie.getShowTimes().stream()
+                        .anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
+                .toList();
+
+        // Chuyển đổi sang MovieDto và trả về
+        return moviesShowing.stream()
+                .map(movie -> modelMapper.map(movie, MovieDto.class))
+                .collect(Collectors.toList());
+    }
 
 
 }

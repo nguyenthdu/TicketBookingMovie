@@ -12,6 +12,7 @@ public class FoodDto {
     private String name;
     private String image;
     private BigDecimal price;
+    private boolean active_price;
     private int quantity;
     private String size;
     private Long categoryId;

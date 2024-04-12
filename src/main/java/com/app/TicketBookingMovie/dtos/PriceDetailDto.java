@@ -15,7 +15,7 @@ public class PriceDetailDto {
     private Long foodId;
     private Long roomId;
     private Long typeSeatId;
-    private String itemName; // Chứa tên của sản phẩm
-    private String itemCode; // Chứa mã của sản phẩm
+    private String name; // Chứa tên của sản phẩm
+    private String code; // Chứa mã của sản phẩm
     private LocalDateTime createdDate;
 }

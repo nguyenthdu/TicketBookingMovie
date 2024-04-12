@@ -54,6 +54,7 @@ public class TypeSeatServiceImpl implements TypeSeatService {
         typeSeatDto.setCode(typeSeat.getCode());
         typeSeatDto.setName(String.valueOf(typeSeat.getName()));
         typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
+        typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setActive_price(priceDetail.isStatus()));
         return typeSeatDto;
 
 
@@ -84,6 +85,7 @@ public class TypeSeatServiceImpl implements TypeSeatService {
                     typeSeatDto.setCode(typeSeat.getCode());
                     typeSeatDto.setName(String.valueOf(typeSeat.getName()));
                     typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
+                    typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setActive_price(priceDetail.isStatus()));
                     return typeSeatDto;
                 }).collect(Collectors.toSet());
 

@@ -37,5 +37,10 @@ public class Invoice {
     @ManyToOne
     @JsonIgnore
     private Promotion  promotion;
+    @ManyToMany
+    @JoinTable(name = "invoice_promotion_line",
+            joinColumns = @JoinColumn(name = "invoice_id"),
+            inverseJoinColumns = @JoinColumn(name = "promotion_line_id"))
+    private List<PromotionLine> promotionLines;
     private boolean status;
 }

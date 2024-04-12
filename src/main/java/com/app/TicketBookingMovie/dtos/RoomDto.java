@@ -15,6 +15,7 @@ public class RoomDto   {
     private String code;
     private String name;
     private BigDecimal price;
+    private boolean active_price;
     private String type;
     private int totalSeats;
     private String cinemaName;

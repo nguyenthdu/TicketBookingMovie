@@ -175,6 +175,7 @@ public class RoomServiceImpl implements RoomService {
         //lấy giá
         room.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
             roomDto.setPrice(priceDetail.getPrice());
+            roomDto.setActive_price(priceDetail.isStatus());
         });
 // Map each seat to a SeatDto and set the price according to the chair type
         roomDto.setSeats(room.getSeats().stream().map(seat -> {
