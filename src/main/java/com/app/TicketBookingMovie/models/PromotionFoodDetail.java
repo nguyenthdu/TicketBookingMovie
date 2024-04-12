@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Entity
@@ -12,4 +14,9 @@ public class PromotionFoodDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private Long foodRequired;//đồ ăn cần mua
+    private int quantityRequired;//số lượng cần mua
+    private Long foodFree;//đồ ăn được tặng
+    private int quantityFree;//số lượng được tặng
+    private BigDecimal price;//giá sản phẩm được tặng
 }

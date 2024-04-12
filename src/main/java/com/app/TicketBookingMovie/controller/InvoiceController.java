@@ -1,6 +1,7 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.InvoiceDto;
+import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.ResponeInvoiceDetail;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -28,12 +30,12 @@ public class InvoiceController {
     }
 
     @PostMapping
-    public ResponseEntity<String> createInvoice(@RequestParam("showTimeId") Long showTimeId,
-                                                @RequestParam("seatIds") Set<Long> seatIds,
-                                                @RequestParam("foodIds") List<Long> foodIds,
-                                                @RequestParam(value = "emailUser", required = false) String emailUser,
-                                                @RequestParam("staffId") Long staffId,
-                                                @RequestParam(value = "promotionIds" ,required = false) Set<Long> promotionIds
+    public ResponseEntity<MessageResponseDto> createInvoice(@RequestParam("showTimeId") Long showTimeId,
+                                                            @RequestParam("seatIds") Set<Long> seatIds,
+                                                            @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
+                                                            @RequestParam(value = "emailUser", required = false) String emailUser,
+                                                            @RequestParam("staffId") Long staffId
+
             , HttpServletRequest request) {
         String jwt = jwtUtils.getJwtFromCookies(request);
         if (emailUser.isEmpty()) {
@@ -44,9 +46,9 @@ public class InvoiceController {
 
         try {
             invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId);
-            return ResponseEntity.ok("Invoice created successfully");
+            return ResponseEntity.ok(new MessageResponseDto("Tạo hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(e.getStatus()).body(e.getMessage());
+            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -72,8 +74,8 @@ public class InvoiceController {
             @RequestParam(value = "staffId", required = false) Long staffId,
             @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "dateCreated", required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate dateCreated) {
-        PageResponse<InvoiceDto> invoices = new  PageResponse<>();
+            @RequestParam(value = "dateCreated", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate dateCreated) {
+        PageResponse<InvoiceDto> invoices = new PageResponse<>();
         invoices.setContent(invoiceService.getAllInvoices(page, size, invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, dateCreated));
         invoices.setTotalElements(invoiceService.countAllInvoices(invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, dateCreated));
         invoices.setTotalPages((int) Math.ceil((double) invoices.getTotalElements() / size));
@@ -82,6 +84,7 @@ public class InvoiceController {
         return ResponseEntity.ok(invoices);
 
     }
+
     @GetMapping("detail/{id}")
     public ResponseEntity<ResponeInvoiceDetail> getInvoiceDetails(@PathVariable Long id) {
         // Gọi tất cả các phương thức và tạo đối tượng InvoiceDetailsDto

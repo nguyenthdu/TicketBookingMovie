@@ -1,21 +1,21 @@
 package com.app.TicketBookingMovie.services.impl;
 
+import com.app.TicketBookingMovie.dtos.PromotionDiscountDetailDto;
 import com.app.TicketBookingMovie.dtos.PromotionLineDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Promotion;
-import com.app.TicketBookingMovie.models.PromotionDiscountDetail;
 import com.app.TicketBookingMovie.models.PromotionLine;
 import com.app.TicketBookingMovie.models.enums.ETypePromotion;
 import com.app.TicketBookingMovie.repository.PromotionLineRepository;
-import com.app.TicketBookingMovie.services.PromotionDiscountDetailService;
-import com.app.TicketBookingMovie.services.PromotionLineService;
-import com.app.TicketBookingMovie.services.PromotionService;
+import com.app.TicketBookingMovie.services.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -23,14 +23,20 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     private final PromotionLineRepository promotionLineRepository;
     private final ModelMapper modelMapper;
     private final PromotionDiscountDetailService promotionDiscountDetailService;
+    private final PromotionTicketDetailService promotionTicketDetailService;
+    private final PromotionFoodDetailService promotionFoodDetailService;
     private final PromotionService promotionService;
 
-    public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionService promotionService) {
+    public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionTicketDetailService promotionTicketDetailService, PromotionFoodDetailService promotionFoodDetailService, PromotionService promotionService) {
         this.promotionLineRepository = promotionLineRepository;
         this.modelMapper = modelMapper;
         this.promotionDiscountDetailService = promotionDiscountDetailService;
+        this.promotionTicketDetailService = promotionTicketDetailService;
+        this.promotionFoodDetailService = promotionFoodDetailService;
         this.promotionService = promotionService;
-    }   public String randomCode() {
+    }
+
+    public String randomCode() {
         return "KM" + LocalDateTime.now().getNano();
     }
 
@@ -38,15 +44,15 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     @Transactional
     public void createPromotionLine(PromotionLineDto promotionLineDto) {
         Promotion promotion = promotionService.findPromotionById(promotionLineDto.getPromotionId());
-        if(promotionLineDto.getStartDate().isBefore(promotion.getStartDate()) || promotionLineDto.getEndDate().isAfter(promotion.getEndDate())){
+        if (promotionLineDto.getStartDate().isBefore(promotion.getStartDate()) || promotionLineDto.getEndDate().isAfter(promotion.getEndDate())) {
             throw new AppException("Thời gian hoạt động khuyến mãi phải nằm trong thời gian khuyến mãi của: " + promotion.getName() + " là từ ngày: " + promotion.getStartDate() + " đến " + promotion.getEndDate(), HttpStatus.BAD_REQUEST);
         }
-        if(promotionLineDto.getStartDate().isAfter(promotionLineDto.getEndDate())){
+        if (promotionLineDto.getStartDate().isAfter(promotionLineDto.getEndDate())) {
             throw new AppException("Ngày bắt đầu không thể sau ngày kết thúc", HttpStatus.BAD_REQUEST);
         }
 
         PromotionLine promotionLine = modelMapper.map(promotionLineDto, PromotionLine.class);
-        switch (promotionLineDto.getTypePromotion()){
+        switch (promotionLineDto.getTypePromotion()) {
             case "DISCOUNT":
                 //kiểm tra xem ngày bắt đầu và ngày kết thúc có trùng với promotion line có cùng loại và cùng 1 promotion
                 // Kiểm tra xem ngày bắt đầu và ngày kết thúc có trùng với promotion line có cùng loại và cùng 1 promotion
@@ -58,17 +64,31 @@ public class PromotionLineServiceImpl implements PromotionLineService {
                     throw new AppException("Khuyến mãi đã tồn tại", HttpStatus.BAD_REQUEST);
                 }
 
-                PromotionDiscountDetail promotionDiscountDetail = promotionDiscountDetailService.createPromotionDiscountDetail(promotionLineDto.getPromotionDiscountDetailDto());
-                promotionLine.setPromotionDiscountDetail(promotionDiscountDetail);
+                promotionLine.setPromotionDiscountDetail(promotionDiscountDetailService.createPromotionDiscountDetail(promotionLineDto.getPromotionDiscountDetailDto()));
                 promotionLine.setTypePromotion(ETypePromotion.valueOf("DISCOUNT"));
                 break;
-//            case "FOOD":
-//                promotionLineDto.setStatus(true);
-//                promotionLineDto.setPromotionDiscountDetailDto(promotionDiscountDetailService.createPromotionDetailDiscount(promotionLineDto.getPromotionDiscountDetailDto()));
-//                break;
-//            case "TICKET":
-//                promotionLineDto.setPromotionDiscountDetailDto(promotionDiscountDetailService.createPromotionDetailGift(promotionLineDto.getPromotionDiscountDetailDto()));
-//                break;
+            case "FOOD":
+                if (promotionLineRepository.existsByStartDateAndEndDateAndTypePromotionAndPromotion(
+                        promotionLineDto.getStartDate(),
+                        promotionLineDto.getEndDate(),
+                        ETypePromotion.FOOD, // Chuyển đổi sang ETypePromotion
+                        promotion)) {
+                    throw new AppException("Khuyến mãi đã tồn tại", HttpStatus.BAD_REQUEST);
+                }
+                promotionLine.setPromotionFoodDetail(promotionFoodDetailService.createPromotionFoodDetail(promotionLineDto.getPromotionFoodDetailDto()));
+                promotionLine.setTypePromotion(ETypePromotion.valueOf("FOOD"));
+                break;
+            case "TICKET":
+                if (promotionLineRepository.existsByStartDateAndEndDateAndTypePromotionAndPromotion(
+                        promotionLineDto.getStartDate(),
+                        promotionLineDto.getEndDate(),
+                        ETypePromotion.TICKET, // Chuyển đổi sang ETypePromotion
+                        promotion)) {
+                    throw new AppException("Khuyến mãi đã tồn tại", HttpStatus.BAD_REQUEST);
+                }
+                promotionLine.setPromotionTicketDetail(promotionTicketDetailService.createPromotionTicketDetail(promotionLineDto.getPromotionTicketDetailDto()));
+                promotionLine.setTypePromotion(ETypePromotion.valueOf("TICKET"));
+                break;
         }
         promotionLine.setCode(randomCode());
         promotionLine.setStatus(false);
@@ -77,11 +97,37 @@ public class PromotionLineServiceImpl implements PromotionLineService {
 
     }
 
+    @Override
+    public List<PromotionLine> getPromotionLineActive() {
+        //lấy danh sách promtionLine có thời gian hiện tại nằm trong thời gian khuyến mãi, và status = true
+        return promotionLineRepository.findActivePromotionLines(LocalDateTime.now());
+
+    }
+
+    @Override
+    public PromotionLineDto showPromotionLineDiscountMatchInvoice(BigDecimal totalPrice) {
+        //lấy danh sách promotionLine có thời gian hiện tại nằm trong thời gian khuyến mãi, và status = true
+        List<PromotionLine> promotionLines = promotionLineRepository.findActivePromotionLines(LocalDateTime.now());
+        PromotionLine promotionLine = promotionLines.stream()
+                .filter(line -> line.getTypePromotion().equals(ETypePromotion.DISCOUNT))
+                .filter(line -> line.getPromotionDiscountDetail().getMinBillValue().compareTo(totalPrice) <= 0)
+                .max(Comparator.comparing(line -> line.getPromotionDiscountDetail().getDiscountValue()))
+                .orElse(null);
+
+        if (promotionLine == null) {
+            return null;
+        }
+        PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
+        PromotionDiscountDetailDto promotionDiscountDetailDto = modelMapper.map(promotionLine.getPromotionDiscountDetail(), PromotionDiscountDetailDto.class);
+        promotionLineDto.setPromotionDiscountDetailDto(promotionDiscountDetailDto);
+        return promotionLineDto;
+    }
 
     @Override
     public PromotionLineDto getPromotionLineById(Long promotionLineId) {
         return null;
     }
+
 
     @Override
     public List<PromotionLineDto> getAllPromotionLineFromPromotionId(Integer page, Integer size, Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String applicableObject, String typePromotion) {

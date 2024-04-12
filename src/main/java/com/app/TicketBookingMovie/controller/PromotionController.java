@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
@@ -112,24 +113,6 @@ public class PromotionController {
 
 
 
-//    //get promotion fit the bill
-//    @GetMapping("/fit-bill")
-//    public ResponseEntity<List<PromotionLine>> getPromotionFitBill(
-//            @RequestParam("totalValueBill") double totalValueBill,
-//            @RequestParam("dateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTime,
-//            @RequestParam("applicableObject") String applicableObject) {
-//
-//        return ResponseEntity.ok(promotionService.getAllPromotionFitBill(totalValueBill, dateTime, applicableObject));
-//    }
-//
-//    @GetMapping("/fit-bill-code")
-//    public ResponseEntity<PromotionLine> getPromotionLineByCodeAndFitBill(
-//            @RequestParam("promotionLineCode") String promotionLineCode,
-//            @RequestParam("totalValueBill") double totalValueBill,
-//            @RequestParam("dateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTime,
-//            @RequestParam("applicableObject") String applicableObject) {
-//        return ResponseEntity.ok(promotionService.getPromotionLineByCodeAndFitBill(promotionLineCode, totalValueBill, dateTime, applicableObject));
-//    }
 
     @GetMapping("/line/{id}")
     public ResponseEntity<PromotionLineDto> getPromotionLineById(@PathVariable Long id) {
@@ -161,6 +144,11 @@ public class PromotionController {
     public ResponseEntity<MessageResponseDto> deletePromotionLine(@PathVariable Long id) {
         promotionLineService.deletePromotionLine(id);
         return ResponseEntity.ok(new MessageResponseDto("Xóa hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+    }
+    // lấy danh sách promtion line đang hoạt động phù hợp với giá trị hóa đơn
+    @GetMapping("/line_discount/active")
+    public ResponseEntity<PromotionLineDto> showPromotionLineDiscountMatchInvoice(@RequestParam("totalPrice") BigDecimal totalPrice) {
+        return ResponseEntity.ok(promotionLineService.showPromotionLineDiscountMatchInvoice(totalPrice));
     }
 
 }

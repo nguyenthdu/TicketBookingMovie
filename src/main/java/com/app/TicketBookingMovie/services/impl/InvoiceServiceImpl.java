@@ -5,6 +5,7 @@ import com.app.TicketBookingMovie.dtos.*;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.models.enums.EDetailType;
+import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
 import com.app.TicketBookingMovie.services.*;
 import org.modelmapper.ModelMapper;
@@ -29,16 +30,17 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final FoodService foodService;
     private final UserService userService;
     private final PriceDetailService priceDetailService;
-
+    private final PromotionLineService promotionLineService;
     private final ModelMapper modelMapper;
 
 
-    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailService priceDetailService, ModelMapper modelMapper) {
+    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailService priceDetailService, PromotionLineService promotionLineService, ModelMapper modelMapper) {
         this.invoiceRepository = invoiceRepository;
         this.ticketService = ticketService;
         this.foodService = foodService;
         this.userService = userService;
         this.priceDetailService = priceDetailService;
+        this.promotionLineService = promotionLineService;
         this.modelMapper = modelMapper;
     }
 
@@ -68,10 +70,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             Optional<PriceDetail> roomPriceDetailOptional = currentPriceDetails.stream()
                     .filter(detail -> detail.getType() == EDetailType.ROOM && Objects.equals(detail.getRoom().getId(), ticket.getShowTime().getRoom().getId()))
                     .findFirst();
-            if (seatPriceDetailOptional.isPresent() && roomPriceDetailOptional.isPresent() ) {
+            if (seatPriceDetailOptional.isPresent() && roomPriceDetailOptional.isPresent()) {
                 PriceDetail seatPriceDetail = seatPriceDetailOptional.get();
                 PriceDetail roomPriceDetail = roomPriceDetailOptional.get();
-              //nếu trạng thái của pricedetail là false hoặc thời gian hiện tại không năm trong khoản thời gian của price header của pricedetail thì không thể tạo hóa đơn
+                //nếu trạng thái của pricedetail là false hoặc thời gian hiện tại không năm trong khoản thời gian của price header của pricedetail thì không thể tạo hóa đơn
                 if (!seatPriceDetail.isStatus() || !roomPriceDetail.isStatus() || currentTime.isBefore(seatPriceDetail.getPriceHeader().getStartDate()) || currentTime.isAfter(seatPriceDetail.getPriceHeader().getEndDate()) || currentTime.isBefore(roomPriceDetail.getPriceHeader().getStartDate()) || currentTime.isAfter(roomPriceDetail.getPriceHeader().getEndDate())) {
                     throw new AppException("Giá sản phẩm không sẵn sàng để tại hóa đơn, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
                 }
@@ -86,35 +88,41 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         // Tạo danh sách chi tiết đồ ăn từ thông tin đồ ăn
         List<InvoiceFoodDetail> invoiceFoodDetails = new ArrayList<>();
-        Map<Long, Integer> foodQuantityMap = new HashMap<>(); // Map lưu trữ số lượng của từng loại đồ ăn
-        for (Long foodId : foodIds) {
-            if (foodQuantityMap.containsKey(foodId)) {
-                foodQuantityMap.put(foodId, foodQuantityMap.get(foodId) + 1);
-            } else {
-                foodQuantityMap.put(foodId, 1);
+        if (!foodIds.isEmpty()) {
+            Map<Long, Integer> foodQuantityMap = new HashMap<>(); // Map lưu trữ số lượng của từng loại đồ ăn
+
+            for (Long foodId : foodIds) {
+                if (foodQuantityMap.containsKey(foodId)) {
+                    foodQuantityMap.put(foodId, foodQuantityMap.get(foodId) + 1);
+                } else {
+                    foodQuantityMap.put(foodId, 1);
+                }
             }
-        }
 
-        for (Map.Entry<Long, Integer> entry : foodQuantityMap.entrySet()) {
-            Long foodId = entry.getKey();
-            int quantity = entry.getValue();
-            Food food = foodService.findById(foodId);
+            for (Map.Entry<Long, Integer> entry : foodQuantityMap.entrySet()) {
+                Long foodId = entry.getKey();
+                int quantity = entry.getValue();
+                Food food = foodService.findById(foodId);
 
-            if (food.getQuantity() < quantity) {
-                throw new AppException("Not enough stock for food: " + food.getName(), HttpStatus.BAD_REQUEST);
+                if (food.getQuantity() < quantity) {
+                    throw new AppException("Not enough stock for food: " + food.getName(), HttpStatus.BAD_REQUEST);
+                }
+                // Tạo chi tiết hóa đơn cho từng loại đồ ăn, thông tin loại đồ ăn
+                InvoiceFoodDetail foodDetail = getInvoiceFoodDetail(food, quantity);
+                invoiceFoodDetails.add(foodDetail);
             }
-            // Tạo chi tiết hóa đơn cho từng loại đồ ăn, thông tin loại đồ ăn
-            InvoiceFoodDetail foodDetail = getInvoiceFoodDetail(food, quantity);
-            invoiceFoodDetails.add(foodDetail);
-        }
-        invoice.setInvoiceFoodDetails(invoiceFoodDetails);
+            invoice.setInvoiceFoodDetails(invoiceFoodDetails);
 
-        // Giảm số lượng tồn của sản phẩm
-        for (Map.Entry<Long, Integer> entry : foodQuantityMap.entrySet()) {
-            Long foodId = entry.getKey();
-            int quantity = entry.getValue();
-            Food food = foodService.findById(foodId);
-            food.setQuantity(food.getQuantity() - quantity);
+            // Giảm số lượng tồn của sản phẩm
+            for (Map.Entry<Long, Integer> entry : foodQuantityMap.entrySet()) {
+                Long foodId = entry.getKey();
+                int quantity = entry.getValue();
+                Food food = foodService.findById(foodId);
+                food.setQuantity(food.getQuantity() - quantity);
+            }
+        } else {
+            // Nếu không có đồ ăn thì không cần tạo chi tiết đồ ăn
+            invoice.setInvoiceFoodDetails(new ArrayList<>());
         }
 
         // Gán người dùng và nhân viên thanh toán vào hóa đơn
@@ -124,23 +132,23 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setStaff(staff);
 
         // Tính tổng giá của hóa đơn
-        BigDecimal total = new BigDecimal(0);
-        for (InvoiceTicketDetail ticketDetail : invoiceTicketDetails) {
-            total = total.add(ticketDetail.getPrice().multiply(new BigDecimal(ticketDetail.getQuantity())));
-        }
-        for (InvoiceFoodDetail foodDetail : invoiceFoodDetails) {
-            total = total.add(foodDetail.getPrice().multiply(new BigDecimal(foodDetail.getQuantity())));
-        }
-        // Áp dụng khuyến mãi và cập nhật tổng giá của hóa đơn
-        // tìm những promtion line trong khoản thời gian hiện tại
-//        List<PromotionLine>promotionLines = promotionService.getAllPromotionFitBill(total, "ALL");
-//        total = applyPromotions(promotionLines, invoice, total);
-        //tìm promotionLine có loại là discount nằm trong khoản thời gian hiện tại
+        BigDecimal total = calculateTotalPrice(invoiceTicketDetails, invoiceFoodDetails);
 
+        // Lấy danh sách PromotionLine đang hoạt động
+        List<PromotionLine> promotionLines = promotionLineService.getPromotionLineActive();
+
+        // Áp dụng khuyến mãi nếu có
+        for (PromotionLine promotionLine : promotionLines) {
+            if (isPromotionApplicable(promotionLine, total)) {
+                total = applyPromotion(promotionLine, total);
+                invoice.setPromotionLines(Set.of(promotionLine));
+            }
+        }
+
+        // Lưu tổng giá của hóa đơn
         invoice.setTotalPrice(total);
-
-        // Lưu hóa đơn vào cơ sở dữ liệu
         invoiceRepository.save(invoice);
+
     }
 
     private InvoiceFoodDetail getInvoiceFoodDetail(Food food, int quantity) {
@@ -160,6 +168,58 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         return foodDetail;
     }
+
+    private BigDecimal calculateTotalPrice(List<InvoiceTicketDetail> ticketDetails, List<InvoiceFoodDetail> foodDetails) {
+        // Tính tổng giá của vé
+        BigDecimal ticketTotal = ticketDetails.stream()
+                .map(detail -> detail.getPrice().multiply(BigDecimal.valueOf(detail.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Tính tổng giá của đồ ăn
+        BigDecimal foodTotal = foodDetails.stream()
+                .map(detail -> detail.getPrice().multiply(BigDecimal.valueOf(detail.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Tổng giá của hóa đơn là tổng giá của vé và đồ ăn
+        return ticketTotal.add(foodTotal);
+    }
+
+    private boolean isPromotionApplicable(PromotionLine promotionLine, BigDecimal total) {
+        // Kiểm tra xem hóa đơn có đủ điều kiện để áp dụng khuyến mãi hay không
+        PromotionDiscountDetail discountDetail = promotionLine.getPromotionDiscountDetail();
+        if (discountDetail != null) {
+            // Nếu loại khuyến mãi là tiền và tổng giá trị hóa đơn >= giá trị tối thiểu của khuyến mãi
+            // Nếu loại khuyến mãi là phần trăm và tổng giá trị hóa đơn >= giá trị tối thiểu của khuyến mãi
+            if (discountDetail.getTypeDiscount() == ETypeDiscount.AMOUNT && total.compareTo(discountDetail.getMinBillValue()) >= 0) {
+                return true;
+            } else
+                return discountDetail.getTypeDiscount() == ETypeDiscount.PERCENT && total.compareTo(discountDetail.getMinBillValue()) >= 0;
+        }
+
+        return false;
+    }
+
+    private BigDecimal applyPromotion(PromotionLine promotionLine, BigDecimal total) {
+        // Áp dụng khuyến mãi vào tổng giá trị hóa đơn
+        PromotionDiscountDetail discountDetail = promotionLine.getPromotionDiscountDetail();
+        if (discountDetail != null) {
+            if (discountDetail.getTypeDiscount() == ETypeDiscount.AMOUNT) {
+                // Nếu loại khuyến mãi là tiền, giảm giá trực tiếp từ tổng giá trị hóa đơn
+                total = total.subtract(discountDetail.getDiscountValue());
+                // Kiểm tra giá trị giảm giá không được vượt quá giá trị tối đa
+            } else if (discountDetail.getTypeDiscount() == ETypeDiscount.PERCENT) {
+                // Nếu loại khuyến mãi là phần trăm, giảm giá theo tỷ lệ phần trăm
+                BigDecimal discountAmount = total.multiply(discountDetail.getDiscountValue().divide(BigDecimal.valueOf(100)));
+                // Kiểm tra giá trị giảm giá không được vượt quá giá trị tối đa
+                if (discountAmount.compareTo(BigDecimal.valueOf(discountDetail.getMaxValue())) > 0) {
+                    discountAmount = BigDecimal.valueOf(discountDetail.getMaxValue());
+                }
+                total = total.subtract(discountAmount);
+            }
+        }
+        return total;
+    }
+
 
     @Override
     public InvoiceDto getInvoiceById(Long id) {
