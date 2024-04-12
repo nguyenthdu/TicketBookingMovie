@@ -316,6 +316,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setEnabled(true);
             user.setPassword(passwordConfig.passwordEncoder()
                     .encode("admin123456"));
+            user.setCreatedDate(LocalDateTime.now());
             userRepository.save(user);
         }
     }
