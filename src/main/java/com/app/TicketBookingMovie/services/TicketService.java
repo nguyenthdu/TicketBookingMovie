@@ -8,4 +8,5 @@ import java.util.Set;
 public interface TicketService {
     List<Ticket> createTickets(Long showTimeId, Set<Long> seatIds);
 
+    Ticket findById(Long typeSeatFreeId);
 }

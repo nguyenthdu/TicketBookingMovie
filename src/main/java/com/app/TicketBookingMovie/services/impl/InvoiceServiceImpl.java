@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -34,7 +35,13 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final ModelMapper modelMapper;
 
 
-    public InvoiceServiceImpl(InvoiceRepository invoiceRepository, TicketService ticketService, FoodService foodService, UserService userService, PriceDetailService priceDetailService, PromotionLineService promotionLineService, ModelMapper modelMapper) {
+    public InvoiceServiceImpl(InvoiceRepository invoiceRepository,
+                              TicketService ticketService,
+                              FoodService foodService,
+                              UserService userService,
+                              PriceDetailService priceDetailService,
+                              PromotionLineService promotionLineService,
+                              ModelMapper modelMapper) {
         this.invoiceRepository = invoiceRepository;
         this.ticketService = ticketService;
         this.foodService = foodService;
@@ -74,7 +81,9 @@ public class InvoiceServiceImpl implements InvoiceService {
                 PriceDetail seatPriceDetail = seatPriceDetailOptional.get();
                 PriceDetail roomPriceDetail = roomPriceDetailOptional.get();
                 //nếu trạng thái của pricedetail là false hoặc thời gian hiện tại không năm trong khoản thời gian của price header của pricedetail thì không thể tạo hóa đơn
-                if (!seatPriceDetail.isStatus() || !roomPriceDetail.isStatus() || currentTime.isBefore(seatPriceDetail.getPriceHeader().getStartDate()) || currentTime.isAfter(seatPriceDetail.getPriceHeader().getEndDate()) || currentTime.isBefore(roomPriceDetail.getPriceHeader().getStartDate()) || currentTime.isAfter(roomPriceDetail.getPriceHeader().getEndDate())) {
+                if (!seatPriceDetail.isStatus() || !roomPriceDetail.isStatus() || currentTime.isBefore(seatPriceDetail.getPriceHeader().getStartDate())
+                        || currentTime.isAfter(seatPriceDetail.getPriceHeader().getEndDate()) || currentTime.isBefore(roomPriceDetail.getPriceHeader().getStartDate())
+                        || currentTime.isAfter(roomPriceDetail.getPriceHeader().getEndDate())) {
                     throw new AppException("Giá sản phẩm không sẵn sàng để tại hóa đơn, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
                 }
 
@@ -105,7 +114,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 Food food = foodService.findById(foodId);
 
                 if (food.getQuantity() < quantity) {
-                    throw new AppException("Not enough stock for food: " + food.getName(), HttpStatus.BAD_REQUEST);
+                    throw new AppException("Số lượng đồ ăn: " + food.getName()+" không đủ!!!", HttpStatus.BAD_REQUEST);
                 }
                 // Tạo chi tiết hóa đơn cho từng loại đồ ăn, thông tin loại đồ ăn
                 InvoiceFoodDetail foodDetail = getInvoiceFoodDetail(food, quantity);
@@ -132,21 +141,29 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setStaff(staff);
 
         // Tính tổng giá của hóa đơn
-        BigDecimal total = calculateTotalPrice(invoiceTicketDetails, invoiceFoodDetails);
 
         // Lấy danh sách PromotionLine đang hoạt động
         List<PromotionLine> promotionLines = promotionLineService.getPromotionLineActive();
+        boolean checkPromotionFood = applyAllFoodPromotions(promotionLines, invoiceFoodDetails);
+        boolean checkPromotionTicket = applyAllTicketPromotions(promotionLines, invoiceTicketDetails);
+        BigDecimal total = calculateTotalPrice(invoiceTicketDetails, invoiceFoodDetails);
 
         // Áp dụng khuyến mãi nếu có
         for (PromotionLine promotionLine : promotionLines) {
             if (isPromotionApplicable(promotionLine, total)) {
                 total = applyPromotion(promotionLine, total);
                 invoice.setPromotionLines(Set.of(promotionLine));
+
+            }
+            if (checkPromotionFood) {
+                invoice.setPromotionLines(Set.of(promotionLine));
+            }
+            if (checkPromotionTicket) {
+                invoice.setPromotionLines(Set.of(promotionLine));
             }
         }
 
         // Áp dụng khuyến mãi đồ ăn
-        applyAllFoodPromotions(promotionLines, invoiceFoodDetails);
 
         // Lưu tổng giá của hóa đơn
         invoice.setTotalPrice(total);
@@ -224,7 +241,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         return total;
     }
-    //TODO: Áp dụng khuyến mãi đồ ăn
     private void applyFoodPromotion(PromotionFoodDetail promotionFoodDetail, List<InvoiceFoodDetail> invoiceFoodDetails) {
         Long foodRequiredId = promotionFoodDetail.getFoodRequired();
         int quantityRequired = promotionFoodDetail.getQuantityRequired();
@@ -239,27 +255,70 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         if (requiredFoodDetailOptional.isPresent()) {
             InvoiceFoodDetail requiredFoodDetail = requiredFoodDetailOptional.get();
-            // Kiểm tra xem số lượng đồ ăn tặng có vượt quá số lượng yêu cầu hay không
-            int availablePromotionQuantity = Math.min(requiredFoodDetail.getQuantity() / quantityRequired, quantityPromotion);
+            // Tạo InvoiceFoodDetail mới cho đồ ăn được tặng
+            InvoiceFoodDetail promotionFoodDetail1 = new InvoiceFoodDetail();
+            promotionFoodDetail1.setFood(foodService.findById(foodPromotionId));
+            promotionFoodDetail1.setQuantity(quantityPromotion);
+            promotionFoodDetail1.setPrice(promotionPrice);
+            promotionFoodDetail1.setNote("Khuyến mãi");
 
-            // Tạo chi tiết hóa đơn cho đồ ăn được tặng
-            for (int i = 0; i < availablePromotionQuantity; i++) {
-                InvoiceFoodDetail promotionFoodDetail1 = new InvoiceFoodDetail();
-                promotionFoodDetail1.setFood(foodService.findById(foodPromotionId));
-                promotionFoodDetail1.setQuantity(1);
-                promotionFoodDetail1.setPrice(promotionPrice);
-                promotionFoodDetail1.setNote("Khuyến mãi");
-                invoiceFoodDetails.add(promotionFoodDetail1);
-            }
+            // Thêm vào danh sách chi tiết hóa đơn
+            invoiceFoodDetails.add(promotionFoodDetail1);
+
+            // Giảm số lượng của đồ ăn cần mua
+            requiredFoodDetail.setQuantity(requiredFoodDetail.getQuantity() - quantityPromotion);
         }
     }
-    private void applyAllFoodPromotions(List<PromotionLine> promotionLines, List<InvoiceFoodDetail> invoiceFoodDetails) {
+
+    private boolean applyAllFoodPromotions(List<PromotionLine> promotionLines, List<InvoiceFoodDetail> invoiceFoodDetails) {
         for (PromotionLine promotionLine : promotionLines) {
             PromotionFoodDetail promotionFoodDetail = promotionLine.getPromotionFoodDetail();
             if (promotionFoodDetail != null) {
                 applyFoodPromotion(promotionFoodDetail, invoiceFoodDetails);
+                return true;
             }
         }
+        return false;
+    }
+
+    //TODO: khuyến mãi loại ghế
+    private void applyTicketPromotion(PromotionTicketDetail promotionTicketDetail, List<InvoiceTicketDetail> invoiceTicketDetails) {
+        Long typeSeatRequiredId = promotionTicketDetail.getTypeSeatRequired();
+        int quantityRequired = promotionTicketDetail.getQuantityRequired();
+        Long typeSeatFreeId = promotionTicketDetail.getTypeSeatFree();
+        int quantityFree = promotionTicketDetail.getQuantityFree();
+        BigDecimal promotionPrice = promotionTicketDetail.getPrice();
+
+        // kiểm tra xem loại ghế của ghế có đủ điều kiện để áp dụng khuyến mãi hay không
+        List<InvoiceTicketDetail> requiredTicketDetails = invoiceTicketDetails.stream()
+                .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId) && detail.getQuantity() >= quantityRequired)
+                .collect(Collectors.toList());
+        if (!requiredTicketDetails.isEmpty()) {
+            for (InvoiceTicketDetail requiredTicketDetail : requiredTicketDetails) {
+                // Tạo InvoiceTicketDetail mới cho loại ghế được tặng
+                InvoiceTicketDetail freeTicketDetail = new InvoiceTicketDetail();
+                freeTicketDetail.setTicket(ticketService.findById(typeSeatFreeId));
+                freeTicketDetail.setQuantity(quantityFree);
+                freeTicketDetail.setPrice(promotionPrice);
+                freeTicketDetail.setNote("Khuyến mãi");
+                // Thêm vào danh sách chi tiết hóa đơn
+                invoiceTicketDetails.add(freeTicketDetail);
+                // Giảm số lượng của loại ghế cần mua
+                requiredTicketDetail.setQuantity(requiredTicketDetail.getQuantity() - quantityFree);
+            }
+        }
+    }
+
+
+    private boolean applyAllTicketPromotions(List<PromotionLine> promotionLines, List<InvoiceTicketDetail> invoiceTicketDetails) {
+        for (PromotionLine promotionLine : promotionLines) {
+            PromotionTicketDetail promotionTicketDetail = promotionLine.getPromotionTicketDetail();
+            if (promotionTicketDetail != null) {
+                applyTicketPromotion(promotionTicketDetail, invoiceTicketDetails);
+                return true;
+            }
+        }
+        return false;
     }
 
 

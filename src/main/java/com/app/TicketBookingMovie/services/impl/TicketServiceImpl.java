@@ -5,7 +5,6 @@ import com.app.TicketBookingMovie.models.Seat;
 import com.app.TicketBookingMovie.models.ShowTime;
 import com.app.TicketBookingMovie.models.ShowTimeSeat;
 import com.app.TicketBookingMovie.models.Ticket;
-import com.app.TicketBookingMovie.repository.PriceDetailRepository;
 import com.app.TicketBookingMovie.repository.SeatRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeRepository;
 import com.app.TicketBookingMovie.repository.TicketRepository;
@@ -27,13 +26,12 @@ public class TicketServiceImpl implements TicketService {
 
     private final SeatRepository seatRepository;
 
-    private final PriceDetailRepository priceDetailRepository;
 
-    public TicketServiceImpl(TicketRepository ticketRepository, ShowTimeRepository showTimeRepository, SeatRepository seatRepository, PriceDetailRepository priceDetailRepository) {
+    public TicketServiceImpl(TicketRepository ticketRepository, ShowTimeRepository showTimeRepository, SeatRepository seatRepository) {
         this.ticketRepository = ticketRepository;
         this.showTimeRepository = showTimeRepository;
         this.seatRepository = seatRepository;
-        this.priceDetailRepository = priceDetailRepository;
+
 
     }
 
@@ -114,6 +112,13 @@ public class TicketServiceImpl implements TicketService {
             }
         }
         return createdTickets;
+
+    }
+
+    @Override
+    public Ticket findById(Long typeSeatFreeId) {
+        return ticketRepository.findById(typeSeatFreeId)
+                .orElseThrow(() -> new AppException("Không tìm thấy vé", HttpStatus.NOT_FOUND));
 
     }
 
