@@ -77,7 +77,9 @@ public class MovieServiceImpl implements MovieService {
     public MovieDto getMovieById(Long id) {
         Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException("Movie not found with id: " + id, HttpStatus.NOT_FOUND));
         Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+        Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
         MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+        movieDTO.setCinemaIds(cinemaIds);
         movieDTO.setGenreIds(genreIds);
         return movieDTO;
 
@@ -207,9 +209,14 @@ public class MovieServiceImpl implements MovieService {
 
         //sort by created date
         return movies.stream().sorted(Comparator.comparing(Movie::getCreatedDate).reversed())
-                .map(movie -> modelMapper.map(movie, MovieDto.class))
-                .collect(Collectors.toList());
+                .map(movie ->{
 
+                    MovieDto movieDto = modelMapper.map(movie, MovieDto.class);
+                    movieDto.setCinemaIds(movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet()));
+                    movieDto.setGenreIds(movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet()));
+                    return movieDto;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
