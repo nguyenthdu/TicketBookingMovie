@@ -127,17 +127,41 @@ public class PromotionController {
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
-            @RequestParam(value = "applicableObject", required = false) String applicableObject,
-            @RequestParam(value = "typePromotion", required = false) String typePromotion,
-            @RequestParam(value = "status", required = false) boolean status) {
+            @RequestParam(value = "typePromotion", required = false) String typePromotion){
         PageResponse<PromotionLineDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(promotionLineService.getAllPromotionLineFromPromotionId(page, size, promotionId, code, startDate, endDate, applicableObject, typePromotion));
-        pageResponse.setTotalElements(promotionLineService.countAllPromotionLineFromPromotionId(promotionId, code, startDate, endDate, applicableObject, typePromotion));
+        pageResponse.setContent(promotionLineService.getAllPromotionLineFromPromotionId(page, size, promotionId, code, startDate, endDate, typePromotion));
+        pageResponse.setTotalElements(promotionLineService.countAllPromotionLineFromPromotionId(promotionId, code, startDate, endDate,  typePromotion));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
         return ResponseEntity.ok(pageResponse);
 
+    }
+    @PutMapping("/line")
+    public ResponseEntity<MessageResponseDto> updatePromotionLine(
+            @RequestParam("id") Long id,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "description", required = false)   String description,
+            @RequestParam(value = "image", required = false) String image,
+            @RequestParam(value = "startDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
+            @RequestParam(value = "endDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
+            @RequestParam(value = "status",required = false) boolean status
+
+        ) {
+        PromotionLineDto promotionLineDto = new PromotionLineDto();
+        promotionLineDto.setId(id);
+        promotionLineDto.setName(name);
+        promotionLineDto.setDescription(description);
+        promotionLineDto.setImage(image);
+        promotionLineDto.setStartDate(startDate);
+        promotionLineDto.setEndDate(endDate);
+        promotionLineDto.setStatus(status);
+        try {
+            promotionLineService.updatePromotionLine(promotionLineDto);
+            return ResponseEntity.ok(new MessageResponseDto("Cập nhật hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
     }
 
     @DeleteMapping("/line/{id}")

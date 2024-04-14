@@ -125,6 +125,7 @@ public class MovieServiceImpl implements MovieService {
             movie.setName(movie.getName());
         }
         if (!movieDTO.getTrailerLink().isEmpty() && !movieDTO.getTrailerLink().isBlank() && !movieDTO.getTrailerLink().equals(movie.getTrailerLink())) {
+            awsService.deleteImage(movie.getTrailerLink());
             movie.setTrailerLink(movieDTO.getTrailerLink());
         } else {
             movie.setTrailerLink(movie.getTrailerLink());
@@ -170,9 +171,7 @@ public class MovieServiceImpl implements MovieService {
         } else {
             movie.setProducer(movie.getProducer());
         }
-
         movieRepository.save(movie);
-        modelMapper.map(movie, MovieDto.class);
     }
 
     @Override

@@ -145,11 +145,15 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
         }
 
+        // Áp dụng khuyến mãi đồ ăn
+        applyAllFoodPromotions(promotionLines, invoiceFoodDetails);
+
         // Lưu tổng giá của hóa đơn
         invoice.setTotalPrice(total);
         invoiceRepository.save(invoice);
 
     }
+
 
     private InvoiceFoodDetail getInvoiceFoodDetail(Food food, int quantity) {
         InvoiceFoodDetail foodDetail = new InvoiceFoodDetail();
@@ -168,7 +172,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         return foodDetail;
     }
-
+    //TODO: tính tổng giá của hóa đơn
     private BigDecimal calculateTotalPrice(List<InvoiceTicketDetail> ticketDetails, List<InvoiceFoodDetail> foodDetails) {
         // Tính tổng giá của vé
         BigDecimal ticketTotal = ticketDetails.stream()
@@ -183,6 +187,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Tổng giá của hóa đơn là tổng giá của vé và đồ ăn
         return ticketTotal.add(foodTotal);
     }
+    //TODO: kiểm tra xem hóa đơn có đủ điều kiện để áp dụng khuyến mãi hay không
 
     private boolean isPromotionApplicable(PromotionLine promotionLine, BigDecimal total) {
         // Kiểm tra xem hóa đơn có đủ điều kiện để áp dụng khuyến mãi hay không
@@ -198,7 +203,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         return false;
     }
-
+    //TODO: áp dụng khuyến mãi vào tổng giá trị hóa đơn
     private BigDecimal applyPromotion(PromotionLine promotionLine, BigDecimal total) {
         // Áp dụng khuyến mãi vào tổng giá trị hóa đơn
         PromotionDiscountDetail discountDetail = promotionLine.getPromotionDiscountDetail();
@@ -218,6 +223,43 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
         }
         return total;
+    }
+    //TODO: Áp dụng khuyến mãi đồ ăn
+    private void applyFoodPromotion(PromotionFoodDetail promotionFoodDetail, List<InvoiceFoodDetail> invoiceFoodDetails) {
+        Long foodRequiredId = promotionFoodDetail.getFoodRequired();
+        int quantityRequired = promotionFoodDetail.getQuantityRequired();
+        Long foodPromotionId = promotionFoodDetail.getFoodPromotion();
+        int quantityPromotion = promotionFoodDetail.getQuantityPromotion();
+        BigDecimal promotionPrice = promotionFoodDetail.getPrice();
+
+        // Kiểm tra xem trong danh sách chi tiết đồ ăn có đủ điều kiện để áp dụng khuyến mãi hay không
+        Optional<InvoiceFoodDetail> requiredFoodDetailOptional = invoiceFoodDetails.stream()
+                .filter(detail -> detail.getFood().getId().equals(foodRequiredId) && detail.getQuantity() >= quantityRequired)
+                .findFirst();
+
+        if (requiredFoodDetailOptional.isPresent()) {
+            InvoiceFoodDetail requiredFoodDetail = requiredFoodDetailOptional.get();
+            // Kiểm tra xem số lượng đồ ăn tặng có vượt quá số lượng yêu cầu hay không
+            int availablePromotionQuantity = Math.min(requiredFoodDetail.getQuantity() / quantityRequired, quantityPromotion);
+
+            // Tạo chi tiết hóa đơn cho đồ ăn được tặng
+            for (int i = 0; i < availablePromotionQuantity; i++) {
+                InvoiceFoodDetail promotionFoodDetail1 = new InvoiceFoodDetail();
+                promotionFoodDetail1.setFood(foodService.findById(foodPromotionId));
+                promotionFoodDetail1.setQuantity(1);
+                promotionFoodDetail1.setPrice(promotionPrice);
+                promotionFoodDetail1.setNote("Khuyến mãi");
+                invoiceFoodDetails.add(promotionFoodDetail1);
+            }
+        }
+    }
+    private void applyAllFoodPromotions(List<PromotionLine> promotionLines, List<InvoiceFoodDetail> invoiceFoodDetails) {
+        for (PromotionLine promotionLine : promotionLines) {
+            PromotionFoodDetail promotionFoodDetail = promotionLine.getPromotionFoodDetail();
+            if (promotionFoodDetail != null) {
+                applyFoodPromotion(promotionFoodDetail, invoiceFoodDetails);
+            }
+        }
     }
 
 
