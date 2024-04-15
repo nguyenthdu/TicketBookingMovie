@@ -64,6 +64,9 @@ public class FoodServiceImpl implements FoodService {
         food.setCreatedDate(LocalDateTime.now());
         food.setCategoryFood(categoryFoodService.findCategoryFoodById(foodDto.getCategoryId()));
         //lấy danh sách rạp
+        if(!cinema.isStatus() && !food.isStatus()){
+            throw new AppException("Không thể đặt trạng thái của đồ ăn hoạt động khi trạng thái của rạp không hoạt động!!!", HttpStatus.BAD_REQUEST);
+        }
         food.setCinema(cinemaService.findById(foodDto.getCinemaId()));
         food.setCreatedDate(LocalDateTime.now());
         foodRepository.save(food);

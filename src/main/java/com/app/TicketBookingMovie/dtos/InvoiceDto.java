@@ -3,23 +3,19 @@ package com.app.TicketBookingMovie.dtos;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 public class InvoiceDto {
     private  Long id;
     private String code;
     private double totalPrice;
-    private Long userId;
-    private Long staffId;
-    private List<Long> invoiceDetailIds;
     private LocalDateTime createdDate;
     private LocalDateTime cancelledDate;
-    private Long promotionId;
     private boolean status;
     private String showTimeCode;
     private String cinemaName;
     private String roomName;
+    private String movieImage;
     private String movieName;
     private String userName;
     private String staffName;

@@ -174,5 +174,13 @@ public class PromotionController {
     public ResponseEntity<PromotionLineDto> showPromotionLineDiscountMatchInvoice(@RequestParam("totalPrice") BigDecimal totalPrice) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineDiscountMatchInvoice(totalPrice));
     }
+    @GetMapping("/line_food/active")
+    public ResponseEntity<PromotionLineDto> showPromotionLineFoodMatchInvoice(@RequestParam("foodId") Long foodId, @RequestParam("quantity") int quantity) {
+        return ResponseEntity.ok(promotionLineService.showPromotionLineFoodMatchInvoice(foodId, quantity));
+    }
+    @GetMapping("/line_ticket/active")
+    public ResponseEntity<PromotionLineDto> showPromotionLineTicketMatchInvoice(@RequestParam("typeSeatId") Long typeSeatId, @RequestParam("quantity") int quantity) {
+        return ResponseEntity.ok(promotionLineService.showPromotionLineTicketMatchInvoice(typeSeatId, quantity));
+    }
 
 }

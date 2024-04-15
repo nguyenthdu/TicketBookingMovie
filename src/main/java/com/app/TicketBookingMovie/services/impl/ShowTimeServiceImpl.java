@@ -111,8 +111,23 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         }
 
 
-    }
 
+    }
+    //sau 1 tuần sẽ dự động xóa các ShowTimeSeat của lịch chiếu đã qua 1 tuần
+    @Async
+    @Scheduled(fixedRate = 60000) // Chạy mỗi phút
+    public void deleteShowTimeSeatAsync() {
+        LocalDate currentDate = LocalDate.now(); // Ngày hiện tại
+        List<ShowTime> allShowTimes = showTimeRepository.findAll();
+        for (ShowTime showTime : allShowTimes) {
+            LocalDate showDate = showTime.getShowDate();
+            boolean isShowTimePassed = showDate.isBefore(currentDate);
+            if (isShowTimePassed) {
+                Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
+                showTimeSeatRepository.deleteAll(showTimeSeats);
+            }
+        }
+    }
 
     @Override
     public ShowTimeDto getShowTimeById(Long id) {

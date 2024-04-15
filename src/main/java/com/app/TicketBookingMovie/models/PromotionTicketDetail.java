@@ -16,8 +16,8 @@ public class PromotionTicketDetail {
     private Long id;
     private Long typeSeatRequired;//loại ghế  cần mua
     private int quantityRequired;//số lượng cần mua
-    private Long typeSeatFree;//loại ghế được tặng
-    private int quantityFree;//số lượng được tặng
+    private Long typeSeatPromotion;//loại ghế được tặng
+    private int quantityPromotion;//số lượng được tặng
     private BigDecimal price;//giá sản phẩm được tặng
 
 }

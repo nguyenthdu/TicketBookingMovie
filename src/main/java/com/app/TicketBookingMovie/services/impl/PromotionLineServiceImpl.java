@@ -108,15 +108,15 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     public void updatePromotionLine(PromotionLineDto promotionLineDto) {
         PromotionLine promotionLine = promotionLineRepository.findById(promotionLineDto.getId()).orElseThrow(() -> new AppException("Không tìm thấy chương trình khuyến mãi với id: " + promotionLineDto.getId(), HttpStatus.NOT_FOUND));
         Promotion promotion = promotionLine.getPromotion();
-        if (promotionLineDto.getStartDate() != null || promotionLineDto.getEndDate() != null){
-            if(promotionLineDto.getStartDate().isBefore(promotion.getStartDate()) || promotionLineDto.getEndDate().isAfter(promotion.getEndDate())) {
+        if (promotionLineDto.getStartDate() != null || promotionLineDto.getEndDate() != null) {
+            if (promotionLineDto.getStartDate().isBefore(promotion.getStartDate()) || promotionLineDto.getEndDate().isAfter(promotion.getEndDate())) {
                 throw new AppException("Thời gian hoạt động khuyến mãi phải nằm trong thời gian khuyến mãi của: " + promotion.getName() + " là từ ngày: " + promotion.getStartDate() + " đến " + promotion.getEndDate(), HttpStatus.BAD_REQUEST);
             }
             if (promotionLineDto.getStartDate().isAfter(promotionLineDto.getEndDate())) {
                 throw new AppException("Ngày bắt đầu không thể sau ngày kết thúc", HttpStatus.BAD_REQUEST);
             }
             //nếu chương trình khuyến mãi đã bắt đầu thì không được cập nhật ngày bắt đầu
-            if (!promotionLineDto.getStartDate().equals(promotionLine.getStartDate()) ) {
+            if (!promotionLineDto.getStartDate().equals(promotionLine.getStartDate())) {
                 if (LocalDateTime.now().isAfter(promotionLine.getStartDate())) {
                     throw new AppException("Không thể cập nhật ngày bắt đầu khi chương trình khuyến mãi đã bắt đầu", HttpStatus.BAD_REQUEST);
                 }
@@ -162,7 +162,6 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         promotionLineRepository.save(promotionLine);
 
 
-
     }
 
     @Override
@@ -189,6 +188,46 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         PromotionDiscountDetailDto promotionDiscountDetailDto = modelMapper.map(promotionLine.getPromotionDiscountDetail(), PromotionDiscountDetailDto.class);
         promotionLineDto.setPromotionDiscountDetailDto(promotionDiscountDetailDto);
         return promotionLineDto;
+    }
+
+    @Override
+    public PromotionLineDto showPromotionLineFoodMatchInvoice(Long foodId, int quantity) {
+        //Lấy danh sách promotionLine có thời gian hiện tại nằm trong thời gian khuyến mãi và status = true
+        List<PromotionLine> promotionLines = promotionLineRepository.findActivePromotionLines(LocalDateTime.now());
+        PromotionLine promotionLine = promotionLines.stream()
+                .filter(line -> line.getTypePromotion().equals(ETypePromotion.FOOD))
+                .filter(line -> line.getPromotionFoodDetail().getFoodRequired().equals(foodId))
+                .filter(line -> line.getPromotionFoodDetail().getQuantityRequired() <= quantity)
+                .max(Comparator.comparing(PromotionLine::getCreatedAt))
+                .orElse(null);
+        if (promotionLine == null) {
+            return null;
+        } else {
+            PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
+            PromotionFoodDetailDto promotionFoodDetailDto = modelMapper.map(promotionLine.getPromotionFoodDetail(), PromotionFoodDetailDto.class);
+            promotionLineDto.setPromotionFoodDetailDto(promotionFoodDetailDto);
+            return promotionLineDto;
+        }
+    }
+
+    @Override
+    public PromotionLineDto showPromotionLineTicketMatchInvoice(Long typeSeatId, int quantity) {
+        //Lấy danh sách promotionLine có thời gian hiện tại nằm trong thời gian khuyến mãi và status = true
+        List<PromotionLine> promotionLines = promotionLineRepository.findActivePromotionLines(LocalDateTime.now());
+        PromotionLine promotionLine = promotionLines.stream()
+                .filter(line -> line.getTypePromotion().equals(ETypePromotion.TICKET))
+                .filter(line -> line.getPromotionTicketDetail().getTypeSeatRequired().equals(typeSeatId))
+                .filter(line -> line.getPromotionTicketDetail().getQuantityRequired() <= quantity)
+                .max(Comparator.comparing(PromotionLine::getCreatedAt))
+                .orElse(null);
+        if (promotionLine == null) {
+            return null;
+        } else {
+            PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
+            PromotionTicketDetailDto promotionTicketDetailDto = modelMapper.map(promotionLine.getPromotionTicketDetail(), PromotionTicketDetailDto.class);
+            promotionLineDto.setPromotionTicketDetailDto(promotionTicketDetailDto);
+            return promotionLineDto;
+        }
     }
 
 

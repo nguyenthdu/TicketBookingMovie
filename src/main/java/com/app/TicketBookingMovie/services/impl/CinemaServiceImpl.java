@@ -95,6 +95,7 @@ public class CinemaServiceImpl implements CinemaService {
         }
         cinemaRepository.save(cinema);
 
+
     }
 
     @Override

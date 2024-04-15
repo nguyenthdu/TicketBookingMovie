@@ -20,7 +20,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -55,6 +54,12 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId) {
+        //kiểm tra nếu trong 1 ngày mà user đã đặt 8 ghế trong tất cả hóa đơn của ngày đó thì không được đặt nữa
+        List<Invoice> invoices = invoiceRepository.findInvoiceByToday(LocalDateTime.now().toLocalDate());
+        long count = invoices.stream().filter(invoice -> invoice.getUser().getEmail().equals(emailUser)).count();
+        if (count >= 8) {
+            throw new AppException("Không thể đặt quá 8 ghế trong 1 ngày", HttpStatus.BAD_REQUEST);
+        }
         // Tạo một đối tượng Invoice mới
         Invoice invoice = new Invoice();
         invoice.setCode(randomCode()); // Tạo mã hóa đơn
@@ -288,8 +293,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     private void applyTicketPromotion(PromotionTicketDetail promotionTicketDetail, List<InvoiceTicketDetail> invoiceTicketDetails) {
         Long typeSeatRequiredId = promotionTicketDetail.getTypeSeatRequired();
         int quantityRequired = promotionTicketDetail.getQuantityRequired();
-        Long typeSeatFreeId = promotionTicketDetail.getTypeSeatFree();
-        int quantityFree = promotionTicketDetail.getQuantityFree();
+        Long typeSeatFreeId = promotionTicketDetail.getTypeSeatPromotion();
+        int quantityFree = promotionTicketDetail.getQuantityPromotion();
         BigDecimal promotionPrice = promotionTicketDetail.getPrice();
 
         // kiểm tra xem loại ghế của ghế có đủ điều kiện để áp dụng khuyến mãi hay không
@@ -300,7 +305,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             // Tìm các vé có loại ghế cần mua để áp dụng khuyến mãi
             List<InvoiceTicketDetail> requiredTicketDetails = invoiceTicketDetails.stream()
                     .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId))
-                    .collect(Collectors.toList());
+                    .toList();
 
             for (int i = 0; i < quantityFree; i++) {
                 InvoiceTicketDetail requiredTicketDetail = requiredTicketDetails.get(i);
@@ -309,7 +314,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
         }
     }
-
 
 
     private boolean applyAllTicketPromotions(List<PromotionLine> promotionLines, List<InvoiceTicketDetail> invoiceTicketDetails) {
@@ -328,7 +332,16 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceDto getInvoiceById(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
-        return modelMapper.map(invoice, InvoiceDto.class);
+        InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+        invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+        invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+        invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+        invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+        invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
+        invoiceDto.setStaffName(invoice.getStaff().getUsername());
+        invoiceDto.setUserName(invoice.getUser().getUsername());
+        return invoiceDto;
+
 
     }
 
@@ -359,28 +372,40 @@ public class InvoiceServiceImpl implements InvoiceService {
         } else {
             pageInvoice = invoiceRepository.findAll(pageable);
         }
-        // tạo 1 danh sách chứa các đối tượng InvoiceDto
-        List<InvoiceDto> invoiceDtos = new ArrayList<>();
-        //lặp qua  các đối tượng Invoice và chuyển đổi chúng thành InvoiceDto
-        for (Invoice invoice : pageInvoice) {
-            InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
-            //lấy code show time
-            invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
-            //lấy tên rạp
-            invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
-            //lấy tên phòng
-            invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
-            //lấy tên phim
-            invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
-            //lấy tên nhân viên
-            invoiceDto.setStaffName(invoice.getStaff().getUsername());
-            //lấy tên người dùng
-            invoiceDto.setUserName(invoice.getUser().getUsername());
-            //thêm vào danh sách
-            invoiceDtos.add(invoiceDto);
-        }
-        return invoiceDtos.stream().sorted(Comparator.comparing(InvoiceDto::getCreatedDate).reversed())
-                .toList();
+
+        return pageInvoice.stream().sorted(Comparator.comparing(Invoice::getCreatedDate).reversed())
+                .map(invoice -> {
+                    InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+                    invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+                    invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+                    invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+                    invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+                    invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
+                    invoiceDto.setStaffName(invoice.getStaff().getUsername());
+                    invoiceDto.setUserName(invoice.getUser().getUsername());
+                    return invoiceDto;
+                }).toList();
+
+//        {
+//            InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+//            //lấy code show time
+//            invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+//            //lấy tên rạp
+//            invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+//            //lấy tên phòng
+//            invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+//            //lấy tên phim
+//            invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+//            //lấy ảnh phim
+//            invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
+//            //lấy tên nhân viên
+//            invoiceDto.setStaffName(invoice.getStaff().getUsername());
+//            //lấy tên người dùng
+//            invoiceDto.setUserName(invoice.getUser().getUsername());
+//            //thêm vào danh sách
+//            invoiceDtos.add(invoiceDto);
+//        }
+
     }
 
     @Override
@@ -427,6 +452,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         addressDto.setCity(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getCity());
         addressDto.setDistrict(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getDistrict());
         addressDto.setStreet(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getStreet());
+        addressDto.setWard(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getWard());
+        addressDto.setNation(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getAddress().getNation());
         return addressDto;
     }
 
@@ -437,7 +464,13 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
         roomDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId());
         roomDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
-//        roomDto.setPrice(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getPrice().getPrice());
+        //lấy giá phòng  từ price detail
+
+        roomDto.setPrice(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getPriceDetails().stream()
+                .filter(priceDetail -> priceDetail.getType() == EDetailType.ROOM)
+                .findFirst()
+                .get()
+                .getPrice());
         String typeRoom = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getType().toString();
         roomDto.setType(typeRoom);
         return roomDto;
@@ -494,7 +527,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public List<InvoiceFoodDetailDto> getInvoiceFoodDetailByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
-        List<InvoiceFoodDetail> invoiceFoodDetails = invoiceRepository.findById(id).get().getInvoiceFoodDetails();
+        List<InvoiceFoodDetail> invoiceFoodDetails = invoice.getInvoiceFoodDetails();
         List<InvoiceFoodDetailDto> invoiceFoodDetailDtos = new ArrayList<>();
         for (InvoiceFoodDetail invoiceFoodDetail : invoiceFoodDetails) {
             InvoiceFoodDetailDto invoiceFoodDetailDto = modelMapper.map(invoiceFoodDetail, InvoiceFoodDetailDto.class);
@@ -514,7 +547,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public List<InvoiceTicketDetailDto> getInvoiceTicketDetailByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
-        List<InvoiceTicketDetail> invoiceTicketDetails = invoiceRepository.findById(id).get().getInvoiceTicketDetails();
+        List<InvoiceTicketDetail> invoiceTicketDetails = invoice.getInvoiceTicketDetails();
         List<InvoiceTicketDetailDto> invoiceTicketDetailDtos = new ArrayList<>();
         for (InvoiceTicketDetail invoiceTicketDetail : invoiceTicketDetails) {
             InvoiceTicketDetailDto invoiceTicketDetailDto = modelMapper.map(invoiceTicketDetail, InvoiceTicketDetailDto.class);
@@ -523,8 +556,16 @@ public class InvoiceServiceImpl implements InvoiceService {
             invoiceTicketDetailDto.setRowCol(invoiceTicketDetail.getTicket().getSeat().getSeatRow() + " - " + invoiceTicketDetail.getTicket().getSeat().getSeatColumn());
             String typeSeat = String.valueOf(invoiceTicketDetail.getTicket().getSeat().getSeatType().getName());
             invoiceTicketDetailDto.setSeatType(typeSeat);
-//                invoiceTicketDetailDto.setPrice(invoiceTicketDetail.getPrice());
-//            invoiceTicketDetailDto.setPriceItem(invoiceTicketDetail.getTicket().getSeat().getSeatType().getPrice().getPrice());
+                invoiceTicketDetailDto.setPrice(invoiceTicketDetail.getPrice());
+            invoiceTicketDetailDto.setPriceItem(invoiceTicketDetail.getTicket().getSeat().getSeatType().getPriceDetails().stream()
+                    .filter(priceDetail -> priceDetail.getType() == EDetailType.TYPE_SEAT)
+                    .findFirst()
+                    .get()
+                    .getPrice().add(invoiceTicketDetail.getTicket().getShowTime().getRoom().getPriceDetails().stream()
+                            .filter(priceDetail -> priceDetail.getType() == EDetailType.ROOM)
+                            .findFirst()
+                            .get()
+                            .getPrice()));
             invoiceTicketDetailDto.setQuantity(invoiceTicketDetail.getQuantity());
             invoiceTicketDetailDto.setNote(invoiceTicketDetail.getNote());
             invoiceTicketDetailDtos.add(invoiceTicketDetailDto);

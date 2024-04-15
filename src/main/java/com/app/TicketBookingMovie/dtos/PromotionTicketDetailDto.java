@@ -9,8 +9,8 @@ public class PromotionTicketDetailDto {
     private  Long id;
     private Long typeSeatRequired;
     private int quantityRequired;
-    private Long typeSeatFree;
-    private int quantityFree;
+    private Long typeSeatPromotion;
+    private int quantityPromotion;
     private BigDecimal price;
 
 

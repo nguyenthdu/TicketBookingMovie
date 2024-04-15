@@ -2,6 +2,8 @@ package com.app.TicketBookingMovie.dtos;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class InvoiceTicketDetailDto {
     private Long id;
@@ -10,7 +12,7 @@ public class InvoiceTicketDetailDto {
    private String rowCol;
     private String seatType;
     private int quantity;
-    private double price;
-    private double priceItem;
+    private BigDecimal price;
+    private BigDecimal priceItem;
     private String note;
 }

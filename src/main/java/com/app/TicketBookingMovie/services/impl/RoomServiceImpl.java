@@ -19,7 +19,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.function.support.RouterFunctionMapping;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -35,16 +34,14 @@ public class RoomServiceImpl implements RoomService {
     private final SeatService seatService;
     private final CinemaRepository cinemaRepository;
     private final CinemaService cinemaService;
-    private final RouterFunctionMapping routerFunctionMapping;
 
     @Autowired
-    public RoomServiceImpl(ModelMapper modelMapper, RoomRepository roomRepository, SeatService seatService, CinemaRepository cinemaRepository, CinemaService cinemaService, RouterFunctionMapping routerFunctionMapping) {
+    public RoomServiceImpl(ModelMapper modelMapper, RoomRepository roomRepository, SeatService seatService, CinemaRepository cinemaRepository, CinemaService cinemaService) {
         this.modelMapper = modelMapper;
         this.roomRepository = roomRepository;
         this.seatService = seatService;
         this.cinemaRepository = cinemaRepository;
         this.cinemaService = cinemaService;
-        this.routerFunctionMapping = routerFunctionMapping;
     }
 
     @Override
@@ -70,6 +67,9 @@ public class RoomServiceImpl implements RoomService {
         }
         room.setSeats(seats);
         room.setTotalSeats(room.getSeats().size());
+        if(!cinema.isStatus() && room.isStatus()){
+            throw new AppException("Không thể đặt trạng thái phòng hoạt động khi trạng thái rạp không hoạt động!!!", HttpStatus.BAD_REQUEST);
+        }
         room.setCreatedDate(LocalDateTime.now());
         roomRepository.save(room);
         cinemaService.countTotalRooms(roomDto.getCinemaId(), 1);

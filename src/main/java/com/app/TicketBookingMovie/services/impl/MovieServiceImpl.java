@@ -67,7 +67,11 @@ public class MovieServiceImpl implements MovieService {
             cinemaOptional.ifPresent(cinemas::add);
         }
         movie.setCinemas(cinemas);
-        movie.setStatus(movieDTO.isStatus());
+        //nếu trạng thái của rạp là false thì trạng thái phim không thể là true
+
+        if (!movie.isStatus() && movieDTO.isStatus()) {
+            throw new AppException("Không thể đặt trạng thái phim hoạt động khi trạng thái rạp không hoạt động ", HttpStatus.BAD_REQUEST);
+        }
         movie.setCreatedDate(LocalDateTime.now());
         movieRepository.save(movie);
         modelMapper.map(movie, MovieDto.class);
