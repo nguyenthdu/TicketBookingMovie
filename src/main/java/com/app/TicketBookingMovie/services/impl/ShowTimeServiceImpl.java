@@ -138,6 +138,12 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         return showTimeDto;
     }
 
+    @Override
+    public ShowTime findById(Long id) {
+        return showTimeRepository.findById(id)
+                .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
+    }
+
 
     @Override
     public void updateShowTime(ShowTimeDto showTimeDto) {

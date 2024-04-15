@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("api/promotion")
@@ -100,7 +101,6 @@ public class PromotionController {
     }
 
 
-
     @PostMapping("/line")
     public ResponseEntity<MessageResponseDto> createPromotionLine(@RequestBody PromotionLineDto promotionLineDto) {
         try {
@@ -110,8 +110,6 @@ public class PromotionController {
             return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
-
-
 
 
     @GetMapping("/line/{id}")
@@ -127,27 +125,28 @@ public class PromotionController {
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
-            @RequestParam(value = "typePromotion", required = false) String typePromotion){
+            @RequestParam(value = "typePromotion", required = false) String typePromotion) {
         PageResponse<PromotionLineDto> pageResponse = new PageResponse<>();
         pageResponse.setContent(promotionLineService.getAllPromotionLineFromPromotionId(page, size, promotionId, code, startDate, endDate, typePromotion));
-        pageResponse.setTotalElements(promotionLineService.countAllPromotionLineFromPromotionId(promotionId, code, startDate, endDate,  typePromotion));
+        pageResponse.setTotalElements(promotionLineService.countAllPromotionLineFromPromotionId(promotionId, code, startDate, endDate, typePromotion));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
         return ResponseEntity.ok(pageResponse);
 
     }
+
     @PutMapping("/line")
     public ResponseEntity<MessageResponseDto> updatePromotionLine(
             @RequestParam("id") Long id,
             @RequestParam(value = "name", required = false) String name,
-            @RequestParam(value = "description", required = false)   String description,
+            @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "image", required = false) String image,
-            @RequestParam(value = "startDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
-            @RequestParam(value = "endDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
-            @RequestParam(value = "status",required = false) boolean status
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
+            @RequestParam(value = "status", required = false) boolean status
 
-        ) {
+    ) {
         PromotionLineDto promotionLineDto = new PromotionLineDto();
         promotionLineDto.setId(id);
         promotionLineDto.setName(name);
@@ -169,18 +168,22 @@ public class PromotionController {
         promotionLineService.deletePromotionLine(id);
         return ResponseEntity.ok(new MessageResponseDto("Xóa hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
     }
+
     // lấy danh sách promtion line đang hoạt động phù hợp với giá trị hóa đơn
     @GetMapping("/line_discount/active")
     public ResponseEntity<PromotionLineDto> showPromotionLineDiscountMatchInvoice(@RequestParam("totalPrice") BigDecimal totalPrice) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineDiscountMatchInvoice(totalPrice));
     }
+
     @GetMapping("/line_food/active")
-    public ResponseEntity<PromotionLineDto> showPromotionLineFoodMatchInvoice(@RequestParam("foodId") Long foodId, @RequestParam("quantity") int quantity) {
-        return ResponseEntity.ok(promotionLineService.showPromotionLineFoodMatchInvoice(foodId, quantity));
+    public ResponseEntity<PromotionLineDto> showPromotionLineFoodMatchInvoice(@RequestParam("foodId") List<Long> foodId, @RequestParam("cinemaId")Long cinemaId) {
+        return ResponseEntity.ok(promotionLineService.showPromotionLineFoodMatchInvoice(foodId, cinemaId));
     }
+
     @GetMapping("/line_ticket/active")
-    public ResponseEntity<PromotionLineDto> showPromotionLineTicketMatchInvoice(@RequestParam("typeSeatId") Long typeSeatId, @RequestParam("quantity") int quantity) {
-        return ResponseEntity.ok(promotionLineService.showPromotionLineTicketMatchInvoice(typeSeatId, quantity));
+    public ResponseEntity<PromotionLineDto> showPromotionLineTicketMatchInvoice(@RequestParam("seatId") List<Long> seatId
+            , @RequestParam("showTimeId") Long showTimeId) {
+        return ResponseEntity.ok(promotionLineService.showPromotionLineTicketMatchInvoice(seatId, showTimeId));
     }
 
 }

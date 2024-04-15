@@ -15,8 +15,8 @@ public interface PromotionLineService {
     PromotionLineDto getPromotionLineById(Long promotionLineId);
     List<PromotionLine> getPromotionLineActive();
     PromotionLineDto showPromotionLineDiscountMatchInvoice(BigDecimal totalPrice);
-    PromotionLineDto showPromotionLineFoodMatchInvoice(Long foodId, int quantity);
-    PromotionLineDto showPromotionLineTicketMatchInvoice(Long typeSeatId, int quantity);
+    PromotionLineDto showPromotionLineFoodMatchInvoice(List<Long> foodId,Long cinemaId);
+    PromotionLineDto showPromotionLineTicketMatchInvoice(List<Long> seatId,Long showTimeId);
     List<PromotionLineDto> getAllPromotionLineFromPromotionId(Integer page, Integer size, Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String typePromotion);
     long countAllPromotionLineFromPromotionId(Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate , String typePromotion);
     void deletePromotionLine(Long promotionLineId);

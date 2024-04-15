@@ -5,8 +5,7 @@ import com.app.TicketBookingMovie.dtos.PromotionFoodDetailDto;
 import com.app.TicketBookingMovie.dtos.PromotionLineDto;
 import com.app.TicketBookingMovie.dtos.PromotionTicketDetailDto;
 import com.app.TicketBookingMovie.exception.AppException;
-import com.app.TicketBookingMovie.models.Promotion;
-import com.app.TicketBookingMovie.models.PromotionLine;
+import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.models.enums.ETypePromotion;
 import com.app.TicketBookingMovie.repository.PromotionLineRepository;
 import com.app.TicketBookingMovie.services.*;
@@ -20,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PromotionLineServiceImpl implements PromotionLineService {
@@ -32,8 +31,10 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     private final PromotionFoodDetailService promotionFoodDetailService;
     private final PromotionService promotionService;
     private final AwsService awsService;
+    private final ShowTimeService showTimeService;
+    private final CinemaService cinemaService;
 
-    public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionTicketDetailService promotionTicketDetailService, PromotionFoodDetailService promotionFoodDetailService, PromotionService promotionService, AwsService awsService) {
+    public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionTicketDetailService promotionTicketDetailService, PromotionFoodDetailService promotionFoodDetailService, PromotionService promotionService, AwsService awsService, ShowTimeService showTimeService, CinemaService cinemaService) {
         this.promotionLineRepository = promotionLineRepository;
         this.modelMapper = modelMapper;
         this.promotionDiscountDetailService = promotionDiscountDetailService;
@@ -41,6 +42,8 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         this.promotionFoodDetailService = promotionFoodDetailService;
         this.promotionService = promotionService;
         this.awsService = awsService;
+        this.showTimeService = showTimeService;
+        this.cinemaService = cinemaService;
     }
 
     public String randomCode() {
@@ -191,44 +194,106 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     }
 
     @Override
-    public PromotionLineDto showPromotionLineFoodMatchInvoice(Long foodId, int quantity) {
-        //Lấy danh sách promotionLine có thời gian hiện tại nằm trong thời gian khuyến mãi và status = true
+    public PromotionLineDto showPromotionLineFoodMatchInvoice(List<Long> foodIds, Long cinemaId) {
+        // Lấy danh sách promotionLine có thời gian hiện tại nằm trong thời gian khuyến mãi và status = true
         List<PromotionLine> promotionLines = promotionLineRepository.findActivePromotionLines(LocalDateTime.now());
-        PromotionLine promotionLine = promotionLines.stream()
-                .filter(line -> line.getTypePromotion().equals(ETypePromotion.FOOD))
-                .filter(line -> line.getPromotionFoodDetail().getFoodRequired().equals(foodId))
-                .filter(line -> line.getPromotionFoodDetail().getQuantityRequired() <= quantity)
-                .max(Comparator.comparing(PromotionLine::getCreatedAt))
-                .orElse(null);
-        if (promotionLine == null) {
+
+        // Tính toán số lượng của từng loại đồ ăn
+        Map<Long, Integer> foodQuantityMap = new HashMap<>();
+        for (Long foodId : foodIds) {
+            if (foodQuantityMap.containsKey(foodId)) {
+                foodQuantityMap.put(foodId, foodQuantityMap.get(foodId) + 1);
+            } else {
+                foodQuantityMap.put(foodId, 1);
+            }
+        }
+
+        // Kiểm tra từng promotionLine để tìm chương trình khuyến mãi phù hợp
+        PromotionLine matchedPromotionLine = null;
+        for (PromotionLine promotionLine : promotionLines) {
+            if (promotionLine.getTypePromotion().equals(ETypePromotion.FOOD)) {
+                PromotionFoodDetail promotionFoodDetail = promotionLine.getPromotionFoodDetail();
+                boolean isMatched = true;
+                // Kiểm tra số lượng đồ ăn phù hợp với yêu cầu của chương trình khuyến mãi
+                for (Map.Entry<Long, Integer> entry : foodQuantityMap.entrySet()) {
+                    Long foodId = entry.getKey();
+                    Integer quantity = entry.getValue();
+                    if (promotionFoodDetail.getFoodRequired().equals(foodId)) {
+                        if (quantity < promotionFoodDetail.getQuantityRequired()) {
+                            isMatched = false;
+                            break;
+                        }
+                    }
+                }
+                // Nếu tất cả các điều kiện đều đáp ứng, chọn promotionLine này
+                if (isMatched) {
+                    matchedPromotionLine = promotionLine;
+                    break;
+                }
+            }
+        }
+
+        if (matchedPromotionLine == null) {
             return null;
         } else {
-            PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
-            PromotionFoodDetailDto promotionFoodDetailDto = modelMapper.map(promotionLine.getPromotionFoodDetail(), PromotionFoodDetailDto.class);
+            PromotionLineDto promotionLineDto = modelMapper.map(matchedPromotionLine, PromotionLineDto.class);
+            PromotionFoodDetailDto promotionFoodDetailDto = modelMapper.map(matchedPromotionLine.getPromotionFoodDetail(), PromotionFoodDetailDto.class);
             promotionLineDto.setPromotionFoodDetailDto(promotionFoodDetailDto);
             return promotionLineDto;
         }
     }
 
+
     @Override
-    public PromotionLineDto showPromotionLineTicketMatchInvoice(Long typeSeatId, int quantity) {
-        //Lấy danh sách promotionLine có thời gian hiện tại nằm trong thời gian khuyến mãi và status = true
+    public PromotionLineDto showPromotionLineTicketMatchInvoice(List<Long> seatIds, Long showTimeId) {
+        // Lấy danh sách promotionLine có thời gian hiện tại nằm trong thời gian khuyến mãi và status = true
         List<PromotionLine> promotionLines = promotionLineRepository.findActivePromotionLines(LocalDateTime.now());
-        PromotionLine promotionLine = promotionLines.stream()
-                .filter(line -> line.getTypePromotion().equals(ETypePromotion.TICKET))
-                .filter(line -> line.getPromotionTicketDetail().getTypeSeatRequired().equals(typeSeatId))
-                .filter(line -> line.getPromotionTicketDetail().getQuantityRequired() <= quantity)
-                .max(Comparator.comparing(PromotionLine::getCreatedAt))
-                .orElse(null);
-        if (promotionLine == null) {
-            return null;
-        } else {
-            PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
-            PromotionTicketDetailDto promotionTicketDetailDto = modelMapper.map(promotionLine.getPromotionTicketDetail(), PromotionTicketDetailDto.class);
-            promotionLineDto.setPromotionTicketDetailDto(promotionTicketDetailDto);
-            return promotionLineDto;
+
+        // Lấy danh sách ghế truyền vào từ lịch chiếu
+        ShowTime showTime = showTimeService.findById(showTimeId);
+        Set<Seat> seats = showTime.getRoom().getSeats();
+        Set<Seat> selectedSeats = seats.stream()
+                .filter(seat -> seatIds.contains(seat.getId()))
+                .collect(Collectors.toSet());
+
+        // Lấy loại ghế của danh sách ghế truyền vào
+        Set<Long> seatTypes = selectedSeats.stream()
+                .map(seat -> seat.getSeatType().getId())
+                .collect(Collectors.toSet());
+
+        // Kiểm tra xem danh sách ghế có khớp với bất kỳ khuyến mãi nào không
+        for (PromotionLine promotionLine : promotionLines) {
+            if (promotionLine.getTypePromotion().equals(ETypePromotion.TICKET)) {
+                PromotionTicketDetail promotionTicketDetail = promotionLine.getPromotionTicketDetail();
+
+                // Kiểm tra xem loại ghế được yêu cầu của khuyến mãi có trong danh sách loại ghế truyền vào không
+                if (seatTypes.contains(promotionTicketDetail.getTypeSeatRequired())) {
+                    int requiredQuantity = promotionTicketDetail.getQuantityRequired();
+                    int totalQuantity = 0;
+
+                    // Đếm số lượng ghế tương ứng với loại ghế yêu cầu của khuyến mãi
+                    for (Seat seat : selectedSeats) {
+                        if (seat.getSeatType().getId().equals(promotionTicketDetail.getTypeSeatRequired())) {
+                            totalQuantity++;
+                        }
+                    }
+
+                    // Kiểm tra xem số lượng ghế có đủ điều kiện để nhận khuyến mãi không
+                    if (totalQuantity >= requiredQuantity) {
+                        // Khuyến mãi phù hợp được tìm thấy
+                        PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
+                        PromotionTicketDetailDto promotionTicketDetailDto = modelMapper.map(promotionTicketDetail, PromotionTicketDetailDto.class);
+                        promotionLineDto.setPromotionTicketDetailDto(promotionTicketDetailDto);
+                        return promotionLineDto;
+                    }
+                }
+            }
         }
+
+        // Không tìm thấy khuyến mãi phù hợp
+        return null;
     }
+
 
 
     @Override

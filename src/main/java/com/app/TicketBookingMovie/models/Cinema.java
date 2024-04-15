@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -21,6 +22,8 @@ public class Cinema {
     private int totalRoom;
     @OneToOne(cascade = CascadeType.REMOVE) // Add CascadeType.REMOVE here
     private Address address;
+    @OneToMany(mappedBy = "cinema")
+    private Set<Food> foods;
     private boolean status = true;
     private LocalDateTime   createdDate = LocalDateTime.now();
     public Cinema() {
