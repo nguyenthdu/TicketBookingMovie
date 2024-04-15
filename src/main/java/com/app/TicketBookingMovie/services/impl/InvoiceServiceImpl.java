@@ -114,7 +114,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 Food food = foodService.findById(foodId);
 
                 if (food.getQuantity() < quantity) {
-                    throw new AppException("Số lượng đồ ăn: " + food.getName()+" không đủ!!!", HttpStatus.BAD_REQUEST);
+                    throw new AppException("Số lượng đồ ăn: " + food.getName() + " không đủ!!!", HttpStatus.BAD_REQUEST);
                 }
                 // Tạo chi tiết hóa đơn cho từng loại đồ ăn, thông tin loại đồ ăn
                 InvoiceFoodDetail foodDetail = getInvoiceFoodDetail(food, quantity);
@@ -189,6 +189,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         return foodDetail;
     }
+
     //TODO: tính tổng giá của hóa đơn
     private BigDecimal calculateTotalPrice(List<InvoiceTicketDetail> ticketDetails, List<InvoiceFoodDetail> foodDetails) {
         // Tính tổng giá của vé
@@ -220,6 +221,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         return false;
     }
+
     //TODO: áp dụng khuyến mãi vào tổng giá trị hóa đơn
     private BigDecimal applyPromotion(PromotionLine promotionLine, BigDecimal total) {
         // Áp dụng khuyến mãi vào tổng giá trị hóa đơn
@@ -241,6 +243,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         return total;
     }
+
     private void applyFoodPromotion(PromotionFoodDetail promotionFoodDetail, List<InvoiceFoodDetail> invoiceFoodDetails) {
         Long foodRequiredId = promotionFoodDetail.getFoodRequired();
         int quantityRequired = promotionFoodDetail.getQuantityRequired();
@@ -290,24 +293,23 @@ public class InvoiceServiceImpl implements InvoiceService {
         BigDecimal promotionPrice = promotionTicketDetail.getPrice();
 
         // kiểm tra xem loại ghế của ghế có đủ điều kiện để áp dụng khuyến mãi hay không
-        List<InvoiceTicketDetail> requiredTicketDetails = invoiceTicketDetails.stream()
-                .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId) && detail.getQuantity() >= quantityRequired)
-                .collect(Collectors.toList());
-        if (!requiredTicketDetails.isEmpty()) {
-            for (InvoiceTicketDetail requiredTicketDetail : requiredTicketDetails) {
-                // Tạo InvoiceTicketDetail mới cho loại ghế được tặng
-                InvoiceTicketDetail freeTicketDetail = new InvoiceTicketDetail();
-                freeTicketDetail.setTicket(ticketService.findById(typeSeatFreeId));
-                freeTicketDetail.setQuantity(quantityFree);
-                freeTicketDetail.setPrice(promotionPrice);
-                freeTicketDetail.setNote("Khuyến mãi");
-                // Thêm vào danh sách chi tiết hóa đơn
-                invoiceTicketDetails.add(freeTicketDetail);
-                // Giảm số lượng của loại ghế cần mua
-                requiredTicketDetail.setQuantity(requiredTicketDetail.getQuantity() - quantityFree);
+        long requiredTicketCount = invoiceTicketDetails.stream()
+                .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId))
+                .count();
+        if (requiredTicketCount >= quantityRequired) {
+            // Tìm các vé có loại ghế cần mua để áp dụng khuyến mãi
+            List<InvoiceTicketDetail> requiredTicketDetails = invoiceTicketDetails.stream()
+                    .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId))
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < quantityFree; i++) {
+                InvoiceTicketDetail requiredTicketDetail = requiredTicketDetails.get(i);
+                requiredTicketDetail.setPrice(promotionPrice);
+                requiredTicketDetail.setNote("Khuyến mãi");
             }
         }
     }
+
 
 
     private boolean applyAllTicketPromotions(List<PromotionLine> promotionLines, List<InvoiceTicketDetail> invoiceTicketDetails) {
