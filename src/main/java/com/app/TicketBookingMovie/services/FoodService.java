@@ -12,6 +12,7 @@ public interface FoodService {
     Food findById(Long id);
 
     void updateFood(FoodDto foodDto);
+    void updateQuantityFood(Long foodId, Long cinemaId, int quantity);
 
     void deleteFoodById(Long id);
 

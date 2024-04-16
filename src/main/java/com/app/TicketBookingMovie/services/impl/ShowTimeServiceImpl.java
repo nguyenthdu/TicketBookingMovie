@@ -186,6 +186,9 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         // Lưu lại cập nhật vào cơ sở dữ liệu
         showTimeRepository.save(showTime);
     }
+    //kiểm tra lại danh sách ghế đã đặt
+
+
 
     //Xử lý nếu thời gian lịch chiếu đã qua hoặc số ghế đã đặt vượt quá số ghế của phòng chiếu thì trạng thái của lịch chiếu sẽ là false
     @Async
@@ -319,6 +322,14 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         }
 
         return showTimeSeatDtos;
+    }
+
+    @Override
+    public void updateSeatStatus(ShowTime showTime) {
+
+        Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
+        showTimeSeatRepository.saveAll(showTimeSeats);
+
     }
 
     @Override

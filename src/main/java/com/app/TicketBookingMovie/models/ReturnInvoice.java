@@ -16,7 +16,7 @@ public class ReturnInvoice {
     private int id;
     private String code;
     private String reason;
-    private LocalDateTime returnDate;
+    private LocalDateTime cancelDate;
     @OneToOne
     private Invoice invoice;
 

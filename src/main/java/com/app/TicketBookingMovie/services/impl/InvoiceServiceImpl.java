@@ -346,6 +346,20 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    public Invoice findById(Long id) {
+        return invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    public void updateStatusInvoice(Long id, boolean status) {
+        Invoice invoice = findById(id);
+        invoice.setStatus(status);
+        invoiceRepository.save(invoice);
+
+    }
+
+    @Override
     public List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long
             roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate dateCreated) {
         Pageable pageable = PageRequest.of(page, size);

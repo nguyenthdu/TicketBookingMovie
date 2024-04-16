@@ -155,8 +155,16 @@ public class FoodServiceImpl implements FoodService {
         }
         food.setCinema(cinemaService.findById(foodDto.getCinemaId()));
         foodRepository.save(food);
-        modelMapper.map(food, FoodDto.class);
 
+    }
+
+    @Override
+    public void updateQuantityFood(Long foodId, Long cinemaId, int quantity) {
+       //tìm đồ ăn trong rạp
+        Food food = foodRepository.findByIdAndCinemaId(foodId, cinemaId)
+                .orElseThrow(() -> new AppException("Không tìm thấy đồ ăn với id: " + foodId + " và rạp: " + cinemaId, HttpStatus.NOT_FOUND));
+        food.setQuantity(food.getQuantity() + quantity);
+        foodRepository.save(food);
     }
 
     @Override

@@ -36,4 +36,6 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     long countByCinemaId(Long cinemaId);
 
     Optional<Object> findByNameAndCinemaId(String name, Long cinemaId);
+
+    Optional<Food> findByIdAndCinemaId(Long foodId, Long cinemaId);
 }

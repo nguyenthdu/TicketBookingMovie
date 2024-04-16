@@ -48,8 +48,6 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public void createMovie(MovieDto movieDTO) {
-
-
         Movie movie = modelMapper.map(movieDTO, Movie.class);
         movie.setCode(randomCode());
         movie.setImageLink(movieDTO.getImageLink());

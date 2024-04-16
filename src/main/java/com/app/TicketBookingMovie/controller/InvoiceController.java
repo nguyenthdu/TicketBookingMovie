@@ -3,10 +3,12 @@ package com.app.TicketBookingMovie.controller;
 import com.app.TicketBookingMovie.dtos.InvoiceDto;
 import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.ResponeInvoiceDetail;
+import com.app.TicketBookingMovie.dtos.ReturnInvoiceDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.services.InvoiceService;
+import com.app.TicketBookingMovie.services.ReturnInvoviceService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -23,10 +25,11 @@ import java.util.Set;
 public class InvoiceController {
     JwtUtils jwtUtils;
     private final InvoiceService invoiceService;
-
-    public InvoiceController(InvoiceService invoiceService, JwtUtils jwtUtils) {
+private final ReturnInvoviceService returnInvoviceService;
+    public InvoiceController(InvoiceService invoiceService, JwtUtils jwtUtils, ReturnInvoviceService returnInvoviceService) {
         this.invoiceService = invoiceService;
         this.jwtUtils = jwtUtils;
+        this.returnInvoviceService = returnInvoviceService;
     }
 
     @PostMapping
@@ -97,6 +100,20 @@ public class InvoiceController {
         invoiceDetails.setInvoiceFoodDetailDtos(invoiceService.getInvoiceFoodDetailByInvoiceId(id));
         invoiceDetails.setInvoiceTicketDetailDtos(invoiceService.getInvoiceTicketDetailByInvoiceId(id));
         return new ResponseEntity<>(invoiceDetails, HttpStatus.OK);
+    }
+    @PostMapping("cancel")
+    public ResponseEntity<MessageResponseDto> cancelInvoice(@RequestParam("invoiceId") Long invoiceId,
+                                                            @RequestParam("reason") String reason){
+        ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
+        returnInvoiceDto.setInvoiceId(invoiceId);
+        returnInvoiceDto.setReason(reason);
+        try {
+            returnInvoviceService.cancelInvoice(returnInvoiceDto);
+            return ResponseEntity.ok(new MessageResponseDto("Hủy hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
+
     }
 
 }
