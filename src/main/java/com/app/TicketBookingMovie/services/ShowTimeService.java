@@ -22,7 +22,7 @@ public interface ShowTimeService {
     void deleteShowTime(Long id);
     List<ShowTimeSeatDto> getShowTimeSeatById(Long id);
     void updateSeatStatus(ShowTime showTime);
-    Set<LocalDate> getShowDatesByMovieId(Long movieId);
+    Set<LocalDate> getShowDatesByMovieId(Long movieId, Long cinemaId);
 
 
 }

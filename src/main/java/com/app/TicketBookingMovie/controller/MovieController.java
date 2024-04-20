@@ -138,7 +138,7 @@ public class MovieController {
         }
 
     }
-    @GetMapping("/not-showed")
+    @GetMapping("/upcoming")
     public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
 
             @RequestParam(defaultValue = "0") Integer page,

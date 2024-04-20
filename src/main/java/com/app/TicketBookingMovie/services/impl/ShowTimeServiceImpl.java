@@ -333,15 +333,16 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     }
 
     @Override
-    public Set<LocalDate> getShowDatesByMovieId(Long movieId) {
+    public Set<LocalDate> getShowDatesByMovieId(Long movieId, Long cinemaId) {
         List<ShowTime> showTimes = showTimeRepository.findAll();
         Set<LocalDate> showDates = new HashSet<>();
         for (ShowTime showTime : showTimes) {
-            if (showTime.getMovie().getId().equals(movieId)) {
+            if (showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId)) {
                 showDates.add(showTime.getShowDate());
             }
         }
         return showDates;
+
     }
 
 

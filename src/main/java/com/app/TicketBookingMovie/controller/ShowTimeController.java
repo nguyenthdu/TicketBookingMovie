@@ -100,9 +100,9 @@ public class ShowTimeController {
         return ResponseEntity.ok(showTimeSeatDtos);
     }
 
-    @GetMapping("/dates/{movieId}")
-    public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@PathVariable Long movieId) {
-        Set<LocalDate> showDates = showTimeService.getShowDatesByMovieId(movieId);
+    @GetMapping("/dates")
+    public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@RequestParam Long movieId,@RequestParam Long cinemaId) {
+        Set<LocalDate> showDates = showTimeService.getShowDatesByMovieId(movieId, cinemaId);
         return ResponseEntity.ok(showDates);
     }
 }
