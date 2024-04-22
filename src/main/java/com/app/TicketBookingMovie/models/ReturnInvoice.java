@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @Table(name = "return_invoice")
 public class ReturnInvoice {
     @Id
-    @GeneratedValue
-    private int id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
     private String code;
     private String reason;
     private LocalDateTime cancelDate;

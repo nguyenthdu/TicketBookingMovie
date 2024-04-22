@@ -88,6 +88,11 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
+    public Movie findById(Long id) {
+        return movieRepository.findById(id).orElseThrow(() -> new AppException("Movie not found with id: " + id, HttpStatus.NOT_FOUND));
+    }
+
+    @Override
     public void updateMovieById(MovieDto movieDTO) {
         Movie movie = movieRepository.findById(movieDTO.getId())
                 .orElseThrow(() -> new AppException("Movie not found with id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));

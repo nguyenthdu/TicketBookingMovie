@@ -25,7 +25,8 @@ import java.util.Set;
 public class InvoiceController {
     JwtUtils jwtUtils;
     private final InvoiceService invoiceService;
-private final ReturnInvoviceService returnInvoviceService;
+    private final ReturnInvoviceService returnInvoviceService;
+
     public InvoiceController(InvoiceService invoiceService, JwtUtils jwtUtils, ReturnInvoviceService returnInvoviceService) {
         this.invoiceService = invoiceService;
         this.jwtUtils = jwtUtils;
@@ -77,10 +78,12 @@ private final ReturnInvoviceService returnInvoviceService;
             @RequestParam(value = "staffId", required = false) Long staffId,
             @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "dateCreated", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate dateCreated) {
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate endDate
+    ) {
         PageResponse<InvoiceDto> invoices = new PageResponse<>();
-        invoices.setContent(invoiceService.getAllInvoices(page, size, invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, dateCreated));
-        invoices.setTotalElements(invoiceService.countAllInvoices(invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, dateCreated));
+        invoices.setContent(invoiceService.getAllInvoices(page, size, invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, startDate, endDate));
+        invoices.setTotalElements(invoiceService.countAllInvoices(invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, startDate, endDate));
         invoices.setTotalPages((int) Math.ceil((double) invoices.getTotalElements() / size));
         invoices.setCurrentPage(page);
         invoices.setPageSize(size);
@@ -101,9 +104,10 @@ private final ReturnInvoviceService returnInvoviceService;
         invoiceDetails.setInvoiceTicketDetailDtos(invoiceService.getInvoiceTicketDetailByInvoiceId(id));
         return new ResponseEntity<>(invoiceDetails, HttpStatus.OK);
     }
+
     @PostMapping("cancel")
     public ResponseEntity<MessageResponseDto> cancelInvoice(@RequestParam("invoiceId") Long invoiceId,
-                                                            @RequestParam("reason") String reason){
+                                                            @RequestParam("reason") String reason) {
         ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
         returnInvoiceDto.setInvoiceId(invoiceId);
         returnInvoiceDto.setReason(reason);
@@ -112,6 +116,35 @@ private final ReturnInvoviceService returnInvoviceService;
             return ResponseEntity.ok(new MessageResponseDto("Hủy hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
+
+    }
+
+    @GetMapping("return")
+    public ResponseEntity<PageResponse<ReturnInvoiceDto>> getAllReturnInvoices(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "code", required = false) String code,
+            @RequestParam(value = "userCode", required = false) String userCode,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate endDate
+    ) {
+        PageResponse<ReturnInvoiceDto> invoices = new PageResponse<>();
+        invoices.setContent(returnInvoviceService.getAllReturnInvoice(page, size, code, userCode, startDate, endDate));
+        invoices.setTotalElements(returnInvoviceService.countAllReturnInvoice(code, userCode, startDate, endDate));
+        invoices.setTotalPages((int) Math.ceil((double) invoices.getTotalElements() / size));
+        invoices.setCurrentPage(page);
+        invoices.setPageSize(size);
+        return ResponseEntity.ok(invoices);
+
+    }
+
+    @GetMapping("return/{id}")
+    public ResponseEntity<ReturnInvoiceDto> getReturnInvoiceById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(returnInvoviceService.getReturnInvoice(id));
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getStatus()).body(null);
         }
 
     }

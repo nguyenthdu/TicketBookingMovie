@@ -32,9 +32,8 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     private final PromotionService promotionService;
     private final AwsService awsService;
     private final ShowTimeService showTimeService;
-    private final CinemaService cinemaService;
 
-    public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionTicketDetailService promotionTicketDetailService, PromotionFoodDetailService promotionFoodDetailService, PromotionService promotionService, AwsService awsService, ShowTimeService showTimeService, CinemaService cinemaService) {
+    public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionTicketDetailService promotionTicketDetailService, PromotionFoodDetailService promotionFoodDetailService, PromotionService promotionService, AwsService awsService, ShowTimeService showTimeService) {
         this.promotionLineRepository = promotionLineRepository;
         this.modelMapper = modelMapper;
         this.promotionDiscountDetailService = promotionDiscountDetailService;
@@ -43,7 +42,6 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         this.promotionService = promotionService;
         this.awsService = awsService;
         this.showTimeService = showTimeService;
-        this.cinemaService = cinemaService;
     }
 
     public String randomCode() {
@@ -161,6 +159,15 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         } else {
             promotionLine.setStatus(promotionLine.isStatus());
         }
+        if(promotionLineDto.getQuantity()<promotionLine.getQuantity()){
+            throw new AppException("Số lượng cập nhật phải lớn hơn số lượng khuyến mãi trước đó", HttpStatus.BAD_REQUEST);
+        }
+        if(promotionLineDto.getQuantity()!=promotionLine.getQuantity()){
+            promotionLine.setQuantity(promotionLineDto.getQuantity());
+        }else {
+            promotionLine.setQuantity(promotionLine.getQuantity());
+        }
+
 
         promotionLineRepository.save(promotionLine);
 
@@ -181,6 +188,8 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         PromotionLine promotionLine = promotionLines.stream()
                 .filter(line -> line.getTypePromotion().equals(ETypePromotion.DISCOUNT))
                 .filter(line -> line.getPromotionDiscountDetail().getMinBillValue().compareTo(totalPrice) <= 0)
+                //có trạng thái true
+                .filter(PromotionLine::isStatus)
                 .max(Comparator.comparing(line -> line.getPromotionDiscountDetail().getDiscountValue()))
                 .orElse(null);
 
@@ -219,7 +228,10 @@ public class PromotionLineServiceImpl implements PromotionLineService {
                     Long foodId = entry.getKey();
                     Integer quantity = entry.getValue();
                     if (promotionFoodDetail.getFoodRequired().equals(foodId)) {
-                        if (quantity < promotionFoodDetail.getQuantityRequired()) {
+                        if (quantity < promotionFoodDetail.getQuantityRequired()
+                        //và trạng thái của promotion line là true
+                                || !promotionLine.isStatus()
+                        ) {
                             isMatched = false;
                             break;
                         }
@@ -279,7 +291,7 @@ public class PromotionLineServiceImpl implements PromotionLineService {
                     }
 
                     // Kiểm tra xem số lượng ghế có đủ điều kiện để nhận khuyến mãi không
-                    if (totalQuantity >= requiredQuantity) {
+                    if (totalQuantity >= requiredQuantity && promotionLine.isStatus()) {
                         // Khuyến mãi phù hợp được tìm thấy
                         PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
                         PromotionTicketDetailDto promotionTicketDetailDto = modelMapper.map(promotionTicketDetail, PromotionTicketDetailDto.class);
@@ -317,6 +329,11 @@ public class PromotionLineServiceImpl implements PromotionLineService {
 
 
         return promotionLineDto;
+    }
+
+    @Override
+    public PromotionLine findById(Long promotionLineId) {
+        return promotionLineRepository.findById(promotionLineId).orElseThrow(() -> new AppException("Không tìm thấy chương trình khuyến mãi với id: " + promotionLineId, HttpStatus.NOT_FOUND));
     }
 
     @Override
@@ -411,6 +428,19 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         }
         promotionLineRepository.deleteById(promotionLineId);
 
+    }
+
+    @Override
+    public void updateQuantityPromotionLine(Long promotionLineId, int quantity) {
+        //mỗi lần hóa đơn sử dụng khuyến mãi thì tổng số lượng khuyến mãi sẽ trừ đi 1 và khi hết thì sẽ chuyển trạng thái của khuyến mãi về false
+        PromotionLine promotionLine = promotionLineRepository.findById(promotionLineId).orElseThrow(() -> new AppException("Promotion line not found", HttpStatus.NOT_FOUND));
+        if (promotionLine.getQuantity() <= 0) {
+            promotionLine.setStatus(false);
+        } else {
+            promotionLine.setQuantity(promotionLine.getQuantity() + quantity);
+            promotionLine.setStatus(promotionLine.getQuantity() > 0);
+        }
+        promotionLineRepository.save(promotionLine);
     }
 
 }

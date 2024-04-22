@@ -24,7 +24,7 @@ public class Cinema {
     private Address address;
     @OneToMany(mappedBy = "cinema")
     private Set<Food> foods;
-    private boolean status = true;
+    private boolean status;
     private LocalDateTime   createdDate = LocalDateTime.now();
     public Cinema() {
     }

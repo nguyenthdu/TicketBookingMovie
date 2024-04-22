@@ -10,7 +10,6 @@ public class InvoiceDto {
     private String code;
     private double totalPrice;
     private LocalDateTime createdDate;
-    private LocalDateTime cancelledDate;
     private boolean status;
     private String showTimeCode;
     private String cinemaName;

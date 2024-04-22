@@ -17,6 +17,7 @@ public class PromotionLineDto {
     private PromotionDiscountDetailDto promotionDiscountDetailDto;
     private PromotionFoodDetailDto promotionFoodDetailDto;
     private PromotionTicketDetailDto promotionTicketDetailDto;
+    private int quantity;
     private boolean status;
     private LocalDateTime createdAt;
 }

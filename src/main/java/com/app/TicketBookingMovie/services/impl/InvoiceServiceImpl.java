@@ -158,13 +158,17 @@ public class InvoiceServiceImpl implements InvoiceService {
             if (isPromotionApplicable(promotionLine, total)) {
                 total = applyPromotion(promotionLine, total);
                 invoice.setPromotionLines(Set.of(promotionLine));
+                //cập nhật lại số lượng của promotion line
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(),-1);
 
             }
             if (checkPromotionFood) {
                 invoice.setPromotionLines(Set.of(promotionLine));
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(),-1);
             }
             if (checkPromotionTicket) {
                 invoice.setPromotionLines(Set.of(promotionLine));
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(),-1);
             }
         }
 
@@ -361,7 +365,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     public List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long
-            roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate dateCreated) {
+            roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate startDate, LocalDate endDate) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Invoice> pageInvoice;
         if (invoiceCode != null && !invoiceCode.isEmpty()) {
@@ -380,10 +384,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             pageInvoice = invoiceRepository.findByUserId(userId, pageable);
         } else if (status != null && !status.isEmpty()) {
             pageInvoice = invoiceRepository.findByStatus(status.equals("true"), pageable);
-        } else if (dateCreated != null && !dateCreated.toString().isEmpty()) {
-            //lọc theo ngày tháng năm
-            pageInvoice = invoiceRepository.findByCreatedDate(dateCreated, pageable);
-        } else {
+        }
+        else if (startDate != null && endDate != null) {
+            pageInvoice = invoiceRepository.findByCreatedDateBetween(startDate, endDate, pageable);
+        }
+        else {
             pageInvoice = invoiceRepository.findAll(pageable);
         }
 
@@ -399,32 +404,11 @@ public class InvoiceServiceImpl implements InvoiceService {
                     invoiceDto.setUserName(invoice.getUser().getUsername());
                     return invoiceDto;
                 }).toList();
-
-//        {
-//            InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
-//            //lấy code show time
-//            invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
-//            //lấy tên rạp
-//            invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
-//            //lấy tên phòng
-//            invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
-//            //lấy tên phim
-//            invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
-//            //lấy ảnh phim
-//            invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
-//            //lấy tên nhân viên
-//            invoiceDto.setStaffName(invoice.getStaff().getUsername());
-//            //lấy tên người dùng
-//            invoiceDto.setUserName(invoice.getUser().getUsername());
-//            //thêm vào danh sách
-//            invoiceDtos.add(invoiceDto);
-//        }
-
     }
 
     @Override
     public long countAllInvoices(String invoiceCode, Long cinemaId, Long roomId, Long movieId, String
-            showTimeCode, Long staffId, Long userId, String status, LocalDate dateCreated) {
+            showTimeCode, Long staffId, Long userId, String status, LocalDate startDate, LocalDate endDate) {
         if (invoiceCode != null && !invoiceCode.isEmpty()) {
             return invoiceRepository.countByCode(invoiceCode);
         } else if (cinemaId != null) {
@@ -441,9 +425,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             return invoiceRepository.countByUserId(userId);
         } else if (status != null && !status.isEmpty()) {
             return invoiceRepository.countByStatus(status.equals("true"));
-        } else if (dateCreated != null && !dateCreated.toString().isEmpty()) {
-            return invoiceRepository.countByCreatedDate(dateCreated);
-        } else {
+        }
+        else if (startDate != null && endDate != null) {
+            return invoiceRepository.countByCreatedDate(startDate, endDate);
+        }
+        else {
             return invoiceRepository.count();
         }
     }
@@ -570,7 +556,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             invoiceTicketDetailDto.setRowCol(invoiceTicketDetail.getTicket().getSeat().getSeatRow() + " - " + invoiceTicketDetail.getTicket().getSeat().getSeatColumn());
             String typeSeat = String.valueOf(invoiceTicketDetail.getTicket().getSeat().getSeatType().getName());
             invoiceTicketDetailDto.setSeatType(typeSeat);
-                invoiceTicketDetailDto.setPrice(invoiceTicketDetail.getPrice());
+            invoiceTicketDetailDto.setPrice(invoiceTicketDetail.getPrice());
             invoiceTicketDetailDto.setPriceItem(invoiceTicketDetail.getTicket().getSeat().getSeatType().getPriceDetails().stream()
                     .filter(priceDetail -> priceDetail.getType() == EDetailType.TYPE_SEAT)
                     .findFirst()
@@ -585,6 +571,25 @@ public class InvoiceServiceImpl implements InvoiceService {
             invoiceTicketDetailDtos.add(invoiceTicketDetailDto);
         }
         return invoiceTicketDetailDtos;
+    }
+
+    @Override
+    public void removePromotionLineFromInvoice(Long invoiceId, Long promotionLineId) {
+        Invoice invoice = findById(invoiceId);
+        //nếu không có chương trình khuyến mãi nào trong hóa đơn thì không thể xóa
+        PromotionLine promotionLine = promotionLineService.findById(promotionLineId);
+        Set<PromotionLine> promotionLines = invoice.getPromotionLines();
+//hoàn lại số lượng của từng khuyến mã có trong hóa đơn
+        promotionLines.remove(promotionLine);
+        promotionLines.forEach(promotionLine1 -> promotionLineService.updateQuantityPromotionLine(promotionLine1.getId(), 1));
+
+        invoice.setPromotionLines(promotionLines);
+        invoiceRepository.save(invoice);
+    }
+
+    @Override
+    public List<Invoice> getAll() {
+        return invoiceRepository.findAll();
     }
 
     private String randomCode() {

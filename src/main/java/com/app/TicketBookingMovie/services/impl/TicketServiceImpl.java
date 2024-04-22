@@ -98,6 +98,7 @@ public class TicketServiceImpl implements TicketService {
             ticket.setCode(randomCode());
             ticket.setShowTime(showTime);
             ticket.setSeat(seat);
+            ticket.setCreatedDate(LocalDateTime.now());
             ticketRepository.save(ticket);
             createdTickets.add(ticket);
         }

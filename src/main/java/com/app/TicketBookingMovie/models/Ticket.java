@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
@@ -17,4 +19,5 @@ public class Ticket {
     private Seat seat;
     @ManyToOne
     private ShowTime showTime;
+    private LocalDateTime createdDate = LocalDateTime.now();
 }

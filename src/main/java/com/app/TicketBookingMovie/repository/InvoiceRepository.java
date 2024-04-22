@@ -54,8 +54,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     long countByStatus(boolean aTrue);
 
-    @Query("SELECT COUNT(i) FROM Invoice i WHERE DATE(i.createdDate) = DATE(?1)")
-    long countByCreatedDate(LocalDate dateCreated);
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE DATE(i.createdDate) BETWEEN DATE(?1) AND DATE(?2)")
+    long countByCreatedDate(LocalDate startDate, LocalDate endDate);
 
     //chỉ cần giống ngày tháng năm không cần giờ phút giây
     @Query("SELECT i FROM Invoice i WHERE DATE(i.createdDate) = DATE(?1)")
@@ -63,4 +63,25 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     @Query("SELECT i FROM Invoice i WHERE DATE(i.createdDate) = DATE(?1)")
     List<Invoice> findInvoiceByToday(LocalDate localDate);
+
+    @Query("SELECT i FROM Invoice i JOIN i.invoiceTicketDetails t JOIN t.ticket s JOIN s.showTime r JOIN r.room c JOIN c.cinema a WHERE a.code = ?1 AND DATE(i.createdDate) BETWEEN DATE(?2) AND DATE(?3)")
+    Page<Invoice> findAllByCinemaCodeAndCreatedDateBetween(String cinemaCode, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @Query("SELECT i FROM Invoice i WHERE DATE(i.createdDate) BETWEEN DATE(?1) AND DATE(?2)")
+    Page<Invoice> findAllByCreatedDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @Query("SELECT  i FROM Invoice i JOIN i.invoiceTicketDetails t JOIN t.ticket s JOIN s.showTime r JOIN r.movie m WHERE m.code = ?1 AND DATE(i.createdDate) BETWEEN DATE(?2) AND DATE(?3)")
+    Page<Invoice> findAllByMovieCodeAndCreatedDateBetween(String movieCode, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @Query("SELECT i FROM Invoice i JOIN i.invoiceTicketDetails t JOIN t.ticket s JOIN s.showTime r JOIN r.room c WHERE c.code = ?1 AND DATE(i.createdDate) BETWEEN DATE(?2) AND DATE(?3)")
+    Page<Invoice> findAllByUserIdAndCreatedDateBetween(String userCode, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @Query("SELECT i FROM Invoice i JOIN i.invoiceTicketDetails t JOIN t.ticket s JOIN s.showTime r JOIN r.room c JOIN c.cinema a WHERE a.code = ?1 AND DATE(i.createdDate) BETWEEN DATE(?2) AND DATE(?3)")
+    Page<Invoice> findAllByUserEmailAndCreatedDateBetween(String email, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @Query("SELECT i FROM Invoice i JOIN i.invoiceTicketDetails t JOIN t.ticket s JOIN s.showTime r JOIN r.room c JOIN c.cinema a WHERE a.code = ?1 AND DATE(i.createdDate) BETWEEN DATE(?2) AND DATE(?3)")
+    Page<Invoice> findAllByUserPhoneAndCreatedDateBetween(String phone, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @Query("SELECT i FROM Invoice i WHERE DATE(i.createdDate) BETWEEN DATE(?1) AND DATE(?2)")
+    Page<Invoice> findByCreatedDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
 }

@@ -9,6 +9,9 @@ import com.app.TicketBookingMovie.services.InvoiceService;
 import com.app.TicketBookingMovie.services.ReturnInvoviceService;
 import com.app.TicketBookingMovie.services.ShowTimeService;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +29,7 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
     private final ReturnInvoiceRepository returnInvoiceRepository;
     private final InvoiceService invoiceService;
     private final ModelMapper modelMapper;
-    private  final FoodService foodService;
+    private final FoodService foodService;
     private final ShowTimeService showTimeService;
 
     public ReturnInvoiceServiceImpl(ReturnInvoiceRepository returnInvoiceRepository, InvoiceService invoiceService, ModelMapper modelMapper, FoodService foodService, ShowTimeService showTimeService) {
@@ -38,8 +41,9 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
     }
 
     private String randomCode() {
-        return "HU"+ LocalDateTime.now().getNano();
+        return "HU" + LocalDateTime.now().getNano();
     }
+
     @Override
     @Transactional
     public void cancelInvoice(ReturnInvoiceDto returnInvoiceDto) {
@@ -52,7 +56,7 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
 
 
         Invoice invoice = invoiceService.findById(invoiceId);
-        if(!invoice.isStatus()){
+        if (!invoice.isStatus()) {
             throw new AppException("Hóa đơn đã hủy trước đó", HttpStatus.BAD_REQUEST);
         }
         LocalDateTime currentTime = LocalDateTime.now();
@@ -82,11 +86,72 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
                 returnInvoiceRepository.save(returnInvoice);
                 // Lưu cập nhật hóa đơn
                 invoiceService.updateStatusInvoice(invoiceId, false);
+                //xóa hóa đơn khỏi chương trình khuyến mãi đã áp dụng
+                deletePromotionLine(invoice);
             } else {
                 throw new AppException("Không thể hủy hóa đơn vì đã ít hơn 2 giờ trước khi bắt đầu lịch chiếu", HttpStatus.BAD_REQUEST);
             }
         } else {
             throw new AppException("Không thể hủy hóa đơn vì lịch chiếu đã bắt đầu", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ReturnInvoiceDto getReturnInvoice(Long invoiceId) {
+        ReturnInvoice returnInvoice = returnInvoiceRepository.findByInvoiceId(invoiceId);
+        if (returnInvoice == null) {
+            throw new AppException("Không tìm thấy hóa đơn", HttpStatus.NOT_FOUND);
+        }
+        ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
+        returnInvoiceDto.setCode(returnInvoice.getCode());
+        returnInvoiceDto.setReason(returnInvoice.getReason());
+        returnInvoiceDto.setCancelDate(returnInvoice.getCancelDate());
+        returnInvoiceDto.setInvoiceCode(returnInvoice.getInvoice().getCode());
+        returnInvoiceDto.setInvoiceDate(returnInvoice.getInvoice().getCreatedDate());
+        returnInvoiceDto.setUserCode(returnInvoice.getInvoice().getUser().getCode());
+        returnInvoiceDto.setUserName(returnInvoice.getInvoice().getUser().getUsername());
+        returnInvoiceDto.setTotal(returnInvoice.getInvoice().getTotalPrice());
+        return returnInvoiceDto;
+    }
+
+    @Override
+    public List<ReturnInvoiceDto> getAllReturnInvoice(Integer page, Integer size, String code, String userCode, LocalDate startDate, LocalDate endDate) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ReturnInvoice> pageReturnInvoice;
+        if (!code.isEmpty() && !code.isBlank()) {
+            pageReturnInvoice = returnInvoiceRepository.findByCode(code, pageable);
+        } else if (userCode != null) {
+            pageReturnInvoice = returnInvoiceRepository.findByUserCode(userCode, pageable);
+        } else if (startDate != null && endDate != null) {
+            pageReturnInvoice = returnInvoiceRepository.findByCancelDateBetween(startDate.atStartOfDay(), endDate.atTime(LocalTime.MAX), pageable);
+        } else {
+            pageReturnInvoice = returnInvoiceRepository.findAll(pageable);
+        }
+        return pageReturnInvoice.stream().map(returnInvoice -> {
+            ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
+            returnInvoiceDto.setCode(returnInvoice.getCode());
+            returnInvoiceDto.setReason(returnInvoice.getReason());
+            returnInvoiceDto.setCancelDate(returnInvoice.getCancelDate());
+            returnInvoiceDto.setInvoiceCode(returnInvoice.getInvoice().getCode());
+            returnInvoiceDto.setInvoiceDate(returnInvoice.getInvoice().getCreatedDate());
+            returnInvoiceDto.setUserCode(returnInvoice.getInvoice().getUser().getCode());
+            returnInvoiceDto.setUserName(returnInvoice.getInvoice().getUser().getUsername());
+            returnInvoiceDto.setTotal(returnInvoice.getInvoice().getTotalPrice());
+            return returnInvoiceDto;
+        }).collect(Collectors.toList());
+
+    }
+
+    @Override
+    public long countAllReturnInvoice(String code, String userCode, LocalDate startDate, LocalDate endDate) {
+        if (!code.isEmpty() && !code.isBlank()) {
+            return returnInvoiceRepository.countByCode(code);
+        } else if (userCode != null) {
+            return returnInvoiceRepository.countByUserCode(userCode);
+        } else if (startDate != null && endDate != null) {
+            return returnInvoiceRepository.countByCancelDateBetween(startDate.atStartOfDay(), endDate.atTime(LocalTime.MAX));
+        } else {
+            return returnInvoiceRepository.count();
         }
     }
 
@@ -100,7 +165,7 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
         // Lấy danh sách ghế đã đặt trong lịch chiếu
         Set<Seat> seats = invoice.getInvoiceTicketDetails().stream().map(invoiceTicketDetail -> invoiceTicketDetail.getTicket().getSeat()).collect(Collectors.toSet());
         //lấy danh sách ghế đã đặt trong lịch chiếu
-        List<ShowTimeSeat> showTimeSeats =   invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowTimeSeat().stream().filter(showTimeSeat -> seats.contains(showTimeSeat.getSeat())).collect(Collectors.toList());
+        List<ShowTimeSeat> showTimeSeats = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowTimeSeat().stream().filter(showTimeSeat -> seats.contains(showTimeSeat.getSeat())).collect(Collectors.toList());
 
 // Cập nhật trạng thái của ghế
         for (ShowTimeSeat showTimeSeat : showTimeSeats) {
@@ -113,5 +178,12 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
         // Cập nhật trạng thái của ghế trong lịch chiếu
         ShowTime showTime = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime();
         showTimeService.updateSeatStatus(showTime);
+    }
+
+    //khi hủy thành công thì xóa hóa đơn khỏi chương trình khuyến mãi đã áp dung
+    public void deletePromotionLine(Invoice invoice) {
+        //kiểm tra xem hóa đơn có chương trình khuyến mãi nào không, nếu có thì mới gọi phương thức xóa
+        if (!invoice.getPromotionLines().isEmpty())
+            invoiceService.removePromotionLineFromInvoice(invoice.getId(), invoice.getPromotionLines().stream().findFirst().get().getId());
     }
 }

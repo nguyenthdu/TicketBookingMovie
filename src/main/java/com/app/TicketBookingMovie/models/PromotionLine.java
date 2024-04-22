@@ -37,6 +37,7 @@ public class PromotionLine {
     private Promotion promotion;
     @ManyToMany(mappedBy = "promotionLines")
     private Set<Invoice> invoices;
+    private int quantity;
     private boolean status;
     private LocalDateTime createdAt;
 }
