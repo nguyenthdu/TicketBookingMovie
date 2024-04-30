@@ -114,7 +114,7 @@ public class UserController {
             userService.createUser(signUpDTO);
             return ResponseEntity.ok(new MessageResponseDto("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
 
     }
