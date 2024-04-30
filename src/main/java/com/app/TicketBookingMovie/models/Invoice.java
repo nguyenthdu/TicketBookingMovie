@@ -1,5 +1,6 @@
 package com.app.TicketBookingMovie.models;
 
+import com.app.TicketBookingMovie.models.enums.EPay;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -39,5 +40,7 @@ public class Invoice {
             joinColumns = @JoinColumn(name = "invoice_id"),
             inverseJoinColumns = @JoinColumn(name = "promotion_line_id"))
     private Set<PromotionLine> promotionLines;
+    @Enumerated(EnumType.STRING)
+    private EPay typePay;
     private boolean status;
 }

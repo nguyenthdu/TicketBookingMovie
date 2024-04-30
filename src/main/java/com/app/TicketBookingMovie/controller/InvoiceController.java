@@ -9,6 +9,7 @@ import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.services.InvoiceService;
 import com.app.TicketBookingMovie.services.ReturnInvoviceService;
+import com.app.TicketBookingMovie.services.VNPAYService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -26,11 +27,13 @@ public class InvoiceController {
     JwtUtils jwtUtils;
     private final InvoiceService invoiceService;
     private final ReturnInvoviceService returnInvoviceService;
+    private final VNPAYService vnPayService;
 
-    public InvoiceController(InvoiceService invoiceService, JwtUtils jwtUtils, ReturnInvoviceService returnInvoviceService) {
+    public InvoiceController(InvoiceService invoiceService, JwtUtils jwtUtils, ReturnInvoviceService returnInvoviceService, VNPAYService vnPayService) {
         this.invoiceService = invoiceService;
         this.jwtUtils = jwtUtils;
         this.returnInvoviceService = returnInvoviceService;
+        this.vnPayService = vnPayService;
     }
 
     @PostMapping
@@ -38,7 +41,8 @@ public class InvoiceController {
                                                             @RequestParam("seatIds") Set<Long> seatIds,
                                                             @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
                                                             @RequestParam(value = "emailUser", required = false) String emailUser,
-                                                            @RequestParam("staffId") Long staffId
+                                                            @RequestParam("staffId") Long staffId,
+                                                            String typePay
 
             , HttpServletRequest request) {
         String jwt = jwtUtils.getJwtFromCookies(request);
@@ -49,7 +53,7 @@ public class InvoiceController {
         }
 
         try {
-            invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId);
+            invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId, typePay);
             return ResponseEntity.ok(new MessageResponseDto("Tạo hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
@@ -148,6 +152,29 @@ public class InvoiceController {
         }
 
     }
+
+    @PostMapping("vnpay")
+    public ResponseEntity<MessageResponseDto> submitOrder(@RequestParam("amount") int orderTotal,
+                                                          @RequestParam("showTimeId") Long showTimeId,
+                                                          @RequestParam("seatIds") Set<Long> seatIds,
+                                                          @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
+                                                          @RequestParam(value = "emailUser", required = false) String emailUser,
+                                                          @RequestParam("staffId") Long staffId,
+                                                          HttpServletRequest request) {
+        String vnpayUrl = vnPayService.createOrder(request, orderTotal, showTimeId, seatIds, foodIds, emailUser, staffId);
+        return ResponseEntity.ok().body(new MessageResponseDto(vnpayUrl, HttpStatus.OK.value(), Instant.now().toString()));
+    }
+
+    @GetMapping("/vnpay-payment-return")
+    public ResponseEntity<MessageResponseDto> paymentCompleted(HttpServletRequest request) {
+        int paymentStatus = vnPayService.orderReturn(request);
+        if (paymentStatus == 1) {
+            return ResponseEntity.ok().body(new MessageResponseDto("Thanh toán thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponseDto("Thanh toán thất bại", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+        }
+    }
+
 
 }
 

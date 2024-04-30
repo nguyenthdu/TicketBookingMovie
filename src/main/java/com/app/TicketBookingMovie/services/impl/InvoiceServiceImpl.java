@@ -5,6 +5,7 @@ import com.app.TicketBookingMovie.dtos.*;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.models.enums.EDetailType;
+import com.app.TicketBookingMovie.models.enums.EPay;
 import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
 import com.app.TicketBookingMovie.services.*;
@@ -53,7 +54,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId) {
+    public void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId, String typePay) {
         //kiểm tra nếu trong 1 ngày mà user đã đặt 8 ghế trong tất cả hóa đơn của ngày đó thì không được đặt nữa
         List<Invoice> invoices = invoiceRepository.findInvoiceByToday(LocalDateTime.now().toLocalDate());
         long count = invoices.stream().filter(invoice -> invoice.getUser().getEmail().equals(emailUser)).count();
@@ -172,8 +173,17 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
         }
 
-        // Áp dụng khuyến mãi đồ ăn
-
+        //loại thanh toán
+        switch (typePay) {
+            case "CASH":
+                invoice.setTypePay(EPay.CASH);
+                break;
+            case "VNPAY":
+                invoice.setTypePay(EPay.VNPAY);
+                break;
+            default:
+                throw new AppException("Loại thanh toán không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
         // Lưu tổng giá của hóa đơn
         invoice.setTotalPrice(total);
         invoiceRepository.save(invoice);

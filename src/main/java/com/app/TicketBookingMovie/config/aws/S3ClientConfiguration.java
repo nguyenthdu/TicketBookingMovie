@@ -1,4 +1,4 @@
-package com.app.TicketBookingMovie.aws;
+package com.app.TicketBookingMovie.config.aws;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;

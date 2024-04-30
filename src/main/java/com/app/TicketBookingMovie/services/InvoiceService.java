@@ -9,7 +9,7 @@ import java.util.Set;
 
 public interface InvoiceService {
     //viết phương thức tạo hóa đơn
-    void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId);
+    void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId, String typePay);
     //viết phương thức lấy hóa đơn theo id
     InvoiceDto getInvoiceById(Long id);
     Invoice findById(Long id);
