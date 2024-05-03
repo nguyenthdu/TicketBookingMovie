@@ -14,12 +14,16 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,7 +70,6 @@ public class MovieServiceImpl implements MovieService {
         }
         movie.setCinemas(cinemas);
         //nếu trạng thái của rạp là false thì trạng thái phim không thể là true
-
         if (!movie.isStatus() && movieDTO.isStatus()) {
             throw new AppException("Không thể đặt trạng thái phim hoạt động khi trạng thái rạp không hoạt động ", HttpStatus.BAD_REQUEST);
         }
@@ -96,7 +99,6 @@ public class MovieServiceImpl implements MovieService {
     public void updateMovieById(MovieDto movieDTO) {
         Movie movie = movieRepository.findById(movieDTO.getId())
                 .orElseThrow(() -> new AppException("Movie not found with id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));
-
         // Xử lý ảnh
         if (!movieDTO.getImageLink().isEmpty() && !movieDTO.getImageLink().isBlank() && !movieDTO.getImageLink().equals(movie.getImageLink())) {
             awsService.deleteImage(movie.getImageLink());
@@ -171,7 +173,6 @@ public class MovieServiceImpl implements MovieService {
             movie.setCast(movieDTO.getCast());
         } else {
             movie.setCast(movie.getCast());
-
         }
         if (!movieDTO.getProducer().isEmpty() && !movieDTO.getProducer().isBlank()) {
             movie.setProducer(movieDTO.getProducer());
@@ -192,37 +193,34 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId, Long cinemaId) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Movie> movies;
+        List<Movie> movies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (code != null && !code.isEmpty()) {
-            movies = movieRepository.findByCodeContaining(code, pageable);
+            movies = movies.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
             if (name != null && !name.isEmpty()) {
-                movies = movieRepository.findByCinemasIdAndNameContaining(cinemaId, name, pageable);
+                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().contains(name)).collect(Collectors.toList());
             } else if (genreId != null && genreId != 0) {
-                movies = movieRepository.findByCinemasIdAndGenreId(cinemaId, genreId, pageable);
+                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
             } else {
-                movies = movieRepository.findByCinemaId(cinemaId, pageable);
+                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId))).collect(Collectors.toList());
             }
         } else if (genreId != null && genreId != 0) {
-            movies = movieRepository.findByGenreId(genreId, pageable);
+            movies = movies.stream().filter(movie -> movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            movies = movieRepository.findByNameContaining(name, pageable);
-        } else {
-            movies = movieRepository.findAll(pageable);
+            movies = movies.stream().filter(movie -> movie.getName().contains(name)).collect(Collectors.toList());
         }
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, movies.size());
+        return movies.subList(fromIndex, toIndex).stream()
+                .map(movie -> {
+                    MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+                    Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+                    Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
+                    movieDTO.setGenreIds(genreIds);
+                    movieDTO.setCinemaIds(cinemaIds);
+                    return movieDTO;
+                }).collect(Collectors.toList());
 
-
-        //sort by created date
-        return movies.stream().sorted(Comparator.comparing(Movie::getCreatedDate).reversed())
-                .map(movie ->{
-
-                    MovieDto movieDto = modelMapper.map(movie, MovieDto.class);
-                    movieDto.setCinemaIds(movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet()));
-                    movieDto.setGenreIds(movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet()));
-                    return movieDto;
-                })
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -245,37 +243,34 @@ public class MovieServiceImpl implements MovieService {
             return movieRepository.count();
         }
     }
-
+    //TODO: Lấy danh sách phim sắp chiếu
     @Override
     public List<MovieDto> getMoviesUpcoming(Integer page, Integer size) {
         // Lấy danh sách tất cả các phim
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Movie> allMovies = movieRepository.findAll(pageable);
-
+        List<Movie> allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "releaseDate"));
         // Lọc ra các phim sắp chiếu
         List<Movie> moviesNotShowed = allMovies.stream()
                 .filter(movie -> movie.getShowTimes().stream()
                         .allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
                 .toList();
 
-        // Chuyển đổi sang MovieDto và trả về
-        return moviesNotShowed.stream()
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, moviesNotShowed.size());
+        return moviesNotShowed.subList(fromIndex, toIndex).stream()
                 .map(movie -> modelMapper.map(movie, MovieDto.class))
                 .collect(Collectors.toList());
     }
-
+    //TODO: Lấy danh sách phim đang chiếu
     @Override
     public List<MovieDto> getMoviesShowing(Integer page, Integer size) {
         // Lấy danh sách tất cả các phim
         Pageable pageable = PageRequest.of(page, size);
         Page<Movie> allMovies = movieRepository.findAll(pageable);
-
         // Lọc ra các phim đang chiếu
         List<Movie> moviesShowing = allMovies.stream()
                 .filter(movie -> movie.getShowTimes().stream()
                         .anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
                 .toList();
-
         // Chuyển đổi sang MovieDto và trả về
         return moviesShowing.stream()
                 .map(movie -> modelMapper.map(movie, MovieDto.class))

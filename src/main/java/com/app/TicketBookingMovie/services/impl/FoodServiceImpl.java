@@ -12,14 +12,11 @@ import com.app.TicketBookingMovie.services.CategoryFoodService;
 import com.app.TicketBookingMovie.services.CinemaService;
 import com.app.TicketBookingMovie.services.FoodService;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -178,30 +175,25 @@ public class FoodServiceImpl implements FoodService {
 
     @Override
     public List<FoodDto> getAllFood(Integer page, Integer size, Long cinemaId, String code, String name, Long categoryId, String sizeFood) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Food> food;
+
+        List<Food> pageFood = foodRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (cinemaId != null) {
             if (code != null && !code.isEmpty()) {
-                food = foodRepository.findByCinemaIdAndCodeContaining(cinemaId, code, pageable);
+                pageFood =  pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getCode().contains(code)).toList();
             } else if (name != null && !name.isEmpty()) {
-                food = foodRepository.findByCinemaIdAndNameContaining(cinemaId, name, pageable);
+                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getName().contains(name)).toList();
             } else if (categoryId != null) {
-                food = foodRepository.findByCinemaIdAndCategoryFoodId(cinemaId, categoryId, pageable);
+                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getCategoryFood().getId().equals(categoryId)).toList();
             } else if (sizeFood != null && !sizeFood.isEmpty()) {
-                food = foodRepository.findByCinemaIdAndSize(cinemaId, ESize.valueOf(sizeFood), pageable);
+                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getSize().name().equals(sizeFood)).toList();
             } else {
-                food = foodRepository.findByCinemaId(cinemaId, pageable);
+                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId)).toList();
             }
-        } else {
-            food = foodRepository.findAll(pageable);
-
         }
 
-        //in ra category name
-        return food.stream().sorted(Comparator.comparing(Food::getCreatedDate).reversed())
-                .map(this::convertFoodDto).toList();
-
-
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, pageFood.size());
+        return pageFood.subList(fromIndex, toIndex).stream().map(this::convertFoodDto).toList();
     }
 
     private FoodDto convertFoodDto(Food f) {

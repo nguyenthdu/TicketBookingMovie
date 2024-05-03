@@ -42,7 +42,7 @@ public class InvoiceController {
                                                             @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
                                                             @RequestParam(value = "emailUser", required = false) String emailUser,
                                                             @RequestParam("staffId") Long staffId,
-                                                            String typePay
+                                                            @RequestParam("typePay") String typePay
 
             , HttpServletRequest request) {
         String jwt = jwtUtils.getJwtFromCookies(request);
@@ -81,13 +81,12 @@ public class InvoiceController {
             @RequestParam(value = "showTimeCode", required = false) String showTimeCode,
             @RequestParam(value = "staffId", required = false) Long staffId,
             @RequestParam(value = "userId", required = false) Long userId,
-            @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate endDate
     ) {
         PageResponse<InvoiceDto> invoices = new PageResponse<>();
-        invoices.setContent(invoiceService.getAllInvoices(page, size, invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, startDate, endDate));
-        invoices.setTotalElements(invoiceService.countAllInvoices(invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, status, startDate, endDate));
+        invoices.setContent(invoiceService.getAllInvoices(page, size, invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId,  startDate, endDate));
+        invoices.setTotalElements(invoiceService.countAllInvoices(invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, startDate, endDate));
         invoices.setTotalPages((int) Math.ceil((double) invoices.getTotalElements() / size));
         invoices.setCurrentPage(page);
         invoices.setPageSize(size);

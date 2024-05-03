@@ -12,9 +12,7 @@ import com.app.TicketBookingMovie.repository.ShowTimeRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeSeatRepository;
 import com.app.TicketBookingMovie.services.ShowTimeService;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -111,8 +109,8 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         }
 
 
-
     }
+
     //sau 1 tuần sẽ dự động xóa các ShowTimeSeat của lịch chiếu đã qua 1 tuần
     @Async
     @Scheduled(fixedRate = 60000) // Chạy mỗi phút
@@ -189,7 +187,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     //kiểm tra lại danh sách ghế đã đặt
 
 
-
     //Xử lý nếu thời gian lịch chiếu đã qua hoặc số ghế đã đặt vượt quá số ghế của phòng chiếu thì trạng thái của lịch chiếu sẽ là false
     @Async
     @Scheduled(fixedRate = 60000) // Chạy mỗi phút
@@ -216,50 +213,34 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     @Override
     public List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long cinemaId, Long movieId, LocalDate date, Long roomId) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ShowTime> showTimes;
-
+        List<ShowTime> showTimes = showTimeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (code != null && !code.isEmpty()) {
-            showTimes = showTimeRepository.findByCode(code, pageable);
+            showTimes = showTimes.stream().filter(showTime -> showTime.getCode().equals(code)).toList();
         } else if (movieId != null && movieId > 0 && cinemaId != null && cinemaId > 0) {
             if (roomId != null && roomId > 0 && date != null && !date.toString().isEmpty()) {
-                showTimes = showTimeRepository.findByMovieIdAndCinemaIdAndRoomIdAndShowDate(movieId, cinemaId, roomId, date, pageable);
+                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId)
+                        && showTime.getRoom().getCinema().getId().equals(cinemaId) && showTime.getRoom().getId().equals(roomId)
+                        && showTime.getShowDate().equals(date)).toList();
             } else if (roomId != null && roomId > 0) {
-                showTimes = showTimeRepository.findByMovieIdAndCinemaIdAndRoomId(movieId, cinemaId, roomId, pageable);
+                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId)
+                        && showTime.getRoom().getCinema().getId().equals(cinemaId)
+                        && showTime.getRoom().getId().equals(roomId)).toList();
             } else if (date != null && !date.toString().isEmpty()) {
-                showTimes = showTimeRepository.findByMovieIdAndShowDate(movieId, date, pageable);
-
+                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId) && showTime.getShowDate().equals(date)).toList();
             } else {
-                showTimes = showTimeRepository.findByMovieIdAndCinemaId(movieId, cinemaId, pageable);
+                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId)).toList();
             }
-        } else {
-            showTimes = showTimeRepository.findAll(pageable);
         }
-        // Tạo một danh sách chứa các DTO ShowTimeDto
-        List<ShowTimeDto> showTimeDtos = new ArrayList<>();
-
-        // Lặp qua các ShowTime và lấy ra thông tin movieName, cinemaName, roomName
-        for (ShowTime showTime : showTimes) {
+        // // Paginate the sorted and filtered list
+        int start = page * size;
+        int end = Math.min(start + size, showTimes.size());
+        List<ShowTime> pagedShowTimes = showTimes.subList(start, end);
+        //map dto
+        return pagedShowTimes.stream().map(showTime -> {
             ShowTimeDto showTimeDto = modelMapper.map(showTime, ShowTimeDto.class);
-
-            // Lấy ra movieName từ movieId
-            Movie movie = showTime.getMovie();
-            if (movie != null) {
-                showTimeDto.setMovieName(movie.getName());
-            }
-            // Lấy ra cinemaName và roomName từ room và cinemaId
-            Room room = showTime.getRoom();
-            if (room != null) {
-                showTimeDto.setRoomName(room.getName());
-                Cinema cinema = room.getCinema();
-                if (cinema != null) {
-                    showTimeDto.setCinemaName(cinema.getName());
-                }
-            }
-            showTimeDtos.add(showTimeDto);
-        }
-        //sort by create date
-        return showTimeDtos.stream().sorted(Comparator.comparing(ShowTimeDto::getCreatedDate).reversed()).toList();
+            showTimeDto.setCinemaName(showTime.getRoom().getCinema().getName());
+            return showTimeDto;
+        }).toList();
     }
 
     @Override
@@ -285,19 +266,18 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     @Override
     public void deleteShowTime(Long id) {
         ShowTime showTime = showTimeRepository.findById(id)
-                .orElseThrow(() -> new AppException("Showtime not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
 
         // Kiểm tra xem lịch chiếu đã có vé đặt chưa
         if (showTime.getSeatsBooked() > 0) {
-            throw new AppException("Cannot delete showtime with booked seats.", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể xóa lịch chiếu đã có người đặt vé!!!", HttpStatus.BAD_REQUEST);
         }
         if (showTime.getShowDate().isBefore(LocalDate.now()) || (showTime.getShowDate().isEqual(LocalDate.now()) && showTime.getShowTime().isBefore(LocalTime.now()))) {
-            throw new AppException("Cannot delete past showtime.", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể xóa lịch chiếu đã qua!!!", HttpStatus.BAD_REQUEST);
         }
         if (showTime.isStatus()) {
-            throw new AppException("Cannot delete showtime with status is active.", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể xóa lịch chiếu đang hoạt động!!!", HttpStatus.BAD_REQUEST);
         }
-
         // Xóa lịch chiếu nếu chưa có vé đặt
         showTimeRepository.delete(showTime);
     }
@@ -305,7 +285,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     @Override
     public List<ShowTimeSeatDto> getShowTimeSeatById(Long id) {
         ShowTime showTime = showTimeRepository.findById(id)
-                .orElseThrow(() -> new AppException("Showtime not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy: " + id, HttpStatus.NOT_FOUND));
 
         Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
         List<ShowTimeSeatDto> showTimeSeatDtos = new ArrayList<>();
@@ -320,7 +300,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             });
             showTimeSeatDtos.add(showTimeSeatDto);
         }
-
         return showTimeSeatDtos;
     }
 
@@ -334,17 +313,15 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     @Override
     public Set<LocalDate> getShowDatesByMovieId(Long movieId, Long cinemaId) {
-        List<ShowTime> showTimes = showTimeRepository.findAll();
-        Set<LocalDate> showDates = new HashSet<>();
-        for (ShowTime showTime : showTimes) {
-            if (showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId)) {
-                showDates.add(showTime.getShowDate());
-            }
-        }
-        return showDates;
+        //lấy danh sach ngày chiếu của phim theo rạp sort theo ngày chiếu mới nhất và chỉ lấy những ngày bắt đầu từ hôm nay trở đi
+        // Lấy danh sách các showDate từ hôm nay trở đi bằng cách sử dụng phương thức truy vấn custom
+        List<LocalDate> showDates = showTimeRepository.findDistinctShowDatesByMovieIdAndCinemaIdAfterToday(movieId, cinemaId);
+        Collections.sort(showDates);
+        // Chuyển danh sách các showDate thành một tập hợp và loại bỏ trùng lặp
+        return new LinkedHashSet<>(showDates);
+
 
     }
-
 
     public String randomCode() {
         return "LC" + LocalDateTime.now().getNano();

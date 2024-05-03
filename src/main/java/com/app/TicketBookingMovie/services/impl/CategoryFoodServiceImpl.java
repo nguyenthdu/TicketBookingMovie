@@ -6,14 +6,11 @@ import com.app.TicketBookingMovie.models.CategoryFood;
 import com.app.TicketBookingMovie.repository.CateogryFoodRepository;
 import com.app.TicketBookingMovie.services.CategoryFoodService;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -33,7 +30,7 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
     @Override
     public void createCategoryFood(CategoryFoodDto categoryFoodDto) {
         if (cateogryFoodRepository.findByName(categoryFoodDto.getName()).isPresent()) {
-            throw new AppException("name: " + categoryFoodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+            throw new AppException("Tên loại đồ ăn: " + categoryFoodDto.getName() + " đã tồn tại!!!", HttpStatus.BAD_REQUEST);
         }
         CategoryFood categoryFood = modelMapper.map(categoryFoodDto, CategoryFood.class);
         categoryFood.setCode(randomCode());
@@ -45,23 +42,23 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
 
     @Override
     public CategoryFoodDto getCategoryFoodById(Long id) {
-       CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Category not found with id: " + id, HttpStatus.NOT_FOUND));
+       CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy loại đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
         return modelMapper.map(categoryFood, CategoryFoodDto.class);
 
     }
 
     @Override
     public CategoryFood findCategoryFoodById(Long id) {
-        return cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Category not found with id: " + id, HttpStatus.NOT_FOUND));
+        return cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy loại đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
     public void updateCategoryFood(CategoryFoodDto categoryFoodDto) {
-        CategoryFood categoryFood = cateogryFoodRepository.findById(categoryFoodDto.getId()).orElseThrow(() -> new AppException("Category not found with id: " + categoryFoodDto.getId(), HttpStatus.NOT_FOUND));
+        CategoryFood categoryFood = cateogryFoodRepository.findById(categoryFoodDto.getId()).orElseThrow(() -> new AppException("Không tìm thấy loại đồ ăn với id: " + categoryFoodDto.getId(), HttpStatus.NOT_FOUND));
 
         if(!categoryFoodDto.getName().isEmpty() && !categoryFoodDto.getName().isBlank()) {
             if (cateogryFoodRepository.findByName(categoryFoodDto.getName()).isPresent()) {
-                throw new AppException("name: " + categoryFoodDto.getName() + " already exists", HttpStatus.BAD_REQUEST);
+                throw new AppException("Tên loại đồ ăn: " + categoryFoodDto.getName() + " đã tồn tại!!!", HttpStatus.BAD_REQUEST);
             }
             categoryFood.setName(categoryFoodDto.getName());
         }else{
@@ -74,25 +71,23 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
 
     @Override
     public void deleteCategoryFoodById(Long id) {
-        CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Category not found with id: " + id, HttpStatus.NOT_FOUND));
+        CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy loại đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
         cateogryFoodRepository.delete(categoryFood);
     }
 
     @Override
     public List<CategoryFoodDto> getAllCategoryFood(int page, int size,String code, String name) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<CategoryFood> pageCategory;
+        List<CategoryFood> pageCategory  = cateogryFoodRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if(code!=null && !code.isEmpty()){
-            pageCategory = cateogryFoodRepository.findByCodeContaining(code, pageable);
+            pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getCode().equals(code)).toList();
         }
        else if (name != null && !name.isEmpty()) {
-            pageCategory = cateogryFoodRepository.findByNameContaining(name, pageable);
-        } else {
-            pageCategory = cateogryFoodRepository.findAll(pageable);
+            pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getName().contains(name)).toList();
         }
-        return pageCategory.stream().sorted(Comparator.comparing(CategoryFood::getCreatedDate).reversed())
-                .map(categoryFood -> modelMapper.map(categoryFood, CategoryFoodDto.class))
-                .toList();
+        int fromIndex = page  * size;
+        int toIndex = Math.min(fromIndex + size, pageCategory.size());
+        return pageCategory.subList(fromIndex, toIndex).stream().map(categoryFood -> modelMapper.map(categoryFood, CategoryFoodDto.class)).toList();
+
     }
 
     @Override

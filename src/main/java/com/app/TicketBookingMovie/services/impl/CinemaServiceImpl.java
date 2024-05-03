@@ -10,14 +10,11 @@ import com.app.TicketBookingMovie.services.AddressService;
 import com.app.TicketBookingMovie.services.CinemaService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -112,29 +109,27 @@ public class CinemaServiceImpl implements CinemaService {
 
     @Override
     public List<CinemaDto> getAllCinemas(int page, int size, String code, String name, String street, String ward, String district, String city, String nation) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Cinema> cinemaPage;
+
+        List<Cinema> cinemaPage  = cinemaRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (code != null && !code.isEmpty()) {
-            cinemaPage = cinemaRepository.findByCodeContaining(code, pageable);
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getCode().equals(code)).toList();
         } else if (name != null && !name.isEmpty()) {
-            cinemaPage = cinemaRepository.findByNameContaining(name, pageable);
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getName().equals(name)).toList();
         } else if (street != null && !street.isEmpty()) {
-            cinemaPage = cinemaRepository.findByAddressStreet(street, pageable);
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getAddress().getStreet().equals(street)).toList();
         } else if (ward != null && !ward.isEmpty()) {
-            cinemaPage = cinemaRepository.findByAddressWard(ward, pageable);
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getAddress().getWard().equals(ward)).toList();
         } else if (district != null && !district.isEmpty()) {
-            cinemaPage = cinemaRepository.findByAddressDistrict(district, pageable);
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getAddress().getDistrict().equals(district)).toList();
         } else if (city != null && !city.isEmpty()) {
-            cinemaPage = cinemaRepository.findByAddressCity(city, pageable);
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getAddress().getCity().equals(city)).toList();
         } else if (nation != null && !nation.isEmpty()) {
-            cinemaPage = cinemaRepository.findByAddressNation(nation, pageable);
-        } else {
-            cinemaPage = cinemaRepository.findAll(pageable);
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getAddress().getNation().equals(nation)).toList();
         }
 
-        return cinemaPage.stream().sorted(Comparator.comparing(Cinema::getCreatedDate).reversed())
-                .map(cinema -> modelMapper.map(cinema, CinemaDto.class))
-                .toList();
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, cinemaPage.size());
+        return cinemaPage.subList(fromIndex, toIndex).stream().map(cinema -> modelMapper.map(cinema, CinemaDto.class)).toList();
     }
 
     @Override

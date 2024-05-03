@@ -4,6 +4,7 @@ import com.app.TicketBookingMovie.dtos.RoomDto;
 import com.app.TicketBookingMovie.dtos.SeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Cinema;
+import com.app.TicketBookingMovie.models.PriceDetail;
 import com.app.TicketBookingMovie.models.Room;
 import com.app.TicketBookingMovie.models.Seat;
 import com.app.TicketBookingMovie.models.enums.ETypeRoom;
@@ -14,14 +15,11 @@ import com.app.TicketBookingMovie.services.RoomService;
 import com.app.TicketBookingMovie.services.SeatService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -166,14 +164,15 @@ public class RoomServiceImpl implements RoomService {
         roomDto.setCode(room.getCode());
         roomDto.setName(room.getName());
         roomDto.setType(room.getType().name());
-
         roomDto.setTotalSeats(room.getTotalSeats());
         roomDto.setStatus(room.isStatus());
         roomDto.setSeats(room.getSeats().stream().map(seat -> modelMapper.map(seat, SeatDto.class)).collect(Collectors.toSet()));
         roomDto.setCreatedDate(room.getCreatedDate());
-
         //lấy giá
-        room.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
+        room.getPriceDetails().stream().findFirst().
+                //lấy trạng thái true
+                        filter(PriceDetail::isStatus).
+                ifPresent(priceDetail -> {
             roomDto.setPrice(priceDetail.getPrice());
             roomDto.setActive_price(priceDetail.isStatus());
         });
@@ -208,26 +207,26 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public List<RoomDto> getAllRoomsPage(Integer page, Integer size, String code, String name, Long cinemaId) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Room> roomPage;
+        List<Room> roomPage = roomRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (code != null && !code.isEmpty()) {
-            roomPage = roomRepository.findByCodeContaining(code, pageable);
+            roomPage = roomPage.stream().filter(room -> room.getCode().equals(code)).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            roomPage = roomRepository.findByNameContaining(name, pageable);
+            roomPage  = roomPage.stream().filter(room -> room.getName().contains(name)).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
-            roomPage = roomRepository.findByCinemaId(cinemaId, pageable);
-        } else {
-            roomPage = roomRepository.findAll(pageable);
+            roomPage = roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId)).collect(Collectors.toList());
         }
-        //sort by created date
-        return roomPage.stream().sorted(Comparator.comparing(Room::getCreatedDate).reversed())
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, roomPage.size());
+        return roomPage.subList(fromIndex, toIndex).stream()
                 .map(room -> {
-
-
                     RoomDto roomDto = new RoomDto();
                     roomDto.setId(room.getId());
                     roomDto.setCode(room.getCode());
                     roomDto.setName(room.getName());
+                    room.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
+                        roomDto.setPrice(priceDetail.getPrice());
+                        roomDto.setActive_price(priceDetail.isStatus());
+                    });
                     roomDto.setType(room.getType().name());
                     roomDto.setTotalSeats(room.getTotalSeats());
                     roomDto.setStatus(room.isStatus());
@@ -239,6 +238,7 @@ public class RoomServiceImpl implements RoomService {
                     return roomDto;
                 }).toList();
     }
+
 
     @Override
     public long countAllRooms(String code, String name, Long cinemaId) {

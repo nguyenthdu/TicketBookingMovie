@@ -7,16 +7,13 @@ import com.app.TicketBookingMovie.models.enums.EDetailType;
 import com.app.TicketBookingMovie.repository.PriceDetailRepository;
 import com.app.TicketBookingMovie.services.*;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -145,7 +142,6 @@ public class PriceDetailServiceImpl implements PriceDetailService {
     }
 
 
-
     @Override
     public void updatePriceDetail(BigDecimal price, boolean status, Long id) {
         PriceDetail priceDetail = priceDetailRepository.findById(id)
@@ -184,7 +180,7 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         if (priceDetail.getPriceHeader().getEndDate().isBefore(LocalDateTime.now())) {
             throw new AppException("Chương trình đã kết thúc, không thể xóa", HttpStatus.BAD_REQUEST);
         }
-        if(priceDetail.isStatus()){
+        if (priceDetail.isStatus()) {
             throw new AppException("Không thể xóa chi tiết chương trình đang kích hoạt", HttpStatus.BAD_REQUEST);
         }
         priceDetailRepository.delete(priceDetail);
@@ -194,53 +190,48 @@ public class PriceDetailServiceImpl implements PriceDetailService {
 
     @Override
     public List<PriceDetail> priceActive() {
-        return priceDetailRepository.findCurrentSalePriceDetails( LocalDateTime.now());
+        return priceDetailRepository.findCurrentSalePriceDetails(LocalDateTime.now());
     }
 
     @Override
     public List<PriceDetailDto> getAllPriceDetail(Integer page, Integer size, Long priceHeaderId, String typeDetail, String foodCode, String roomCode, String typeSeatCode) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<PriceDetail> priceDetails;
+        List<PriceDetail> priceDetails = priceDetailRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (priceHeaderId != null) {
             if (typeDetail != null && !typeDetail.isEmpty()) {
                 EDetailType detailType = EDetailType.valueOf(typeDetail);
-                priceDetails = priceDetailRepository.findAllByType(priceHeaderId, detailType, pageable);
+                priceDetails = priceDetails.stream().filter(priceDetail -> priceDetail.getPriceHeader().getId().equals(priceHeaderId) && priceDetail.getType().equals(detailType)).toList();
             } else if (foodCode != null && !foodCode.isEmpty()) {
-                priceDetails = priceDetailRepository.findAllByFoodCode(priceHeaderId, foodCode, pageable);
+                priceDetails = priceDetails.stream().filter(priceDetail -> priceDetail.getPriceHeader().getId().equals(priceHeaderId) && priceDetail.getFood().getCode().equals(foodCode)).toList();
             } else if (roomCode != null && !roomCode.isEmpty()) {
-                priceDetails = priceDetailRepository.findAllByRoomCode(priceHeaderId, roomCode, pageable);
+                priceDetails = priceDetails.stream().filter(priceDetail -> priceDetail.getPriceHeader().getId().equals(priceHeaderId) && priceDetail.getRoom().getCode().equals(roomCode)).toList();
             } else if (typeSeatCode != null && !typeSeatCode.isEmpty()) {
-                priceDetails = priceDetailRepository.findAllByTypeSeatCode(priceHeaderId, typeSeatCode, pageable);
+                priceDetails = priceDetails.stream().filter(priceDetail -> priceDetail.getPriceHeader().getId().equals(priceHeaderId) && priceDetail.getTypeSeat().getCode().equals(typeSeatCode)).toList();
             } else {
-                priceDetails = priceDetailRepository.findAllByPriceHeaderId(priceHeaderId, pageable);
+                priceDetails = priceDetails.stream().filter(priceDetail -> priceDetail.getPriceHeader().getId().equals(priceHeaderId)).toList();
             }
-        }else{
-            priceDetails = priceDetailRepository.findAll(pageable);
         }
 
-        return priceDetails.stream().sorted(Comparator.comparing(PriceDetail::getCreatedDate).reversed())
-                .map(priceDetail -> {
-                    PriceDetailDto priceDetailDto = modelMapper.map(priceDetail, PriceDetailDto.class);
-                    switch (priceDetail.getType()) {
-                        case FOOD:
-                            priceDetailDto.setType("FOOD");
-                            priceDetailDto.setName(priceDetail.getFood().getName());
-                            priceDetailDto.setCode(priceDetail.getFood().getCode());
-                            break;
-                        case ROOM:
-                            priceDetailDto.setType("ROOM");
-                            priceDetailDto.setName(priceDetail.getRoom().getName());
-                            priceDetailDto.setCode(priceDetail.getRoom().getCode());
-                            break;
-                        case TYPE_SEAT:
-                            priceDetailDto.setType("TYPE_SEAT");
-                            priceDetailDto.setName(String.valueOf(priceDetail.getTypeSeat().getName()));
-                            priceDetailDto.setCode(priceDetail.getTypeSeat().getCode());
-                            break;
-                    }
-                    return priceDetailDto;
-                })
-                .toList();
+        int start = page * size;
+        int end = Math.min(start + size, priceDetails.size());
+        return priceDetails.subList(start, end).stream().map(priceDetail -> {
+            PriceDetailDto priceDetailDto = modelMapper.map(priceDetail, PriceDetailDto.class);
+            switch (priceDetail.getType()) {
+                case FOOD:
+                    priceDetailDto.setName(priceDetail.getFood().getName());
+                    priceDetailDto.setCode(priceDetail.getFood().getCode());
+                    break;
+                case ROOM:
+                    priceDetailDto.setName(priceDetail.getRoom().getName());
+                    priceDetailDto.setCode(priceDetail.getRoom().getCode());
+                    break;
+                case TYPE_SEAT:
+                    priceDetailDto.setName(String.valueOf(priceDetail.getTypeSeat().getName()));
+                    priceDetailDto.setCode(priceDetail.getTypeSeat().getCode());
+                    break;
+            }
+            return priceDetailDto;
+        }).toList();
+
     }
 
     @Override

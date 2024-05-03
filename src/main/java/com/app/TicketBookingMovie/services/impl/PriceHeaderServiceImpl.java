@@ -7,9 +7,7 @@ import com.app.TicketBookingMovie.models.PriceHeader;
 import com.app.TicketBookingMovie.repository.PriceHeaderRepository;
 import com.app.TicketBookingMovie.services.PriceHeaderService;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -140,7 +137,6 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
                     priceDetail.setStatus(false);
 
                 }
-
             }
         } else {
             priceHeader.setStatus(priceHeader.isStatus());
@@ -148,8 +144,6 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         // Save the updated sale price to the database
         priceHeaderRepository.save(priceHeader);
         //khi tắt chương trình thì tắt tất cả các chi tiết giá
-
-
     }
 
 
@@ -182,45 +176,37 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     }
 
     @Override
-    public List<PriceHeaderDto> getAllPriceHeader(Integer page, Integer size, String code, String name, LocalDateTime startDate, LocalDateTime endDate) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<PriceHeader> pageSalePrice;
-        if (code != null && !code.isEmpty()) {
-            pageSalePrice = priceHeaderRepository.findByCodeContaining(code, pageable);
-        } else if (name != null && !name.isEmpty()) {
-            pageSalePrice = priceHeaderRepository.findByNameContaining(name, pageable);
+    public List<PriceHeaderDto> getAllPriceHeader(Integer page, Integer size, String code, String name, LocalDate startDate, LocalDate endDate) {
 
+        List<PriceHeader> pageSalePrice = priceHeaderRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+        if (code != null && !code.isEmpty()) {
+            pageSalePrice = pageSalePrice.stream().filter(priceHeader -> priceHeader.getCode().equals(code)).toList();
+        } else if (name != null && !name.isEmpty()) {
+            pageSalePrice = pageSalePrice.stream().filter(priceHeader -> priceHeader.getName().contains(name)).toList();
         } else if (startDate != null && endDate != null) {
-            //sort
-            pageSalePrice = priceHeaderRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, startDate, pageable);
-        } else {
-            pageSalePrice = priceHeaderRepository.findAllByOrderByCreatedDateDesc(pageable);
+            pageSalePrice = pageSalePrice.stream().filter(priceHeader -> priceHeader.getStartDate().isAfter(startDate.atStartOfDay())
+                    && priceHeader.getEndDate().isBefore(endDate.atStartOfDay().plusDays(1))).toList();
         }
-        //sort by  created date
-        return pageSalePrice.stream().sorted(Comparator.comparing(PriceHeader::getCreatedDate).reversed())
-                .map(priceHeader ->
-                {
-                    PriceHeaderDto priceHeaderDto = modelMapper.map(priceHeader, PriceHeaderDto.class);
-                    priceHeaderDto.setPriceDetails(Collections.emptySet());
-                    return priceHeaderDto;
-                }).toList();
+        int start = page * size;
+        int end = Math.min((start + size), pageSalePrice.size());
+        List<PriceHeaderDto> priceHeaderDtos = pageSalePrice.subList(start, end).stream().map(priceHeader -> modelMapper.map(priceHeader, PriceHeaderDto.class)).toList();
+        priceHeaderDtos.forEach(priceHeaderDto -> priceHeaderDto.setPriceDetails(Collections.emptySet()));
+        return priceHeaderDtos;
     }
 
     @Override
-    public long countAllPriceHeader(String code, String name, LocalDateTime startDate, LocalDateTime endDate) {
+    public long countAllPriceHeader(String code, String name, LocalDate startDate,LocalDate endDate) {
         if (code != null && !code.isEmpty()) {
             return priceHeaderRepository.countByCodeContaining(code);
         } else if (name != null && !name.isEmpty()) {
             return priceHeaderRepository.countByNameContaining(name);
 
         } else if (startDate != null && endDate != null) {
-            return priceHeaderRepository.countByStartDateGreaterThanEqualAndEndDateLessThanEqual(startDate, endDate);
+            return priceHeaderRepository.countByStartDateGreaterThanEqualAndEndDateLessThanEqual(startDate.atStartOfDay(), endDate.atStartOfDay());
         } else {
             return priceHeaderRepository.count();
         }
-
     }
-
 }
 /*
  * Tôi có phương thức thêm chương trình giảm giá sau đây và tôi muốn thêm điều kiện, Tôi muốn tạo giảm giá với điều kiện là nếu khoảng thời gian từ startDate đến endDate không tồn tại (không thể trùng lặp), thời gian bắt đầu không được nhỏ hơn thời gian hiện tại(trong quá khứ),thời gian kết thúc phải sau thời gian bắt đầu:*/

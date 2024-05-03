@@ -15,8 +15,8 @@ public interface InvoiceService {
     Invoice findById(Long id);
     void updateStatusInvoice(Long id, boolean status);
     //viết phương thức lấy tất cả hóa đơn
-    List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long  roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate startDate, LocalDate endDate);
-    long countAllInvoices(String invoiceCode, Long cinemaId, Long  roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate startDate, LocalDate endDate);
+    List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long  roomId, Long movieId, String showTimeCode, Long staffId, Long userId, LocalDate startDate, LocalDate endDate);
+    long countAllInvoices(String invoiceCode, Long cinemaId, Long  roomId, Long movieId, String showTimeCode, Long staffId, Long userId, LocalDate startDate, LocalDate endDate);
     //get detail invoice
     CinemaDto getCinemaByInvoiceId(Long id);
     RoomDto getRoomByInvoiceId(Long id);

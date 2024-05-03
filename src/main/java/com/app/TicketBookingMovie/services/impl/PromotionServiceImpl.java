@@ -4,20 +4,16 @@ import com.app.TicketBookingMovie.dtos.PromotionDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Promotion;
 import com.app.TicketBookingMovie.models.PromotionLine;
-import com.app.TicketBookingMovie.repository.PromotionLineRepository;
 import com.app.TicketBookingMovie.repository.PromotionRepository;
 import com.app.TicketBookingMovie.services.PromotionService;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,12 +21,10 @@ import java.util.stream.Collectors;
 public class PromotionServiceImpl implements PromotionService {
     private final PromotionRepository promotionRepository;
     private final ModelMapper modelMapper;
-    private final PromotionLineRepository promotionLineRepository;
 
-    public PromotionServiceImpl(PromotionRepository promotionRepository, ModelMapper modelMapper, PromotionLineRepository promotionLineRepository) {
+    public PromotionServiceImpl(PromotionRepository promotionRepository, ModelMapper modelMapper) {
         this.promotionRepository = promotionRepository;
         this.modelMapper = modelMapper;
-        this.promotionLineRepository = promotionLineRepository;
     }
 
     @Override
@@ -79,73 +73,7 @@ public class PromotionServiceImpl implements PromotionService {
         return modelMapper.map(promotion, PromotionDto.class);
     }
 
-    @Override
-    public List<PromotionLine> getAllPromotionFitBill(BigDecimal totalValueBill, String applicableObject) {
-        LocalDateTime dateTime = LocalDateTime.now();
-        // Lấy danh sách tất cả các promotion
-        List<Promotion> promotions = promotionRepository.findAll();
 
-//        // Lọc các promotion phù hợp với hóa đơn hiện tại
-//        return promotions.stream()
-//                .filter(promotion -> isValidPromotion(promotion, totalValueBill, dateTime, applicableObject))
-//                .map(promotion -> promotion.getPromotionLines().stream()
-//                        .filter(promotionLine -> isValidPromotionLine(promotionLine, totalValueBill, applicableObject))
-//                        .collect(Collectors.toList()))
-//                .flatMap(List::stream)
-//                .collect(Collectors.toList());
-
-        return  null;
-    }
-
-//    private boolean isValidPromotion(Promotion promotion, BigDecimal totalValueBill, LocalDateTime dateTime, String applicableObject) {
-//        // Kiểm tra xem ngày hiện tại có nằm trong khoảng thời gian của promotion không
-//        if (dateTime.isBefore(promotion.getStartDate()) || dateTime.isAfter(promotion.getEndDate())) {
-//            return false;
-//        }
-//
-//        // Kiểm tra trạng thái của promotion
-//        if (!promotion.isStatus()) {
-//            return false;
-//        }
-//
-//        // Lọc các promotion lines phù hợp
-//        return promotion.getPromotionLines().stream()
-//                .filter(PromotionLine::isStatus).anyMatch(promotionLine -> isValidPromotionLine(promotionLine, totalValueBill, applicableObject));
-//    }
-//
-//    private boolean isValidPromotionLine(PromotionLine promotionLine, BigDecimal totalValueBill, String applicableObject) {
-//        // Kiểm tra xem đối tượng sử dụng (applicableObject) có phù hợp không, nếu promotion line oject là ALL thì không cần kiểm tra
-//        if (!promotionLine.getApplicableObject().toString().equals("ALL") && !applicableObject.equals(promotionLine.getApplicableObject().toString())) {
-//            return false;
-//        }
-//
-//        // Kiểm tra xem số lượng khuyến mãi còn lại có phù hợp không
-//        if (promotionLine.getUsePerPromotion() <= 0) {
-//            return false;
-//        }
-//
-//        // Kiểm tra xem tổng giá trị hóa đơn có phù hợp không
-//        return !(totalValueBill.compareTo(promotionLine.getPromotionDiscountDetail().getMinBillValue()) < 0);
-//    }
-
-//    @Override
-//    public PromotionLine getPromotionLineByCodeAndFitBill(String promotionLineCode, BigDecimal totalValueBill, LocalDateTime dateTime, String applicableObject) {
-//        // Tìm mã khuyến mãi dựa trên mã được nhập vào
-//        PromotionLine promotionLine = promotionLineRepository.findByCode(promotionLineCode);
-//
-//        // Kiểm tra xem mã khuyến mãi có tồn tại không
-//        if (promotionLine == null) {
-//            throw new AppException("Không tìm thấy hoạt động khuyến mãi với mã " + promotionLineCode, HttpStatus.NOT_FOUND);
-//        }
-//
-//        // Kiểm tra xem mã khuyến mãi có phù hợp với hóa đơn không
-//        if (!isValidPromotionLineCode(promotionLine, totalValueBill, applicableObject, dateTime)) {
-//            throw new AppException("Mã khuyến mãi: " + promotionLineCode + " không phù hợp với hóa đơn hiện tại", HttpStatus.BAD_REQUEST);
-//        }
-//
-//        return promotionLine;
-//    }
-//
     @Override
     public void deletePromotion(Long id) {
         //nếu đã bắt đầu thì không thể xóa
@@ -205,61 +133,34 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
-    public List<PromotionDto> getAllPromotion(Integer page, Integer size, LocalDateTime startDate, LocalDateTime endDate, boolean status) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Promotion> promotions;
+    public List<PromotionDto> getAllPromotion(Integer page, Integer size, LocalDate startDate,LocalDate endDate, boolean status) {
+        List<Promotion> promotions = promotionRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         if (startDate != null && endDate != null) {
-            promotions = promotionRepository.findAllByStartDateGreaterThanEqualAndEndDateLessThanEqualAndStatus(startDate, endDate, status, pageable);
+            promotions = promotions.stream().filter(promotion -> promotion.getStartDate().isAfter(startDate.atStartOfDay()) && promotion.getEndDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
         } else if (startDate != null) {
-            promotions = promotionRepository.findAllByStartDateGreaterThanEqualAndStatus(startDate, status, pageable);
+            promotions = promotions.stream().filter(promotion -> promotion.getStartDate().isAfter(startDate.atStartOfDay())).collect(Collectors.toList());
         } else if (endDate != null) {
-            promotions = promotionRepository.findAllByEndDateLessThanEqualAndStatus(endDate, status, pageable);
-        } else {
-            promotions = promotionRepository.findAllByStatus(status, pageable);
-
+            promotions = promotions.stream().filter(promotion -> promotion.getEndDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
         }
         //sort by  create at
-        return promotions.stream().sorted(Comparator.comparing(Promotion::getCreatedAt).reversed())
-                .map(promotion -> modelMapper.map(promotion, PromotionDto.class))
-                .collect(Collectors.toList());
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, promotions.size());
+        return promotions.subList(fromIndex, toIndex).stream().map(promotion -> modelMapper.map(promotion, PromotionDto.class)).collect(Collectors.toList());
+
     }
 
     @Override
-    public long countAllPromotion(LocalDateTime startDate, LocalDateTime endDate, boolean status) {
+    public long countAllPromotion(LocalDate startDate, LocalDate endDate, boolean status) {
         if (startDate != null && endDate != null) {
-            return promotionRepository.countAllByStartDateGreaterThanEqualAndEndDateLessThanEqualAndStatus(startDate, endDate, status);
+            return promotionRepository.countAllByStartDateGreaterThanEqualAndEndDateLessThanEqualAndStatus(startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1), status);
         } else if (startDate != null) {
-            return promotionRepository.countAllByStartDateGreaterThanEqualAndStatus(startDate, status);
+            return promotionRepository.countAllByStartDateGreaterThanEqualAndStatus(startDate.atStartOfDay(), status);
         } else if (endDate != null) {
-            return promotionRepository.countAllByEndDateLessThanEqualAndStatus(endDate, status);
+            return promotionRepository.countAllByEndDateLessThanEqualAndStatus(endDate.atStartOfDay().plusDays(1), status);
         } else {
             return promotionRepository.countAllByStatus(status);
         }
     }
 
-    private boolean isValidPromotionLineCode(PromotionLine promotionLine, BigDecimal totalValueBill, String applicableObject, LocalDateTime dateTime) {
-//        // Kiểm tra xem đối tượng sử dụng (applicableObject) có phù hợp không
-//        if (!applicableObject.equals(EApplicableObject.ALL.toString()) && !applicableObject.equals(promotionLine.getApplicableObject().toString())) {
-//            return false;
-//        }
-
-        // Kiểm tra xem số lượng khuyến mãi còn lại có phù hợp không
-//        if (promotionLine.getUsePerPromotion() <= 0) {
-//            return false;
-//        }
-
-        // Kiểm tra xem tổng giá trị hóa đơn có phù hợp không
-        if (totalValueBill.compareTo(promotionLine.getPromotionDiscountDetail().getMinBillValue()) < 0) {
-            return false;
-        }
-
-        // Kiểm tra xem ngày hiện tại có nằm trong khoảng thời gian của mã khuyến mãi không
-        if (dateTime.isBefore(promotionLine.getStartDate()) || dateTime.isAfter(promotionLine.getEndDate())) {
-            return false;
-        }
-
-        // Kiểm tra trạng thái của mã khuyến mãi
-        return promotionLine.isStatus();
-    }
 
 }

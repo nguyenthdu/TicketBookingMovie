@@ -3,7 +3,7 @@ package com.app.TicketBookingMovie.services;
 import com.app.TicketBookingMovie.dtos.PriceHeaderDto;
 import com.app.TicketBookingMovie.models.PriceHeader;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface PriceHeaderService {
@@ -16,8 +16,8 @@ public interface PriceHeaderService {
     PriceHeader findById(Long id);
     void deletePriceHeaderById(Long id);
 
-    List<PriceHeaderDto> getAllPriceHeader(Integer page, Integer size, String code, String name, LocalDateTime startDate, LocalDateTime endDate);
+    List<PriceHeaderDto> getAllPriceHeader(Integer page, Integer size, String code, String name, LocalDate startDate,LocalDate endDate);
 
-    long countAllPriceHeader(String code, String name,  LocalDateTime startDate, LocalDateTime endDate);
+    long countAllPriceHeader(String code, String name,  LocalDate startDate, LocalDate endDate);
 
 }

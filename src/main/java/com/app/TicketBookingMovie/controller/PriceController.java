@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -83,8 +84,8 @@ public class PriceController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "name", required = false) String name,
-            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
-            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate) {
+            @RequestParam(value = "startDate", required = false) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) LocalDate endDate) {
         {
             PageResponse<PriceHeaderDto> pageResponse = new PageResponse<>();
             pageResponse.setContent(priceHeaderService.getAllPriceHeader(page, size, code, name, startDate, endDate));

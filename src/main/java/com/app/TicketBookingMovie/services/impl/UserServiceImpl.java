@@ -13,9 +13,7 @@ import com.app.TicketBookingMovie.security.PasswordConfig;
 import com.app.TicketBookingMovie.security.UserDetailsImpl;
 import com.app.TicketBookingMovie.services.UserService;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -75,45 +72,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
     }
 
-    /***
-     *
-     * @param page
-     * @param size
-     * @param code
-     * @param username
-     * @param phone
-     * @param email
-     * @return List<UserDTO>
-     */
-    @Override
-    public List<UserDto> getAllUsersPage(Integer page,
-                                         Integer size, String code, String username,
-                                         String phone, String email, Long roleId) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> userPage;
-        if (code != null && !code.isEmpty()) {
-            userPage = userRepository.findByCodeContaining(code, pageable);
-        } else if (username != null && !username.isEmpty()) {
-            userPage = userRepository.findByUsernameContaining(username, pageable);
-        } else if (phone != null && !phone.isEmpty()) {
-            userPage = userRepository.findByPhoneContaining(phone, pageable);
-        } else if (email != null && !email.isEmpty()) {
-            userPage = userRepository.findByEmailContaining(email, pageable);
-        } else if (roleId != null && roleId > 0) {
-            userPage = userRepository.findByRoleId(roleId, pageable);
-        } else {
-            userPage = userRepository.findAll(pageable);
-        }
-        // Filter out users with role "admin"
-//        List<UserDto> filteredUsers = userPage.stream()
-//                .filter(user -> !user.getRoles().stream().anyMatch(role -> role.getName() == ERole.ROLE_ADMIN))
-//                .map(user -> modelMapper.map(user, UserDto.class))
-//                .collect(Collectors.toList());
-       //sort by create at
-        return  userPage.stream().sorted(Comparator.comparing(User::getCreatedDate).reversed())
-                .map(user -> modelMapper.map(user, UserDto.class))
-                .collect(Collectors.toList());
-    }
 
     @Override
     public UserDto getUserById(Long id) {
@@ -319,6 +277,50 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setCreatedDate(LocalDateTime.now());
             userRepository.save(user);
         }
+    }
+
+    /***
+     *
+     * @param page
+     * @param size
+     * @param code
+     * @param username
+     * @param phone
+     * @param email
+     * @return List<UserDTO>
+     */
+    @Override
+    public List<UserDto> getAllUsersPage(Integer page,
+                                         Integer size, String code, String username,
+                                         String phone, String email, Long roleId) {
+        List<User> users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+        if (code != null && !code.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getCode().equals(code))
+                    .collect(Collectors.toList());
+        } else if (username != null && !username.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getUsername().contains(username))
+                    .collect(Collectors.toList());
+        } else if (phone != null && !phone.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getPhone().contains(phone))
+                    .collect(Collectors.toList());
+        } else if (email != null && !email.isEmpty()) {
+            users = users.stream()
+                    .filter(user -> user.getEmail().contains(email))
+                    .collect(Collectors.toList());
+        } else if (roleId != null && roleId > 0) {
+            users = users.stream()
+                    .filter(user -> user.getRoles().stream().anyMatch(role -> role.getId().equals(roleId)))
+                    .collect(Collectors.toList());
+        }
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, users.size());
+        return users.subList(fromIndex, toIndex).stream()
+                .map(user -> modelMapper.map(user, UserDto.class))
+                .collect(Collectors.toList());
+
     }
 
     @Override

@@ -10,9 +10,8 @@ import com.app.TicketBookingMovie.models.enums.ETypePromotion;
 import com.app.TicketBookingMovie.repository.PromotionLineRepository;
 import com.app.TicketBookingMovie.services.*;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -338,36 +337,33 @@ public class PromotionLineServiceImpl implements PromotionLineService {
 
     @Override
     public List<PromotionLineDto> getAllPromotionLineFromPromotionId(Integer page, Integer size, Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String typePromotion) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<PromotionLine> promotionLines;
-
-
+        List<PromotionLine> promotionLines = promotionLineRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         if (promotionId != null) {
             if (promotionLineCode != null && !promotionLineCode.isEmpty()) {
-                promotionLines = promotionLineRepository.findAllByPromotionIdAndCode(promotionId, promotionLineCode, pageable);
+                promotionLines = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotion().getId().equals(promotionId) && promotionLine.getCode().equals(promotionLineCode)).toList();
             } else if (startDate != null && endDate != null) {
-                promotionLines = promotionLineRepository.findAllByPromotionIdAndStartDateGreaterThanEqualAndEndDateLessThanEqual(promotionId, startDate, endDate, pageable);
+                promotionLines = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotion().getId().equals(promotionId) && promotionLine.getStartDate().isAfter(startDate) && promotionLine.getEndDate().isBefore(endDate.plusDays(1))).toList();
             } else if (typePromotion != null && !typePromotion.isEmpty()) {
                 switch (typePromotion) {
                     case "DISCOUNT" -> {
-                        promotionLines = promotionLineRepository.findAllByPromotionIdAndTypePromotion(promotionId, ETypePromotion.DISCOUNT, pageable);
+                        promotionLines = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotion().getId().equals(promotionId) && promotionLine.getTypePromotion().equals(ETypePromotion.DISCOUNT)).toList();
                     }
                     case "FOOD" -> {
-                        promotionLines = promotionLineRepository.findAllByPromotionIdAndTypePromotion(promotionId, ETypePromotion.FOOD, pageable);
+                        promotionLines = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotion().getId().equals(promotionId) && promotionLine.getTypePromotion().equals(ETypePromotion.FOOD)).toList();
                     }
                     case "TICKET" -> {
-                        promotionLines = promotionLineRepository.findAllByPromotionIdAndTypePromotion(promotionId, ETypePromotion.TICKET, pageable);
+                        promotionLines = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotion().getId().equals(promotionId) && promotionLine.getTypePromotion().equals(ETypePromotion.TICKET)).toList();
                     }
                     default -> throw new AppException("Loại khuyến mãi không hợp lệ", HttpStatus.BAD_REQUEST);
                 }
             } else {
-                promotionLines = promotionLineRepository.findAllByPromotionId(promotionId, pageable);
+                promotionLines = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotion().getId().equals(promotionId)).toList();
             }
-        } else {
-
-            promotionLines = promotionLineRepository.findAll(pageable);
         }
-        return promotionLines.stream().sorted(Comparator.comparing(PromotionLine::getCreatedAt).reversed()).map(promotionLine -> {
+       int start = page* size;
+        int end = Math.min((start + size), promotionLines.size());
+        List<PromotionLine> promotionLinesPage = promotionLines.subList(start, end);
+        return promotionLinesPage.stream().map(promotionLine -> {
             PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
             if (promotionLine.getTypePromotion().equals(ETypePromotion.DISCOUNT)) {
                 PromotionDiscountDetailDto promotionDiscountDetailDto = modelMapper.map(promotionLine.getPromotionDiscountDetail(), PromotionDiscountDetailDto.class);

@@ -9,9 +9,7 @@ import com.app.TicketBookingMovie.services.InvoiceService;
 import com.app.TicketBookingMovie.services.ReturnInvoviceService;
 import com.app.TicketBookingMovie.services.ShowTimeService;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,30 +114,30 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
 
     @Override
     public List<ReturnInvoiceDto> getAllReturnInvoice(Integer page, Integer size, String code, String userCode, LocalDate startDate, LocalDate endDate) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ReturnInvoice> pageReturnInvoice;
+        List<ReturnInvoice> pageReturnInvoice = returnInvoiceRepository.findAll(Sort.by(Sort.Direction.DESC, "cancelDate"));
         if (!code.isEmpty() && !code.isBlank()) {
-            pageReturnInvoice = returnInvoiceRepository.findByCode(code, pageable);
-        } else if (userCode != null) {
-            pageReturnInvoice = returnInvoiceRepository.findByUserCode(userCode, pageable);
+            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getCode().equals(code)).collect(Collectors.toList());
+        } else if (!userCode.isEmpty() && !userCode.isBlank()){
+            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getInvoice().getUser().getCode().equals(userCode)).collect(Collectors.toList());
         } else if (startDate != null && endDate != null) {
-            pageReturnInvoice = returnInvoiceRepository.findByCancelDateBetween(startDate.atStartOfDay(), endDate.atTime(LocalTime.MAX), pageable);
-        } else {
-            pageReturnInvoice = returnInvoiceRepository.findAll(pageable);
+            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getCancelDate().isAfter(startDate.atStartOfDay()) && returnInvoice.getCancelDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
         }
-        return pageReturnInvoice.stream().map(returnInvoice -> {
+        int fromIndex = page* size;
+        int toIndex = Math.min(fromIndex + size, pageReturnInvoice.size());
+        return pageReturnInvoice.subList(fromIndex, toIndex).stream().map(returnInvoice -> {
             ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
             returnInvoiceDto.setCode(returnInvoice.getCode());
             returnInvoiceDto.setReason(returnInvoice.getReason());
             returnInvoiceDto.setCancelDate(returnInvoice.getCancelDate());
+            returnInvoiceDto.setInvoiceId(returnInvoice.getInvoice().getId());
             returnInvoiceDto.setInvoiceCode(returnInvoice.getInvoice().getCode());
             returnInvoiceDto.setInvoiceDate(returnInvoice.getInvoice().getCreatedDate());
             returnInvoiceDto.setUserCode(returnInvoice.getInvoice().getUser().getCode());
             returnInvoiceDto.setUserName(returnInvoice.getInvoice().getUser().getUsername());
+            returnInvoiceDto.setQuantity(returnInvoice.getInvoice().getInvoiceTicketDetails().size() + returnInvoice.getInvoice().getInvoiceFoodDetails().size());
             returnInvoiceDto.setTotal(returnInvoice.getInvoice().getTotalPrice());
             return returnInvoiceDto;
         }).collect(Collectors.toList());
-
     }
 
     @Override
@@ -149,7 +147,7 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
         } else if (userCode != null) {
             return returnInvoiceRepository.countByUserCode(userCode);
         } else if (startDate != null && endDate != null) {
-            return returnInvoiceRepository.countByCancelDateBetween(startDate.atStartOfDay(), endDate.atTime(LocalTime.MAX));
+            return returnInvoiceRepository.countByCancelDateBetween(startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
         } else {
             return returnInvoiceRepository.count();
         }

@@ -26,7 +26,6 @@ public class SeatServiceImpl implements SeatService {
         this.modelMapper = modelMapper;
         this.seatRepository = seatRepository;
         this.typeSeatRepository = typeSeatRepository;
-
     }
 
     public String randomCode() {
@@ -37,14 +36,13 @@ public class SeatServiceImpl implements SeatService {
         char rowChar = (char) ('A' + row - 1); // Convert row number to character starting from 'A'
         return rowChar + String.valueOf(col); // Combine row character and column number to form seat name
     }
-
     @Override
     public SeatDto createSeat(SeatDto seatDto) {
         Seat seat = modelMapper.map(seatDto, Seat.class);
         seat.setCode(randomCode());
         seat.setName(handleNameSeat(seatDto.getSeatRow(), seat.getSeatColumn()));
         TypeSeat typeSeat = typeSeatRepository.findById(seatDto.getSeatTypeId())
-                .orElseThrow(() -> new AppException("Seat type not found" + seatDto.getSeatTypeId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy loại ghế với id: " + seatDto.getSeatTypeId(), HttpStatus.NOT_FOUND));
         seat.setSeatType(typeSeat);
         seatRepository.save(seat);
         return modelMapper.map(seat, SeatDto.class);
@@ -53,7 +51,7 @@ public class SeatServiceImpl implements SeatService {
     @Override
     public SeatDto getSeatById(Long id) {
         Seat seat = seatRepository.findById(id)
-                .orElseThrow(() -> new AppException("Seat not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy ghế với id: " + id, HttpStatus.NOT_FOUND));
         return modelMapper.map(seat, SeatDto.class);
     }
 

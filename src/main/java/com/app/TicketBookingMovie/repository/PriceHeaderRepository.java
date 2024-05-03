@@ -13,9 +13,6 @@ import java.time.LocalDateTime;
 public interface PriceHeaderRepository extends JpaRepository<PriceHeader, Long> {
     boolean existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(LocalDateTime endDate, LocalDateTime startDate);
 
-    Page<PriceHeader> findByCodeContaining(String code, Pageable pageable);
-
-    Page<PriceHeader> findByNameContaining(String name, Pageable pageable);
     long countByCodeContaining(String code);
 
     long countByNameContaining(String name);

@@ -10,9 +10,7 @@ import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
 import com.app.TicketBookingMovie.services.*;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -160,16 +158,16 @@ public class InvoiceServiceImpl implements InvoiceService {
                 total = applyPromotion(promotionLine, total);
                 invoice.setPromotionLines(Set.of(promotionLine));
                 //cập nhật lại số lượng của promotion line
-                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(),-1);
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
 
             }
             if (checkPromotionFood) {
                 invoice.setPromotionLines(Set.of(promotionLine));
-                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(),-1);
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
             }
             if (checkPromotionTicket) {
                 invoice.setPromotionLines(Set.of(promotionLine));
-                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(),-1);
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
             }
         }
 
@@ -375,34 +373,47 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     public List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long
-            roomId, Long movieId, String showTimeCode, Long staffId, Long userId, String status, LocalDate startDate, LocalDate endDate) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Invoice> pageInvoice;
+            roomId, Long movieId, String showTimeCode, Long staffId, Long userId, LocalDate startDate, LocalDate endDate) {
+
+        List<Invoice> pageInvoice = invoiceRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (invoiceCode != null && !invoiceCode.isEmpty()) {
-            pageInvoice = invoiceRepository.findByCode(invoiceCode, pageable);
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getCode().equals(invoiceCode))
+                    .toList();
         } else if (cinemaId != null) {
-            pageInvoice = invoiceRepository.findByCinemaId(cinemaId, pageable);
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getId().equals(cinemaId))
+                    .toList();
         } else if (roomId != null) {
-            pageInvoice = invoiceRepository.findByRoomId(roomId, pageable);
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId().equals(roomId))
+                    .toList();
         } else if (movieId != null) {
-            pageInvoice = invoiceRepository.findByMovieId(movieId, pageable);
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getId().equals(movieId))
+                    .toList();
         } else if (showTimeCode != null && !showTimeCode.isEmpty()) {
-            pageInvoice = invoiceRepository.findByShowTimeCode(showTimeCode, pageable);
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode().equals(showTimeCode))
+                    .toList();
         } else if (staffId != null) {
-            pageInvoice = invoiceRepository.findByStaffId(staffId, pageable);
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getStaff().getId().equals(staffId))
+                    .toList();
         } else if (userId != null) {
-            pageInvoice = invoiceRepository.findByUserId(userId, pageable);
-        } else if (status != null && !status.isEmpty()) {
-            pageInvoice = invoiceRepository.findByStatus(status.equals("true"), pageable);
-        }
-        else if (startDate != null && endDate != null) {
-            pageInvoice = invoiceRepository.findByCreatedDateBetween(startDate, endDate, pageable);
-        }
-        else {
-            pageInvoice = invoiceRepository.findAll(pageable);
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getUser().getId().equals(userId))
+                    .toList();
+        } else if (startDate != null && endDate != null) {
+            pageInvoice = pageInvoice.stream()
+                    .filter(invoice -> invoice.getCreatedDate().toLocalDate().isAfter(startDate) && invoice.getCreatedDate().toLocalDate().isBefore(endDate.plusDays(1)))
+                    .toList();
         }
 
-        return pageInvoice.stream().sorted(Comparator.comparing(Invoice::getCreatedDate).reversed())
+
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, pageInvoice.size());
+        return pageInvoice.subList(fromIndex, toIndex).stream()
                 .map(invoice -> {
                     InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
                     invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
@@ -413,12 +424,14 @@ public class InvoiceServiceImpl implements InvoiceService {
                     invoiceDto.setStaffName(invoice.getStaff().getUsername());
                     invoiceDto.setUserName(invoice.getUser().getUsername());
                     return invoiceDto;
-                }).toList();
+                })
+                .toList();
+
     }
 
     @Override
     public long countAllInvoices(String invoiceCode, Long cinemaId, Long roomId, Long movieId, String
-            showTimeCode, Long staffId, Long userId, String status, LocalDate startDate, LocalDate endDate) {
+            showTimeCode, Long staffId, Long userId, LocalDate startDate, LocalDate endDate) {
         if (invoiceCode != null && !invoiceCode.isEmpty()) {
             return invoiceRepository.countByCode(invoiceCode);
         } else if (cinemaId != null) {
@@ -433,13 +446,9 @@ public class InvoiceServiceImpl implements InvoiceService {
             return invoiceRepository.countByStaffId(staffId);
         } else if (userId != null) {
             return invoiceRepository.countByUserId(userId);
-        } else if (status != null && !status.isEmpty()) {
-            return invoiceRepository.countByStatus(status.equals("true"));
-        }
-        else if (startDate != null && endDate != null) {
+        } else if (startDate != null && endDate != null) {
             return invoiceRepository.countByCreatedDate(startDate, endDate);
-        }
-        else {
+        } else {
             return invoiceRepository.count();
         }
     }
