@@ -211,7 +211,7 @@ public class RoomServiceImpl implements RoomService {
         if (code != null && !code.isEmpty()) {
             roomPage = roomPage.stream().filter(room -> room.getCode().equals(code)).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            roomPage  = roomPage.stream().filter(room -> room.getName().contains(name)).collect(Collectors.toList());
+            roomPage  = roomPage.stream().filter(room -> room.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
             roomPage = roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId)).collect(Collectors.toList());
         }

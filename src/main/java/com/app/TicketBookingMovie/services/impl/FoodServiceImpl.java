@@ -181,7 +181,7 @@ public class FoodServiceImpl implements FoodService {
             if (code != null && !code.isEmpty()) {
                 pageFood =  pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getCode().contains(code)).toList();
             } else if (name != null && !name.isEmpty()) {
-                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getName().contains(name)).toList();
+                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getName().toLowerCase().contains(name.toLowerCase())).toList();
             } else if (categoryId != null) {
                 pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getCategoryFood().getId().equals(categoryId)).toList();
             } else if (sizeFood != null && !sizeFood.isEmpty()) {

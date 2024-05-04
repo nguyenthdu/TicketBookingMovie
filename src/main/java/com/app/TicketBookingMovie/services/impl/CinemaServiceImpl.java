@@ -114,7 +114,7 @@ public class CinemaServiceImpl implements CinemaService {
         if (code != null && !code.isEmpty()) {
             cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getCode().equals(code)).toList();
         } else if (name != null && !name.isEmpty()) {
-            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getName().contains(name)).toList();
+            cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getName().toLowerCase().contains(name.toLowerCase())).toList();
         } else if (street != null && !street.isEmpty()) {
             cinemaPage = cinemaPage.stream().filter(cinema -> cinema.getAddress().getStreet().equals(street)).toList();
         } else if (ward != null && !ward.isEmpty()) {

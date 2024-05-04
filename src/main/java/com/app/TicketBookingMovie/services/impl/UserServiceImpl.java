@@ -302,7 +302,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                     .collect(Collectors.toList());
         } else if (username != null && !username.isEmpty()) {
             users = users.stream()
-                    .filter(user -> user.getUsername().contains(username))
+                    .filter(user -> user.getUsername().toLowerCase().contains(username.toLowerCase()))
                     .collect(Collectors.toList());
         } else if (phone != null && !phone.isEmpty()) {
             users = users.stream()

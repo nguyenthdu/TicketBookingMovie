@@ -82,7 +82,7 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
             pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getCode().equals(code)).toList();
         }
        else if (name != null && !name.isEmpty()) {
-            pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getName().contains(name)).toList();
+            pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getName().toLowerCase().contains(name.toLowerCase())).toList();
         }
         int fromIndex = page  * size;
         int toIndex = Math.min(fromIndex + size, pageCategory.size());

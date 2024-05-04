@@ -198,7 +198,7 @@ public class MovieServiceImpl implements MovieService {
             movies = movies.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
             if (name != null && !name.isEmpty()) {
-                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().contains(name)).collect(Collectors.toList());
+                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
             } else if (genreId != null && genreId != 0) {
                 movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
             } else {

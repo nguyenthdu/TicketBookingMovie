@@ -67,7 +67,7 @@ public class GenreServiceImpl implements GenreService {
         if (code != null && !code.isEmpty()) {
             genres = genres.stream().filter(genre -> genre.getCode().equals(code)).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            genres = genres.stream().filter(genre -> genre.getName().equals(name)).collect(Collectors.toList());
+            genres = genres.stream().filter(genre -> genre.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
         }
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, genres.size());
