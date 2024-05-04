@@ -161,6 +161,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setRoles(Set.of(role));
         String email = "guest" + now.getNano() + "@gmail.com";
         user.setEmail(email);
+        user.setPhone(String.valueOf(now.getNano()));
         user.setEnabled(true);
         user.setCreatedDate(now);
         userRepository.save(user);
