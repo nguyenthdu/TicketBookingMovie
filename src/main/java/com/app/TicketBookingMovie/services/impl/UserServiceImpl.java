@@ -161,7 +161,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setRoles(Set.of(role));
         String email = "guest" + now.getNano() + "@gmail.com";
         user.setEmail(email);
-        user.setPhone(String.valueOf(now.getNano()));
         user.setEnabled(true);
         user.setCreatedDate(now);
         userRepository.save(user);
@@ -307,11 +306,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                     .collect(Collectors.toList());
         } else if (phone != null && !phone.isEmpty()) {
             users = users.stream()
-                    .filter(user -> user.getPhone().contains(phone))
+                    .filter(user -> user.getPhone() != null && user.getPhone().equals(phone))
                     .collect(Collectors.toList());
         } else if (email != null && !email.isEmpty()) {
             users = users.stream()
-                    .filter(user -> user.getEmail().contains(email))
+                    .filter(user -> user.getEmail() != null && user.getEmail().equals(email))
                     .collect(Collectors.toList());
         } else if (roleId != null && roleId > 0) {
             users = users.stream()
