@@ -159,6 +159,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setUsername("Khách hàng_" + now.getDayOfMonth() + now.getMonthValue() + now.getYear() + "_" + now.getHour() + now.getMinute() + now.getSecond());
         Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
+        String email = "guest" + now.getNano() + "@gmail.com";
+        user.setEmail(email);
         user.setEnabled(true);
         user.setCreatedDate(now);
         userRepository.save(user);
