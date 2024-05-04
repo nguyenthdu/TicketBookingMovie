@@ -152,7 +152,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void createGuest() {
+    public UserDto createGuest() {
         User user = new User();
         user.setCode(randomCode());
         LocalDateTime now = LocalDateTime.now();
@@ -164,6 +164,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setEnabled(true);
         user.setCreatedDate(now);
         userRepository.save(user);
+        return modelMapper.map(user, UserDto.class);
     }
 
     @Override

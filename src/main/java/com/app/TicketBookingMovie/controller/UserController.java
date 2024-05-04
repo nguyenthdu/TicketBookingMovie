@@ -211,9 +211,12 @@ public class UserController {
     }
 
     @PostMapping("/guest")
-    public ResponseEntity<MessageResponseDto> createGuest() {
-        userService.createGuest();
-        return ResponseEntity.ok(new MessageResponseDto("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+    public ResponseEntity<UserDto> createGuest() {
+        try {
+            return ResponseEntity.ok(userService.createGuest());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
 
     }
 }

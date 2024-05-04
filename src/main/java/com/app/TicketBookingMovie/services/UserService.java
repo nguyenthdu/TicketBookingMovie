@@ -17,7 +17,7 @@ public interface UserService {
 	void deleteUser(Long id);
 	void updateUser(Long id, UserDto userDTO);
 	void updateUserProfile(String email, UserDto userDTO);
-	void createGuest();
+	UserDto createGuest();
 	void createUserInTicket(UserDto userDto);
 
 	void createUser(SignupDto signupDto);
