@@ -40,17 +40,9 @@ public class InvoiceController {
     public ResponseEntity<MessageResponseDto> createInvoice(@RequestParam("showTimeId") Long showTimeId,
                                                             @RequestParam("seatIds") Set<Long> seatIds,
                                                             @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
-                                                            @RequestParam(value = "emailUser", required = false) String emailUser,
-                                                            @RequestParam("staffId") Long staffId,
-                                                            @RequestParam("typePay") String typePay
-
-            , HttpServletRequest request) {
-        String jwt = jwtUtils.getJwtFromCookies(request);
-        if (emailUser.isEmpty()) {
-            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                emailUser = jwtUtils.getEmailFromJwtToken(jwt);
-            }
-        }
+                                                            @RequestParam(value = "emailUser") String emailUser,
+                                                            @RequestParam(value = "staffId", required = false) Long staffId,
+                                                            @RequestParam("typePay") String typePay) {
 
         try {
             invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId, typePay);
@@ -85,7 +77,7 @@ public class InvoiceController {
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalDate endDate
     ) {
         PageResponse<InvoiceDto> invoices = new PageResponse<>();
-        invoices.setContent(invoiceService.getAllInvoices(page, size, invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId,  startDate, endDate));
+        invoices.setContent(invoiceService.getAllInvoices(page, size, invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, startDate, endDate));
         invoices.setTotalElements(invoiceService.countAllInvoices(invoiceCode, cinemaId, roomId, movieId, showTimeCode, staffId, userId, startDate, endDate));
         invoices.setTotalPages((int) Math.ceil((double) invoices.getTotalElements() / size));
         invoices.setCurrentPage(page);
@@ -157,14 +149,14 @@ public class InvoiceController {
                                                           @RequestParam("showTimeId") Long showTimeId,
                                                           @RequestParam("seatIds") Set<Long> seatIds,
                                                           @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
-                                                          @RequestParam(value = "emailUser", required = false) String emailUser,
-                                                          @RequestParam("staffId") Long staffId,
+                                                          @RequestParam(value = "emailUser") String emailUser,
+                                                          @RequestParam(value = "staffId", required = false) Long staffId,
                                                           HttpServletRequest request) {
         String vnpayUrl = vnPayService.createOrder(request, orderTotal, showTimeId, seatIds, foodIds, emailUser, staffId);
         return ResponseEntity.ok().body(new MessageResponseDto(vnpayUrl, HttpStatus.OK.value(), Instant.now().toString()));
     }
 
-    @GetMapping("/vnpay-payment-return")
+    @GetMapping("vnpay-payment-return")
     public ResponseEntity<MessageResponseDto> paymentCompleted(HttpServletRequest request) {
         int paymentStatus = vnPayService.orderReturn(request);
         if (paymentStatus == 1) {

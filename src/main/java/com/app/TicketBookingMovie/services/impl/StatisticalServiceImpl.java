@@ -219,7 +219,8 @@ public class StatisticalServiceImpl implements StatisticalService {
                     && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
         }
         // Tính toán tổng số lượng hóa đơn, tổng số lượng vé, tổng giảm giá và tổng doanh thu
-        List<RevenueByUserDto> revenueByUserDtos = pageInvoices.stream().collect(Collectors.groupingBy(invoice -> invoice.getStaff().getId()))
+        List<RevenueByUserDto> revenueByUserDtos = pageInvoices.stream().filter(invoice -> invoice.getStaff() != null)
+                .collect(Collectors.groupingBy(invoice -> invoice.getStaff().getId()))
                 .entrySet().stream()
                 .map(entry -> {
                     RevenueByUserDto revenueByUserDto = new RevenueByUserDto();

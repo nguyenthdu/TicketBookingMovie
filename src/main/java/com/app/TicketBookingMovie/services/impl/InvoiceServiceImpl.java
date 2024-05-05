@@ -141,8 +141,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Gán người dùng và nhân viên thanh toán vào hóa đơn
         User user = userService.getCurrentUser(emailUser);
         invoice.setUser(user);
-        User staff = userService.findById(staffId);
-        invoice.setStaff(staff);
+        if (staffId != null) {
+            User staff = userService.findById(staffId);
+            invoice.setStaff(staff);
+        } else {
+            invoice.setStaff(null);
+        }
 
         // Tính tổng giá của hóa đơn
 
