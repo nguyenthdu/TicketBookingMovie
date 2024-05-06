@@ -2,7 +2,6 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.dtos.PriceHeaderDto;
 import com.app.TicketBookingMovie.exception.AppException;
-import com.app.TicketBookingMovie.models.PriceDetail;
 import com.app.TicketBookingMovie.models.PriceHeader;
 import com.app.TicketBookingMovie.repository.PriceHeaderRepository;
 import com.app.TicketBookingMovie.services.PriceHeaderService;
@@ -65,13 +64,11 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         priceHeaderRepository.save(priceHeader);
     }
 
-    //TODO: khi tạo thì mặc định status = false nhưng nếu ngày bắt đâu >= ngày hiện tại thì status = true
-    //tự động cập nhật status khi ngày bắt đầu >= ngày hiện tại
-//    @Async - số lượng khuyến mãi không nhiều nên không cần chạy đồng thời
-    @Scheduled(fixedRate = 60000) // This will run the method every minute
-    public void activePriceHeader() {
-        LocalDateTime currentTime = LocalDateTime.now();
 
+    //    @Async
+    @Scheduled(fixedRate = 60000) // This will run the method every minute=
+    public void updateStatusPrice() {
+        LocalDateTime currentTime = LocalDateTime.now();
         priceHeaderRepository.updatePriceHeadersStatus(currentTime);
         priceHeaderRepository.updatePriceDetailsStatus(currentTime);
     }
@@ -79,10 +76,9 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     //TODO: update không cập nhật ngày bắt đầu
     @Override
     public void updatePriceHeader(PriceHeaderDto priceHeaderDto) {
-// Parse the start date and end date from the priceHeaderDto
+        // Parse the start date and end date from the priceHeaderDto
         LocalDateTime endDate = priceHeaderDto.getEndDate();
-
-
+        LocalDateTime startDate = priceHeaderDto.getStartDate();
         // Find the sale price by its ID
         PriceHeader priceHeader = priceHeaderRepository.findById(priceHeaderDto.getId())
                 .orElseThrow(() -> new AppException("Không tìm thấy chương trình thay đổi giá với mã là: " + priceHeaderDto.getId(), HttpStatus.NOT_FOUND));
@@ -99,13 +95,20 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
             priceHeader.setDescription(priceHeader.getDescription());
         }
         //nếu chưa bắt đầu:
-        if (priceHeader.getStartDate().isAfter(LocalDateTime.now())) {
-            if (priceHeaderDto.getStartDate() != null && !priceHeaderDto.getStartDate().equals(priceHeader.getStartDate())) {
-                priceHeader.setStartDate(priceHeaderDto.getStartDate());
-            } else {
-                priceHeader.setStartDate(priceHeader.getStartDate());
-
+        if (priceHeaderDto.getStartDate() != null) {
+            //nếu như ngày bắt đầu đã qua ngày hiện tại thì không thể cập nhật
+            if (priceHeaderDto.getStartDate().isBefore(LocalDateTime.now()) || priceHeaderDto.getStartDate().getDayOfMonth() == LocalDate.now().getDayOfMonth()) {
+                throw new AppException("Không thể cập nhật ngày bắt đầu đã qua ngày hiện tại!!!", HttpStatus.BAD_REQUEST);
             }
+            // kiểm tra xem ngày bắt đầu có nằm trong 1 khoản thời gian của 1 price header khác không
+            boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(priceHeader.getEndDate(), priceHeaderDto.getStartDate());
+            if (exists) {
+                throw new AppException("Ngày bắt đầu đã nằm trong khoản thời gian của 1 chương trình thay đổi giá khác", HttpStatus.BAD_REQUEST);
+            }
+            priceHeader.setStartDate(priceHeaderDto.getStartDate());
+
+        } else {
+            priceHeader.setStartDate(priceHeader.getStartDate());
         }
         if (priceHeaderDto.getEndDate() != null && !priceHeaderDto.getEndDate().equals(priceHeader.getEndDate())) {
             // Check if the end date is after the start date
@@ -113,12 +116,12 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
                 throw new AppException("Ngày kết thúc phải sau ngày hiện tại", HttpStatus.BAD_REQUEST);
             }
             if (endDate.isBefore(LocalDateTime.now())) {
-                throw new AppException("Ngày kết thúc phải sau ngày hiện tại", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ngày kết thúc phải sau ngày hiện tại!!!", HttpStatus.BAD_REQUEST);
             }
             // Check if the time period is already occupied
-            boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(endDate, priceHeaderDto.getStartDate());
+            boolean exists = priceHeaderRepository.existsByStartDateLessThanEqualAndEndDateGreaterThanEqual(priceHeader.getStartDate(), priceHeaderDto.getEndDate());
             if (exists) {
-                throw new AppException("Một chương trình thay đổi giá khác đã tồn tại trong khoản thời gian từ " + priceHeaderDto.getStartDate() + " đến " + endDate + " vui lòng chọn khoản thời gian khác.", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ngày kết thúc đã nằm trong khoản thời gian của 1 chương trình thay đổi giá khác!!!", HttpStatus.BAD_REQUEST);
             }
             priceHeader.setEndDate(priceHeaderDto.getEndDate());
         } else {
@@ -128,22 +131,19 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
             if (priceHeaderDto.isStatus()) {
                 boolean existsStatus = priceHeaderRepository.existsByStatus(true);
                 if (existsStatus) {
-                    throw new AppException("Không thể kích hoạt chương trình thay đổi giá khi đã có chương trình đang hoạt động", HttpStatus.BAD_REQUEST);
+                    throw new AppException("Không thể kích hoạt chương trình thay đổi giá khi đã có chương trình đang hoạt động!!!", HttpStatus.BAD_REQUEST);
+                }
+                //nếu chưa tới ngày bắt đầu thì không thể kích hoạt
+                if (priceHeader.getStartDate().isAfter(LocalDateTime.now())) {
+                    throw new AppException("Chương trình thay đổi giá chưa tới ngày bắt đầu, không thể kích hoạt!!!", HttpStatus.BAD_REQUEST);
                 }
             }
             priceHeader.setStatus(priceHeaderDto.isStatus());
-            if (!priceHeader.isStatus()) {
-                for (PriceDetail priceDetail : priceHeader.getPriceDetails()) {
-                    priceDetail.setStatus(false);
-
-                }
-            }
         } else {
             priceHeader.setStatus(priceHeader.isStatus());
         }
         // Save the updated sale price to the database
         priceHeaderRepository.save(priceHeader);
-        //khi tắt chương trình thì tắt tất cả các chi tiết giá
     }
 
 
@@ -195,7 +195,7 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     }
 
     @Override
-    public long countAllPriceHeader(String code, String name, LocalDate startDate,LocalDate endDate) {
+    public long countAllPriceHeader(String code, String name, LocalDate startDate, LocalDate endDate) {
         if (code != null && !code.isEmpty()) {
             return priceHeaderRepository.countByCodeContaining(code);
         } else if (name != null && !name.isEmpty()) {
@@ -208,5 +208,3 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         }
     }
 }
-/*
- * Tôi có phương thức thêm chương trình giảm giá sau đây và tôi muốn thêm điều kiện, Tôi muốn tạo giảm giá với điều kiện là nếu khoảng thời gian từ startDate đến endDate không tồn tại (không thể trùng lặp), thời gian bắt đầu không được nhỏ hơn thời gian hiện tại(trong quá khứ),thời gian kết thúc phải sau thời gian bắt đầu:*/

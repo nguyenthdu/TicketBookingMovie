@@ -65,7 +65,7 @@ public class RoomServiceImpl implements RoomService {
         }
         room.setSeats(seats);
         room.setTotalSeats(room.getSeats().size());
-        if(!cinema.isStatus() && room.isStatus()){
+        if (!cinema.isStatus() && room.isStatus()) {
             throw new AppException("Không thể đặt trạng thái phòng hoạt động khi trạng thái rạp không hoạt động!!!", HttpStatus.BAD_REQUEST);
         }
         room.setCreatedDate(LocalDateTime.now());
@@ -169,13 +169,11 @@ public class RoomServiceImpl implements RoomService {
         roomDto.setSeats(room.getSeats().stream().map(seat -> modelMapper.map(seat, SeatDto.class)).collect(Collectors.toSet()));
         roomDto.setCreatedDate(room.getCreatedDate());
         //lấy giá
-        room.getPriceDetails().stream().findFirst().
-                //lấy trạng thái true
-                        filter(PriceDetail::isStatus).
-                ifPresent(priceDetail -> {
-            roomDto.setPrice(priceDetail.getPrice());
-            roomDto.setActive_price(priceDetail.isStatus());
-        });
+        room.getPriceDetails().stream().filter(PriceDetail::isStatus).findFirst()
+                .ifPresent(priceDetail -> {
+                    roomDto.setPrice(priceDetail.getPrice());
+                    roomDto.setActive_price(priceDetail.isStatus());
+                });
 // Map each seat to a SeatDto and set the price according to the chair type
         roomDto.setSeats(room.getSeats().stream().map(seat -> {
             SeatDto seatDto = modelMapper.map(seat, SeatDto.class);
@@ -211,7 +209,7 @@ public class RoomServiceImpl implements RoomService {
         if (code != null && !code.isEmpty()) {
             roomPage = roomPage.stream().filter(room -> room.getCode().equals(code)).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            roomPage  = roomPage.stream().filter(room -> room.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
+            roomPage = roomPage.stream().filter(room -> room.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
             roomPage = roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId)).collect(Collectors.toList());
         }
@@ -223,7 +221,7 @@ public class RoomServiceImpl implements RoomService {
                     roomDto.setId(room.getId());
                     roomDto.setCode(room.getCode());
                     roomDto.setName(room.getName());
-                    room.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
+                    room.getPriceDetails().stream().filter(PriceDetail::isStatus).findFirst().ifPresent(priceDetail -> {
                         roomDto.setPrice(priceDetail.getPrice());
                         roomDto.setActive_price(priceDetail.isStatus());
                     });

@@ -44,12 +44,10 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         for (PriceDetailDto priceDetailDto : priceDetailDtos) {
             // Lấy thông tin của chương trình thay đổi giá từ ID
             PriceHeader priceHeader = priceHeaderService.findById(priceDetailDto.getPriceHeaderId());
-
             // Kiểm tra xem chương trình thay đổi giá có còn hiệu lực hay không
             if (!priceHeader.getEndDate().isAfter(LocalDateTime.now())) {
                 throw new AppException("Chương trình đã kết thúc, không thể thêm chi tiết chương trình", HttpStatus.BAD_REQUEST);
             }
-
             // Kiểm tra xem giá mới có hợp lệ không
             if (priceDetailDto.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new AppException("Giá mới phải lớn hơn 0", HttpStatus.BAD_REQUEST);
@@ -59,9 +57,6 @@ public class PriceDetailServiceImpl implements PriceDetailService {
             PriceDetail priceDetail = new PriceDetail();
             priceDetail.setPrice(priceDetailDto.getPrice());
             priceDetail.setPriceHeader(priceHeader);
-//            if (!priceHeader.isStatus() && priceDetailDto.isStatus()) {
-//                throw new AppException("Không thể kích hoạt chi tiết chương trình khi chương trình thay đổi giá chưa được kích hoạt", HttpStatus.BAD_REQUEST);
-//            }
             priceDetail.setStatus(false);
             priceDetail.setStatus(priceDetailDto.isStatus());
             priceDetail.setCreatedDate(LocalDateTime.now());
@@ -145,11 +140,11 @@ public class PriceDetailServiceImpl implements PriceDetailService {
     @Override
     public void updatePriceDetail(BigDecimal price, boolean status, Long id) {
         PriceDetail priceDetail = priceDetailRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy chi tiết chương trình thay đổi giá với id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chi tiết  giá với id: " + id, HttpStatus.NOT_FOUND));
         //nếu ngày bắt đầu hoặc ngày kết thúc của header đã  qua thì không thể update giá
 
         if (priceDetail.getPriceHeader().getEndDate().isBefore(LocalDateTime.now())) {
-            throw new AppException("Chương trình đã kết thúc, không thể cập nhật chi tiết chương trình", HttpStatus.BAD_REQUEST);
+            throw new AppException("Khoảng thời gian hoạt động của giá này đã kết thúc, không thể cập nhật chi tiết giá!!!", HttpStatus.BAD_REQUEST);
         }
         // Kiểm tra xem giá mới có hợp lệ không
         //nếu giá < 0 và không phải là số thực thì không được update
@@ -160,7 +155,7 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         }
         if (priceDetail.isStatus() != status) {
             if (!priceDetail.getPriceHeader().isStatus() && status) {
-                throw new AppException("Không thể kích hoạt giá khi chương trình quản lý giá chưa được kích hoạt", HttpStatus.BAD_REQUEST);
+                throw new AppException("Không thể kích hoạt giá khi chương trình quản lý giá của giá này chưa được kích hoạt!!!", HttpStatus.BAD_REQUEST);
             }
             priceDetail.setStatus(status);
         } else {
@@ -172,16 +167,16 @@ public class PriceDetailServiceImpl implements PriceDetailService {
     @Override
     public void deletePriceDetail(Long id) {
         PriceDetail priceDetail = priceDetailRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy chi tiết chương trình thay đổi giá với id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy chi tiết giá với id: " + id, HttpStatus.NOT_FOUND));
         //nếu ngày bắt đầu và kết thúc của Priceheader đã qua ngày hiện tại thì không được update
         if (priceDetail.getPriceHeader().getStartDate().isAfter(LocalDateTime.now())) {
-            throw new AppException("Chương trình đã bắt đầu, không thể xóa", HttpStatus.BAD_REQUEST);
+            throw new AppException("Giá này nằm trong chương trình quản lý giá đang hoạt động, không thể xóa!!!", HttpStatus.BAD_REQUEST);
         }
         if (priceDetail.getPriceHeader().getEndDate().isBefore(LocalDateTime.now())) {
-            throw new AppException("Chương trình đã kết thúc, không thể xóa", HttpStatus.BAD_REQUEST);
+            throw new AppException("Giá này nằm trong chương trình quản lý giá đã kết thúc, không thể xóa!!!", HttpStatus.BAD_REQUEST);
         }
         if (priceDetail.isStatus()) {
-            throw new AppException("Không thể xóa chi tiết chương trình đang kích hoạt", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể xóa chi tiết giá đang hoạt động!!!", HttpStatus.BAD_REQUEST);
         }
         priceDetailRepository.delete(priceDetail);
 

@@ -84,13 +84,13 @@ public class InvoiceServiceImpl implements InvoiceService {
             if (seatPriceDetailOptional.isPresent() && roomPriceDetailOptional.isPresent()) {
                 PriceDetail seatPriceDetail = seatPriceDetailOptional.get();
                 PriceDetail roomPriceDetail = roomPriceDetailOptional.get();
-                //nếu trạng thái của pricedetail là false hoặc thời gian hiện tại không năm trong khoản thời gian của price header của pricedetail thì không thể tạo hóa đơn
-                if (!seatPriceDetail.isStatus() || !roomPriceDetail.isStatus() || currentTime.isBefore(seatPriceDetail.getPriceHeader().getStartDate())
-                        || currentTime.isAfter(seatPriceDetail.getPriceHeader().getEndDate()) || currentTime.isBefore(roomPriceDetail.getPriceHeader().getStartDate())
-                        || currentTime.isAfter(roomPriceDetail.getPriceHeader().getEndDate())) {
-                    throw new AppException("Giá sản phẩm không sẵn sàng để tại hóa đơn, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
+                //nếu trạng thái của pricedetail là false thì không thể tạo hóa đơn
+                if (!seatPriceDetail.isStatus()) {
+                    throw new AppException("Giá của " + ticket.getSeat().getSeatType().getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
                 }
-
+                if (!roomPriceDetail.isStatus()) {
+                    throw new AppException("Giá của " + ticket.getShowTime().getRoom().getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
+                }
                 ticketDetail.setPrice(seatPriceDetail.getPrice().add(roomPriceDetail.getPrice()));
             } else {
                 throw new AppException("Giá của " + ticket.getSeat().getSeatType().getName() + " hoặc " + ticket.getShowTime().getRoom().getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
@@ -202,8 +202,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         Optional<PriceDetail> foodPriceDetailOptional = currentPriceDetails.stream()
                 .filter(detail -> detail.getType() == EDetailType.FOOD && Objects.equals(detail.getFood().getId(), food.getId()))
                 .findFirst();
+        //nếu trạng thái giá là false thì không thể tạo hóa đơn
         if (foodPriceDetailOptional.isPresent()) {
             PriceDetail foodPriceDetail = foodPriceDetailOptional.get();
+            if (!foodPriceDetail.isStatus()) {
+                throw new AppException("Giá của " + food.getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);
+            }
             foodDetail.setPrice(foodPriceDetail.getPrice());
         } else {
             throw new AppException("Giá của " + food.getName() + " không sẵn sàng, vui lòng liên hệ quản trị viên", HttpStatus.BAD_REQUEST);

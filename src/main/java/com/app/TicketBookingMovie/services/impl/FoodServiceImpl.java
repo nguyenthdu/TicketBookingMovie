@@ -5,6 +5,7 @@ import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.CategoryFood;
 import com.app.TicketBookingMovie.models.Cinema;
 import com.app.TicketBookingMovie.models.Food;
+import com.app.TicketBookingMovie.models.PriceDetail;
 import com.app.TicketBookingMovie.models.enums.ESize;
 import com.app.TicketBookingMovie.repository.FoodRepository;
 import com.app.TicketBookingMovie.services.AwsService;
@@ -209,8 +210,10 @@ public class FoodServiceImpl implements FoodService {
         foodDto.setCinemaId(f.getCinema().getId());
         foodDto.setStatus(f.isStatus());
         foodDto.setCreatedDate(f.getCreatedDate());
-        f.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> foodDto.setPrice(priceDetail.getPrice()));
-        f.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> foodDto.setActive_price(priceDetail.isStatus()));
+        f.getPriceDetails().stream().filter(PriceDetail::isStatus).findFirst().ifPresent(priceDetail -> {
+            foodDto.setPrice(priceDetail.getPrice());
+            foodDto.setActive_price(priceDetail.isStatus());
+        });
         return foodDto;
     }
 

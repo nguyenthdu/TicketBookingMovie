@@ -2,6 +2,7 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.dtos.TypeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.models.PriceDetail;
 import com.app.TicketBookingMovie.models.TypeSeat;
 import com.app.TicketBookingMovie.models.enums.ETypeSeat;
 import com.app.TicketBookingMovie.repository.TypeSeatRepository;
@@ -48,13 +49,13 @@ public class TypeSeatServiceImpl implements TypeSeatService {
     @Override
     public TypeSeatDto getTypeSeatById(Long id) {
         TypeSeat typeSeat = typeSeatRepository.findById(id)
-                .orElseThrow(() -> new AppException("TypeSeat not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy loại ghế với id: " + id, HttpStatus.NOT_FOUND));
         TypeSeatDto typeSeatDto = new TypeSeatDto();
         typeSeatDto.setId(typeSeat.getId());
         typeSeatDto.setCode(typeSeat.getCode());
         typeSeatDto.setName(String.valueOf(typeSeat.getName()));
-        typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
-        typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setActive_price(priceDetail.isStatus()));
+        typeSeat.getPriceDetails().stream().filter(PriceDetail::isStatus).findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
+        typeSeat.getPriceDetails().stream().filter(PriceDetail::isStatus).findFirst().ifPresent(priceDetail -> typeSeatDto.setActive_price(priceDetail.isStatus()));
         return typeSeatDto;
 
 
@@ -84,8 +85,9 @@ public class TypeSeatServiceImpl implements TypeSeatService {
                     typeSeatDto.setId(typeSeat.getId());
                     typeSeatDto.setCode(typeSeat.getCode());
                     typeSeatDto.setName(String.valueOf(typeSeat.getName()));
-                    typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
-                    typeSeat.getPriceDetails().stream().findFirst().ifPresent(priceDetail -> typeSeatDto.setActive_price(priceDetail.isStatus()));
+                  //lấy giá của loại ghế có trạng thái là true
+                    typeSeat.getPriceDetails().stream().filter(PriceDetail::isStatus).findFirst().ifPresent(priceDetail -> typeSeatDto.setPrice(priceDetail.getPrice()));
+                    typeSeat.getPriceDetails().stream().filter(PriceDetail::isStatus).findFirst().ifPresent(priceDetail -> typeSeatDto.setActive_price(priceDetail.isStatus()));
                     return typeSeatDto;
                 }).collect(Collectors.toSet());
 

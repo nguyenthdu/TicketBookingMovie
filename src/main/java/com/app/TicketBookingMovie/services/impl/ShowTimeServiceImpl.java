@@ -111,21 +111,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     }
 
-    //sau 1 tuần sẽ dự động xóa các ShowTimeSeat của lịch chiếu đã qua 1 tuần
-    @Async
-    @Scheduled(fixedRate = 60000) // Chạy mỗi phút
-    public void deleteShowTimeSeatAsync() {
-        LocalDate currentDate = LocalDate.now(); // Ngày hiện tại
-        List<ShowTime> allShowTimes = showTimeRepository.findAll();
-        for (ShowTime showTime : allShowTimes) {
-            LocalDate showDate = showTime.getShowDate();
-            boolean isShowTimePassed = showDate.isBefore(currentDate);
-            if (isShowTimePassed) {
-                Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
-                showTimeSeatRepository.deleteAll(showTimeSeats);
-            }
-        }
-    }
+
 
     @Override
     public ShowTimeDto getShowTimeById(Long id) {
@@ -190,22 +176,25 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     //Xử lý nếu thời gian lịch chiếu đã qua hoặc số ghế đã đặt vượt quá số ghế của phòng chiếu thì trạng thái của lịch chiếu sẽ là false
     @Async
     @Scheduled(fixedRate = 60000) // Chạy mỗi phút
+    @Transactional
     public void updateShowTimeStatusAsync() {
         LocalDate currentDate = LocalDate.now(); // Ngày hiện tại
         LocalTime currentTime = LocalTime.now(); // Thời gian hiện tại
-
         List<ShowTime> allShowTimes = showTimeRepository.findAll();
-
         for (ShowTime showTime : allShowTimes) {
             LocalDate showDate = showTime.getShowDate();
             LocalTime showTimeStart = showTime.getShowTime();
             boolean isShowTimePassed = showDate.isBefore(currentDate) || (showDate.isEqual(currentDate) && showTimeStart.isBefore(currentTime));
-            boolean isSeatsExceeded = showTime.getSeatsBooked() >= showTime.getRoom().getTotalSeats();
-
             // Cập nhật trạng thái của lịch chiếu
-            boolean status = !(isShowTimePassed || isSeatsExceeded);
-            showTime.setStatus(status);
-
+          if (isShowTimePassed ) {
+                showTime.setStatus(false);
+                //xóa tất cả showTimeSeat
+              //nếu showTimeSeat null thì bỏ qua
+                if (showTime.getShowTimeSeat() != null) {
+                   showTimeSeatRepository.deleteAllByShowTime(showTime);
+                   showTime.setShowTimeSeat(null);
+                }
+            }
             // Lưu lại trạng thái đã cập nhật vào cơ sở dữ liệu
             showTimeRepository.save(showTime);
         }

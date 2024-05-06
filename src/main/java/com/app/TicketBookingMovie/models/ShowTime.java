@@ -29,7 +29,7 @@ public class ShowTime {
     private boolean status;
     private int seatsBooked;
     private LocalDateTime createdDate;
-    @OneToMany(mappedBy = "showTime", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "showTime", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<ShowTimeSeat> showTimeSeat;
     public ShowTime() {
     }
