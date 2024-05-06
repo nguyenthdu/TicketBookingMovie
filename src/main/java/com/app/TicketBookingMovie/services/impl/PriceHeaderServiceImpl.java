@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -67,11 +68,20 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
 
 
     @Async
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(cron = "0 * * * * ?") // Run every minute
+    @Transactional
     public void updateStatusPrice() {
-        LocalDateTime currentTime = LocalDateTime.now();
-        priceHeaderRepository.updatePriceHeadersStatus(currentTime);
-        priceHeaderRepository.updatePriceDetailsStatus(currentTime);
+        LocalDateTime now = LocalDateTime.now();
+        priceHeaderRepository.findAll().forEach(priceHeader -> {
+            if (priceHeader.getEndDate().isBefore(now)) {
+                priceHeader.setStatus(false);
+                priceHeader.getPriceDetails().forEach(priceDetail -> {
+                    priceDetail.setStatus(false);
+                });
+            }
+            priceHeaderRepository.save(priceHeader);
+        });
+
     }
 
     //TODO: update không cập nhật ngày bắt đầu

@@ -34,5 +34,4 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
     @Query("SELECT DISTINCT s.showDate FROM ShowTime s WHERE s.movie.id = ?1 AND s.room.cinema.id = ?2 AND s.showDate >= CURRENT_DATE")
     List<LocalDate> findDistinctShowDatesByMovieIdAndCinemaIdAfterToday(Long movieId, Long cinemaId);
 
-    List<ShowTime> findAllByStatusIsFalse();
 }

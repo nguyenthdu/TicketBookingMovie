@@ -112,7 +112,6 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     }
 
 
-
     @Override
     public ShowTimeDto getShowTimeById(Long id) {
         ShowTime showTime = showTimeRepository.findById(id)
@@ -186,13 +185,13 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             LocalTime showTimeStart = showTime.getShowTime();
             boolean isShowTimePassed = showDate.isBefore(currentDate) || (showDate.isEqual(currentDate) && showTimeStart.isBefore(currentTime));
             // Cập nhật trạng thái của lịch chiếu
-          if (isShowTimePassed ) {
+            if (isShowTimePassed) {
                 showTime.setStatus(false);
                 //xóa tất cả showTimeSeat
-              //nếu showTimeSeat null thì bỏ qua
+                //nếu showTimeSeat null thì bỏ qua
                 if (showTime.getShowTimeSeat() != null) {
-                   showTimeSeatRepository.deleteAllByShowTime(showTime);
-                   showTime.setShowTimeSeat(null);
+                    showTimeSeatRepository.deleteAllByShowTime(showTime);
+                    showTime.setShowTimeSeat(null);
                 }
             }
             // Lưu lại trạng thái đã cập nhật vào cơ sở dữ liệu

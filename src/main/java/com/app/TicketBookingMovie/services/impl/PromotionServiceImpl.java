@@ -9,6 +9,7 @@ import com.app.TicketBookingMovie.services.PromotionService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -55,10 +56,26 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     //kích hoạt trạng thái của chương trình khuyến mãi khi thời gian băắt đầu đến
-    @Scheduled(fixedRate = 60000) // This will run the method every minute
-    public void activatePromotion() {
-        promotionRepository.updatePromotionStatus();
-        promotionRepository.updatePromotionLineStatus();
+    @Async
+    @Scheduled(cron = "0 * * * * ?") // Run every minute
+    public void updateStatusPromotions() {
+        LocalDateTime now = LocalDateTime.now();
+        promotionRepository.findAll().forEach(promotion -> {
+            // Activation logic (considers midnight edge case)
+            if (promotion.getStartDate().getMinute() == now.getMinute()
+                    && promotion.getStartDate().getHour() == now.getHour()
+                    && promotion.getStartDate().getDayOfMonth() == now.getDayOfMonth()
+                    && promotion.getStartDate().getMonthValue() == now.getMonthValue()
+                    && promotion.getStartDate().getYear() == now.getYear()
+            ) {
+                promotion.setStatus(true);
+            }
+            //nếu ngày kết thuc đã qua thì set status = false
+            if (promotion.getEndDate().isBefore(now)) {
+                promotion.setStatus(false);
+            }
+            promotionRepository.save(promotion);
+        });
     }
 
 
@@ -123,17 +140,18 @@ public class PromotionServiceImpl implements PromotionService {
         } else {
             promotion.setStatus(promotion.isStatus());
         }
-        promotionRepository.save(promotion);
         if (!promotion.isStatus()) {
             for (PromotionLine promotionLine : promotion.getPromotionLines()) {
                 promotionLine.setStatus(false);
             }
         }
+        promotionRepository.save(promotion);
+
 
     }
 
     @Override
-    public List<PromotionDto> getAllPromotion(Integer page, Integer size, LocalDate startDate,LocalDate endDate, boolean status) {
+    public List<PromotionDto> getAllPromotion(Integer page, Integer size, LocalDate startDate, LocalDate endDate, boolean status) {
         List<Promotion> promotions = promotionRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         if (startDate != null && endDate != null) {
             promotions = promotions.stream().filter(promotion -> promotion.getStartDate().isAfter(startDate.atStartOfDay()) && promotion.getEndDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());

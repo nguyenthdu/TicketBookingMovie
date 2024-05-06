@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
@@ -19,14 +20,15 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
     long countAllByEndDateLessThanEqualAndStatus(LocalDateTime endDate, boolean status);
 
     long countAllByStatus(boolean status);
+    @Transactional
+    @Modifying
+    @Query("UPDATE Promotion p SET p.status = true WHERE p.startDate <= CURRENT_TIMESTAMP AND p.status = false")
+    void activatePromotionsWithStartDateAfterNow();
 
     @Transactional
     @Modifying
-    @Query("UPDATE Promotion p SET p.status = true WHERE p.startDate <= CURRENT_DATE AND p.status = false")
-    void updatePromotionStatus();
+    @Query("UPDATE Promotion p SET p.status = false WHERE p.endDate > CURRENT_TIMESTAMP AND p.status = true")
+    void deactivatePromotionsWithEndDateBeforeNow();
 
-    @Transactional
-    @Modifying
-    @Query("UPDATE PromotionLine pl SET pl.status = true WHERE pl.promotion.status = true  AND pl.status = false")
-    void updatePromotionLineStatus();
+    List<Promotion> findAllByStartDateLessThanEqualAndEndDateGreaterThanEqual(LocalDateTime now, LocalDateTime now1);
 }

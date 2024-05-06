@@ -61,8 +61,8 @@ public class PromotionController {
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
+            @RequestParam(value = "endDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
             @RequestParam("status") boolean status) {
         PromotionDto promotionDto = new PromotionDto();
         promotionDto.setId(id);

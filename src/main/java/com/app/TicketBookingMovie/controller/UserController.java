@@ -17,6 +17,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,28 +53,37 @@ public class UserController {
         SigninRequest loginRequest = new SigninRequest();
         loginRequest.setEmail(email);
         loginRequest.setPassword(password);
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtUtils.generateJwtToken(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(item -> item.getAuthority())
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(new JwtResponse(jwt,
-                userDetails.getId(),
-                userDetails.getCode(),
-                userDetails.getUsername(),
-                userDetails.getEmail(),
-                roles,
-                userDetails.getBirthday(),
-                userDetails.getPhone(),
-                userDetails.isEnabled(),
-                userDetails.isGender(),
-                userDetails.getCreatedDate()));
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            List<String> roles = userDetails.getAuthorities().stream()
+                    .map(item -> item.getAuthority())
+                    .collect(Collectors.toList());
+            if(!userDetails.isEnabled()){
+                return ResponseEntity.badRequest().build();
+            }
+            return ResponseEntity.ok(new JwtResponse(jwt,
+                    userDetails.getId(),
+                    userDetails.getCode(),
+                    userDetails.getUsername(),
+                    userDetails.getEmail(),
+                    roles,
+                    userDetails.getBirthday(),
+                    userDetails.getPhone(),
+                    userDetails.isEnabled(),
+                    userDetails.isGender(),
+                    userDetails.getCreatedDate()));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Email hoặc mật khẩu không đúng!!!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+        } catch (DisabledException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Tài khoản này đã bị xóa!!!"
+                    , HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+        }
 
 }
 

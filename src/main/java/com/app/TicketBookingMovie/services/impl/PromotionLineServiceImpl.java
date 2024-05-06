@@ -13,6 +13,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,27 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     private final PromotionService promotionService;
     private final AwsService awsService;
     private final ShowTimeService showTimeService;
+
+    //kích hoạt trạng thái của chương trình khuyến mãi khi thời gian băắt đầu đến
+    @Async
+    @Scheduled(cron = "0 * * * * ?") // Run every minute
+    public void updateStatusPromotionLines() {
+        LocalDateTime now = LocalDateTime.now();
+        promotionLineRepository.findAll().forEach(promotionLine -> {
+            if (promotionLine.getStartDate().getMinute() == now.getMinute()
+                    && promotionLine.getStartDate().getHour() == now.getHour()
+                    && promotionLine.getStartDate().getDayOfMonth() == now.getDayOfMonth()
+                    && promotionLine.getStartDate().getMonthValue() == now.getMonthValue()
+                    && promotionLine.getStartDate().getYear() == now.getYear()
+            ) {
+                promotionLine.setStatus(true);
+            }
+            if (promotionLine.getEndDate().isBefore(now)) {
+                promotionLine.setStatus(false);
+            }
+            promotionLineRepository.save(promotionLine);
+        });
+    }
 
     public PromotionLineServiceImpl(PromotionLineRepository promotionLineRepository, ModelMapper modelMapper, PromotionDiscountDetailService promotionDiscountDetailService, PromotionTicketDetailService promotionTicketDetailService, PromotionFoodDetailService promotionFoodDetailService, PromotionService promotionService, AwsService awsService, ShowTimeService showTimeService) {
         this.promotionLineRepository = promotionLineRepository;
@@ -70,7 +93,6 @@ public class PromotionLineServiceImpl implements PromotionLineService {
                         promotion)) {
                     throw new AppException("Khuyến mãi đã tồn tại", HttpStatus.BAD_REQUEST);
                 }
-
                 promotionLine.setPromotionDiscountDetail(promotionDiscountDetailService.createPromotionDiscountDetail(promotionLineDto.getPromotionDiscountDetailDto()));
                 promotionLine.setTypePromotion(ETypePromotion.valueOf("DISCOUNT"));
                 break;
@@ -158,12 +180,12 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         } else {
             promotionLine.setStatus(promotionLine.isStatus());
         }
-        if(promotionLineDto.getQuantity()<promotionLine.getQuantity()){
+        if (promotionLineDto.getQuantity() < promotionLine.getQuantity()) {
             throw new AppException("Số lượng cập nhật phải lớn hơn số lượng khuyến mãi trước đó", HttpStatus.BAD_REQUEST);
         }
-        if(promotionLineDto.getQuantity()!=promotionLine.getQuantity()){
+        if (promotionLineDto.getQuantity() != promotionLine.getQuantity()) {
             promotionLine.setQuantity(promotionLineDto.getQuantity());
-        }else {
+        } else {
             promotionLine.setQuantity(promotionLine.getQuantity());
         }
 
@@ -228,7 +250,7 @@ public class PromotionLineServiceImpl implements PromotionLineService {
                     Integer quantity = entry.getValue();
                     if (promotionFoodDetail.getFoodRequired().equals(foodId)) {
                         if (quantity < promotionFoodDetail.getQuantityRequired()
-                        //và trạng thái của promotion line là true
+                                //và trạng thái của promotion line là true
                                 || !promotionLine.isStatus()
                         ) {
                             isMatched = false;
@@ -306,7 +328,6 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     }
 
 
-
     @Override
     public PromotionLineDto getPromotionLineById(Long promotionLineId) {
         PromotionLine promotionLine = promotionLineRepository.findById(promotionLineId).orElseThrow(() -> new AppException("Không tìm thấy chương trình khuyến mãi với id: " + promotionLineId, HttpStatus.NOT_FOUND));
@@ -360,7 +381,7 @@ public class PromotionLineServiceImpl implements PromotionLineService {
                 promotionLines = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotion().getId().equals(promotionId)).toList();
             }
         }
-       int start = page* size;
+        int start = page * size;
         int end = Math.min((start + size), promotionLines.size());
         List<PromotionLine> promotionLinesPage = promotionLines.subList(start, end);
         return promotionLinesPage.stream().map(promotionLine -> {
