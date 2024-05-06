@@ -22,11 +22,11 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
     @Transactional
     @Modifying
-    @Query("UPDATE Promotion p SET p.status = true WHERE p.startDate <= :currentTime AND p.status = false")
-    void updatePromotionStatus(LocalDateTime currentTime);
+    @Query("UPDATE Promotion p SET p.status = true WHERE p.startDate <= CURRENT_DATE AND p.status = false")
+    void updatePromotionStatus();
 
     @Transactional
     @Modifying
-    @Query("UPDATE Promotion p SET p.status = false WHERE p.endDate <= :currentTime AND p.status = true")
-    void updatePromotionLineStatus(LocalDateTime currentTime);
+    @Query("UPDATE PromotionLine pl SET pl.status = true WHERE pl.promotion.status = true  AND pl.status = false")
+    void updatePromotionLineStatus();
 }

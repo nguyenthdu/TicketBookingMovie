@@ -57,10 +57,10 @@ public class PromotionServiceImpl implements PromotionService {
     //kích hoạt trạng thái của chương trình khuyến mãi khi thời gian băắt đầu đến
     @Scheduled(fixedRate = 60000) // This will run the method every minute
     public void activatePromotion() {
-        LocalDateTime currentTime = LocalDateTime.now();
-        promotionRepository.updatePromotionStatus(currentTime);
-        promotionRepository.updatePromotionLineStatus(currentTime);
+        promotionRepository.updatePromotionStatus();
+        promotionRepository.updatePromotionLineStatus();
     }
+
 
     @Override
     public Promotion findPromotionById(Long id) {

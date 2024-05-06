@@ -1,7 +1,9 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.MessageResponseDto;
+import com.app.TicketBookingMovie.dtos.ResponseSignin;
 import com.app.TicketBookingMovie.dtos.SigninDto;
+import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.RefreshToken;
 import com.app.TicketBookingMovie.security.JwtUtils;
@@ -67,7 +69,20 @@ public class AuthController {
             List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority()).collect(Collectors.toList());
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
             ResponseCookie jwtRefreshCookie = jwtUtils.generateRefreshJwtCookie(refreshToken.getToken());
-            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString()).body(new MessageResponseDto("User signed in successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+            ResponseSignin responseSignin= new ResponseSignin();
+            //lấy thông tin user
+            UserDto userDto = new UserDto();
+            userDto.setId(userDetails.getId());
+            userDto.setUsername(userDetails.getUsername());
+            userDto.setEmail(userDetails.getEmail());
+            responseSignin.setAccess_token(jwtCookie.getValue());
+            responseSignin.setUser(userDto);
+//            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString())
+//                    //trả về token
+//                    .body(new MessageResponseDto("User logged in successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).header(HttpHeaders.SET_COOKIE, jwtRefreshCookie.toString())
+                    //trả về token
+                    .body(responseSignin);
         } catch (BadCredentialsException e) {
             return ResponseEntity.badRequest().body(new MessageResponseDto("Incorrect email or password!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         } catch (DisabledException e) {

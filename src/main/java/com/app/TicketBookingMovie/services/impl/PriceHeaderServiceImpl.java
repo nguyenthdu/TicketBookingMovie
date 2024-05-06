@@ -8,6 +8,7 @@ import com.app.TicketBookingMovie.services.PriceHeaderService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -65,8 +66,8 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
     }
 
 
-    //    @Async
-    @Scheduled(fixedRate = 60000) // This will run the method every minute=
+    @Async
+    @Scheduled(fixedRate = 60000)
     public void updateStatusPrice() {
         LocalDateTime currentTime = LocalDateTime.now();
         priceHeaderRepository.updatePriceHeadersStatus(currentTime);
