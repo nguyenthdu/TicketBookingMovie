@@ -1,8 +1,8 @@
 package com.app.TicketBookingMovie.services;
 
-import com.app.TicketBookingMovie.dtos.SignupDto;
 import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.models.User;
+import com.app.TicketBookingMovie.payload.request.SignupRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
@@ -20,8 +20,8 @@ public interface UserService {
 	UserDto createGuest();
 	void createUserInTicket(UserDto userDto);
 
-	void createUser(SignupDto signupDto);
-	void createMor(SignupDto SignupDto);
+	void createUser(SignupRequest signupRequest);
+	void createMor(SignupRequest SignupRequest);
 	void createRoles();
 	void createAdmin();
     long countUsers(String code, String username, String phone, String email, Long roleId);

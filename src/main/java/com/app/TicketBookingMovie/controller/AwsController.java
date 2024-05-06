@@ -1,7 +1,7 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.AwsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +20,13 @@ public class AwsController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> uploadImage(
+    public ResponseEntity<MessageResponse> uploadImage(
             @RequestParam("file") MultipartFile file) {
         try {
             String imageUrl = awsService.uploadImage(file);
-            return ResponseEntity.ok(new MessageResponseDto(imageUrl, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse(imageUrl, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getMessage()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getMessage()));
         }
     }
 

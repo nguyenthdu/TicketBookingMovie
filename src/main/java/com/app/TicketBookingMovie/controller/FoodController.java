@@ -1,9 +1,9 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.FoodDto;
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.FoodService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class FoodController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createFood(
+    public ResponseEntity<MessageResponse> createFood(
             @RequestParam("name") String name,
             @RequestParam("image") String image,
             @RequestParam("categoryId") Long categoryId,
@@ -40,9 +40,9 @@ public class FoodController {
         foodDto.setStatus(status);
         try {
             foodService.createFood(foodDto);
-            return ResponseEntity.ok(new MessageResponseDto("Thêm thành công" + name, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Thêm thành công" + name, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -52,7 +52,7 @@ public class FoodController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDto> updateFood(
+    public ResponseEntity<MessageResponse> updateFood(
             @RequestParam Long id,
             @RequestParam("name") String name,
             @RequestParam("image") String image,
@@ -73,19 +73,19 @@ public class FoodController {
 
         try {
             foodService.updateFood(foodDto);
-            return ResponseEntity.ok(new MessageResponseDto("Cập nhật thành công " + foodDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật thành công " + foodDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deleteFood(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deleteFood(@PathVariable Long id) {
         try {
             foodService.deleteFoodById(id);
-            return ResponseEntity.ok(new MessageResponseDto("Xóa thành công!!", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Xóa thành công!!", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 

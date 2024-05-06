@@ -1,10 +1,10 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.PromotionDto;
 import com.app.TicketBookingMovie.dtos.PromotionLineDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.PromotionLineService;
 import com.app.TicketBookingMovie.services.PromotionService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,7 +30,7 @@ public class PromotionController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createPromotion(
+    public ResponseEntity<MessageResponse> createPromotion(
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
@@ -44,9 +44,9 @@ public class PromotionController {
         promotionDto.setStatus(status);
         try {
             promotionService.createPromotion(promotionDto);
-            return ResponseEntity.ok(new MessageResponseDto("Tạo chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(new MessageResponseDto(e.getMessage(), 400, LocalDateTime.now().toString()));
+            return ResponseEntity.status(400).body(new MessageResponse(e.getMessage(), 400, LocalDateTime.now().toString()));
         }
     }
 
@@ -57,7 +57,7 @@ public class PromotionController {
     }
 
     @PutMapping()
-    public ResponseEntity<MessageResponseDto> updatePromotion(
+    public ResponseEntity<MessageResponse> updatePromotion(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
@@ -73,16 +73,16 @@ public class PromotionController {
         promotionDto.setStatus(status);
         try {
             promotionService.updatePromotion(promotionDto);
-            return ResponseEntity.ok(new MessageResponseDto("Cập nhật chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(new MessageResponseDto(e.getMessage(), 400, LocalDateTime.now().toString()));
+            return ResponseEntity.status(400).body(new MessageResponse(e.getMessage(), 400, LocalDateTime.now().toString()));
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deletePromotion(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deletePromotion(@PathVariable Long id) {
         promotionService.deletePromotion(id);
-        return ResponseEntity.ok(new MessageResponseDto("Xóa chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        return ResponseEntity.ok(new MessageResponse("Xóa chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
     }
 
     @GetMapping
@@ -103,12 +103,12 @@ public class PromotionController {
 
 
     @PostMapping("/line")
-    public ResponseEntity<MessageResponseDto> createPromotionLine(@RequestBody PromotionLineDto promotionLineDto) {
+    public ResponseEntity<MessageResponse> createPromotionLine(@RequestBody PromotionLineDto promotionLineDto) {
         try {
             promotionLineService.createPromotionLine(promotionLineDto);
-            return ResponseEntity.ok(new MessageResponseDto("Tạo hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -138,7 +138,7 @@ public class PromotionController {
     }
 
     @PutMapping("/line")
-    public ResponseEntity<MessageResponseDto> updatePromotionLine(
+    public ResponseEntity<MessageResponse> updatePromotionLine(
             @RequestParam("id") Long id,
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "description", required = false) String description,
@@ -158,16 +158,16 @@ public class PromotionController {
         promotionLineDto.setStatus(status);
         try {
             promotionLineService.updatePromotionLine(promotionLineDto);
-            return ResponseEntity.ok(new MessageResponseDto("Cập nhật hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @DeleteMapping("/line/{id}")
-    public ResponseEntity<MessageResponseDto> deletePromotionLine(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deletePromotionLine(@PathVariable Long id) {
         promotionLineService.deletePromotionLine(id);
-        return ResponseEntity.ok(new MessageResponseDto("Xóa hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        return ResponseEntity.ok(new MessageResponse("Xóa hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
     }
 
     // lấy danh sách promtion line đang hoạt động phù hợp với giá trị hóa đơn

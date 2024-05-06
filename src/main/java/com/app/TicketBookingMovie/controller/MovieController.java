@@ -1,10 +1,10 @@
 package com.app.TicketBookingMovie.controller;
 
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.MovieDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.MovieService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -43,7 +43,7 @@ public class MovieController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createMovie(
+    public ResponseEntity<MessageResponse> createMovie(
             @RequestParam("name") String name,
             @RequestParam("image") String image,
             @RequestParam("trailer") String trailer,
@@ -73,9 +73,9 @@ public class MovieController {
         movieDTO.setStatus(status);
         try {
             movieService.createMovie(movieDTO);
-            return ResponseEntity.ok().body(new MessageResponseDto("Movie created successfully with movie name: " + name, HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Movie created successfully with movie name: " + name, HttpStatus.CREATED.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -88,7 +88,7 @@ public class MovieController {
 
     //update
     @PutMapping
-    public ResponseEntity<MessageResponseDto> updateMovie(
+    public ResponseEntity<MessageResponse> updateMovie(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
             @RequestParam("image") String image,
@@ -120,21 +120,21 @@ public class MovieController {
         movieDTO.setStatus(status);
         try {
             movieService.updateMovieById(movieDTO);
-            return ResponseEntity.ok().body(new MessageResponseDto("Movie updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Movie updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
 
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     //delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deleteMovie(@PathVariable("id") Long id) {
+    public ResponseEntity<MessageResponse> deleteMovie(@PathVariable("id") Long id) {
         try {
             movieService.deleteMovieById(id);
-            return ResponseEntity.ok().body(new MessageResponseDto("Movie deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Movie deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
 
     }

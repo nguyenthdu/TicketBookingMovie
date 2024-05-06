@@ -1,11 +1,11 @@
-package com.app.TicketBookingMovie.dtos;
+package com.app.TicketBookingMovie.payload.request;
 
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.Set;
 @Data
-public class SignupDto {
+public class SignupRequest {
 	private String username;
 	private String email;
 	private boolean gender;

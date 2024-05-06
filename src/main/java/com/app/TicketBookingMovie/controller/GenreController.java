@@ -1,9 +1,9 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.GenreDto;
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.GenreService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,14 +21,14 @@ public class GenreController {
     }
 
     @PostMapping()
-    public ResponseEntity<MessageResponseDto> createGenre(@RequestParam("name") String name) {
+    public ResponseEntity<MessageResponse> createGenre(@RequestParam("name") String name) {
         GenreDto genreDTO = new GenreDto();
         genreDTO.setName(name);
         try {
             genreService.createGenre(genreDTO);
-            return ResponseEntity.ok().body(new MessageResponseDto("Genre created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Genre created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
         }catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
 
     }
@@ -39,25 +39,25 @@ public class GenreController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDto> updateGenreById(@RequestParam("id") Long id, @RequestParam("name") String name) {
+    public ResponseEntity<MessageResponse> updateGenreById(@RequestParam("id") Long id, @RequestParam("name") String name) {
         GenreDto genreDTO = new GenreDto();
         genreDTO.setId(id);
         genreDTO.setName(name);
         try {
             genreService.updateGenreById(genreDTO);
-            return ResponseEntity.ok().body(new MessageResponseDto("Genre updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Genre updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @DeleteMapping("{id}")
-    public ResponseEntity<MessageResponseDto> deleteGenreById(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deleteGenreById(@PathVariable Long id) {
         try {
             genreService.deleteGenreById(id);
-            return ResponseEntity.ok().body(new MessageResponseDto("Genre deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Genre deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 

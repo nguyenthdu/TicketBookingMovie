@@ -1,11 +1,11 @@
 package com.app.TicketBookingMovie.services.impl;
 
-import com.app.TicketBookingMovie.dtos.SignupDto;
 import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.Role;
 import com.app.TicketBookingMovie.models.User;
 import com.app.TicketBookingMovie.models.enums.ERole;
+import com.app.TicketBookingMovie.payload.request.SignupRequest;
 import com.app.TicketBookingMovie.repository.RoleRepository;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.JwtUtils;
@@ -187,27 +187,27 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     //TODO: create user
     @Override
-    public void createUser(SignupDto signupDto) {
-        if (userRepository.existsByEmail(signupDto.getEmail())) {
+    public void createUser(SignupRequest signupRequest) {
+        if (userRepository.existsByEmail(signupRequest.getEmail())) {
             throw new AppException("Email is already taken!", HttpStatus.BAD_REQUEST);
         }
-        if (userRepository.existsByPhone(signupDto.getPhone())) {
+        if (userRepository.existsByPhone(signupRequest.getPhone())) {
             throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
         }
         User user = new User();
         user.setCode(randomCode());
-        user.setUsername(signupDto.getUsername());
-        user.setEmail(signupDto.getEmail());
-        user.setGender(signupDto.isGender());
-        user.setBirthday(signupDto.getBirthday());
-        user.setPhone(signupDto.getPhone());
+        user.setUsername(signupRequest.getUsername());
+        user.setEmail(signupRequest.getEmail());
+        user.setGender(signupRequest.isGender());
+        user.setBirthday(signupRequest.getBirthday());
+        user.setPhone(signupRequest.getPhone());
         Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
 //        user.setCreatedDate(LocalDateTime.now());
         user.setEnabled(true);
         user.setCreatedDate(LocalDateTime.now());
         user.setPassword(passwordConfig.passwordEncoder()
-                .encode(signupDto.getPassword()));
+                .encode(signupRequest.getPassword()));
         userRepository.save(user);
     }
 
@@ -221,18 +221,18 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
 
     @Override
-    public void createMor(SignupDto signupDto) {
-        if (userRepository.existsByEmail(signupDto.getEmail())) {
+    public void createMor(SignupRequest signupRequest) {
+        if (userRepository.existsByEmail(signupRequest.getEmail())) {
             throw new AppException("Email is already taken!", HttpStatus.BAD_REQUEST);
         }
-        if (userRepository.existsByPhone(signupDto.getPhone())) {
+        if (userRepository.existsByPhone(signupRequest.getPhone())) {
             throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
         }
         User user = new User();
         user.setCode(randomCodeMor());
-        user.setUsername(signupDto.getUsername());
-        user.setEmail(signupDto.getEmail());
-        user.setGender(signupDto.isGender());
+        user.setUsername(signupRequest.getUsername());
+        user.setEmail(signupRequest.getEmail());
+        user.setGender(signupRequest.isGender());
         LocalDate birthday = LocalDate.parse("2000-01-01");
         user.setBirthday(birthday);
         Role role = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
@@ -242,7 +242,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setEnabled(true);
         user.setCreatedDate(LocalDateTime.now());
         user.setPassword(passwordConfig.passwordEncoder()
-                .encode(signupDto.getPassword()));
+                .encode(signupRequest.getPassword()));
         userRepository.save(user);
     }
 

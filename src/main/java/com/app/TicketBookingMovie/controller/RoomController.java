@@ -1,8 +1,8 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.RoomDto;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,23 +22,23 @@ public class RoomController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createRoom(@RequestBody RoomDto roomDto) {
+    public ResponseEntity<MessageResponse> createRoom(@RequestBody RoomDto roomDto) {
         try {
             roomService.createRoom(roomDto);
-            return ResponseEntity.ok().body(new MessageResponseDto("Room created successfully: " + roomDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Room created successfully: " + roomDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> updateRoom(@PathVariable Long id, @RequestBody RoomDto roomDto) {
+    public ResponseEntity<MessageResponse> updateRoom(@PathVariable Long id, @RequestBody RoomDto roomDto) {
         roomDto.setId(id);
         try {
             roomService.updateRoom(roomDto);
-            return ResponseEntity.ok().body(new MessageResponseDto("Room updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Room updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
     }
 
@@ -48,12 +48,12 @@ public class RoomController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deleteRoom(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deleteRoom(@PathVariable Long id) {
         try {
             roomService.deleteRoom(id);
-            return ResponseEntity.ok().body(new MessageResponseDto("Room deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Room deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
     }
 

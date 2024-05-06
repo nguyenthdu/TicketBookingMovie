@@ -1,9 +1,9 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.CategoryFoodDto;
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.CategoryFoodService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,15 +21,15 @@ public class CategoryFoodController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createCategoryFood(
+    public ResponseEntity<MessageResponse> createCategoryFood(
             @RequestParam("name") String name) {
         CategoryFoodDto categoryFoodDto = new CategoryFoodDto();
         categoryFoodDto.setName(name);
         try {
             categoryFoodService.createCategoryFood(categoryFoodDto);
-            return ResponseEntity.ok(new MessageResponseDto("Category Food created successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Category Food created successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -39,7 +39,7 @@ public class CategoryFoodController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDto> updateCategoryFood(
+    public ResponseEntity<MessageResponse> updateCategoryFood(
             @RequestParam("id") Long id,
             @RequestParam("name") String name) {
         CategoryFoodDto categoryFoodDto = new CategoryFoodDto();
@@ -47,19 +47,19 @@ public class CategoryFoodController {
         categoryFoodDto.setName(name);
         try {
             categoryFoodService.updateCategoryFood(categoryFoodDto);
-            return ResponseEntity.ok(new MessageResponseDto("Category Food updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Category Food updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deleteCategoryFood(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deleteCategoryFood(@PathVariable Long id) {
         try {
             categoryFoodService.deleteCategoryFoodById(id);
-            return ResponseEntity.ok(new MessageResponseDto("Category Food deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Category Food deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 

@@ -1,11 +1,11 @@
 package com.app.TicketBookingMovie.controller;
 
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.ShowTimeDto;
 import com.app.TicketBookingMovie.dtos.ShowTimeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.ShowTimeService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -28,12 +28,12 @@ public class ShowTimeController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createShowTime(@RequestBody Set<ShowTimeDto> showTimeDtos) {
+    public ResponseEntity<MessageResponse> createShowTime(@RequestBody Set<ShowTimeDto> showTimeDtos) {
         try {
             showTimeService.createShowTime(showTimeDtos);
-            return ResponseEntity.ok(new MessageResponseDto("Show time created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Show time created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -61,7 +61,7 @@ public class ShowTimeController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDto> updateShowTime(
+    public ResponseEntity<MessageResponse> updateShowTime(
             @RequestParam("id") Long id,
             @RequestParam("showDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate showDate,
             @RequestParam("showTime") @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime showTime,
@@ -78,19 +78,19 @@ public class ShowTimeController {
 
         try {
             showTimeService.updateShowTime(showTimeDto);
-            return ResponseEntity.ok(new MessageResponseDto("Show time updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Show time updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deleteShowTime(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deleteShowTime(@PathVariable Long id) {
         try {
             showTimeService.deleteShowTime(id);
-            return ResponseEntity.ok(new MessageResponseDto("Show time deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Show time deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 

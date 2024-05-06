@@ -1,11 +1,11 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.InvoiceDto;
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.ResponeInvoiceDetail;
 import com.app.TicketBookingMovie.dtos.ReturnInvoiceDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.services.InvoiceService;
 import com.app.TicketBookingMovie.services.ReturnInvoviceService;
@@ -37,18 +37,18 @@ public class InvoiceController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createInvoice(@RequestParam("showTimeId") Long showTimeId,
-                                                            @RequestParam("seatIds") Set<Long> seatIds,
-                                                            @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
-                                                            @RequestParam(value = "emailUser") String emailUser,
-                                                            @RequestParam(value = "staffId", required = false) Long staffId,
-                                                            @RequestParam("typePay") String typePay) {
+    public ResponseEntity<MessageResponse> createInvoice(@RequestParam("showTimeId") Long showTimeId,
+                                                         @RequestParam("seatIds") Set<Long> seatIds,
+                                                         @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
+                                                         @RequestParam(value = "emailUser") String emailUser,
+                                                         @RequestParam(value = "staffId", required = false) Long staffId,
+                                                         @RequestParam("typePay") String typePay) {
 
         try {
             invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId, typePay);
-            return ResponseEntity.ok(new MessageResponseDto("Tạo hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(e.getStatus()).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -101,16 +101,16 @@ public class InvoiceController {
     }
 
     @PostMapping("cancel")
-    public ResponseEntity<MessageResponseDto> cancelInvoice(@RequestParam("invoiceId") Long invoiceId,
-                                                            @RequestParam("reason") String reason) {
+    public ResponseEntity<MessageResponse> cancelInvoice(@RequestParam("invoiceId") Long invoiceId,
+                                                         @RequestParam("reason") String reason) {
         ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
         returnInvoiceDto.setInvoiceId(invoiceId);
         returnInvoiceDto.setReason(reason);
         try {
             returnInvoviceService.cancelInvoice(returnInvoiceDto);
-            return ResponseEntity.ok(new MessageResponseDto("Hủy hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Hủy hóa đơn thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(e.getStatus()).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(e.getStatus()).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
 
     }
@@ -145,24 +145,24 @@ public class InvoiceController {
     }
 
     @PostMapping("vnpay")
-    public ResponseEntity<MessageResponseDto> submitOrder(@RequestParam("amount") int orderTotal,
-                                                          @RequestParam("showTimeId") Long showTimeId,
-                                                          @RequestParam("seatIds") Set<Long> seatIds,
-                                                          @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
-                                                          @RequestParam(value = "emailUser") String emailUser,
-                                                          @RequestParam(value = "staffId", required = false) Long staffId,
-                                                          HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> submitOrder(@RequestParam("amount") int orderTotal,
+                                                       @RequestParam("showTimeId") Long showTimeId,
+                                                       @RequestParam("seatIds") Set<Long> seatIds,
+                                                       @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
+                                                       @RequestParam(value = "emailUser") String emailUser,
+                                                       @RequestParam(value = "staffId", required = false) Long staffId,
+                                                       HttpServletRequest request) {
         String vnpayUrl = vnPayService.createOrder(request, orderTotal, showTimeId, seatIds, foodIds, emailUser, staffId);
-        return ResponseEntity.ok().body(new MessageResponseDto(vnpayUrl, HttpStatus.OK.value(), Instant.now().toString()));
+        return ResponseEntity.ok().body(new MessageResponse(vnpayUrl, HttpStatus.OK.value(), Instant.now().toString()));
     }
 
     @GetMapping("vnpay-payment-return")
-    public ResponseEntity<MessageResponseDto> paymentCompleted(HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> paymentCompleted(HttpServletRequest request) {
         int paymentStatus = vnPayService.orderReturn(request);
         if (paymentStatus == 1) {
-            return ResponseEntity.ok().body(new MessageResponseDto("Thanh toán thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Thanh toán thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } else {
-            return ResponseEntity.badRequest().body(new MessageResponseDto("Thanh toán thất bại", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+            return ResponseEntity.badRequest().body(new MessageResponse("Thanh toán thất bại", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
     }
 

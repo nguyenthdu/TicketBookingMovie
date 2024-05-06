@@ -1,10 +1,10 @@
 package com.app.TicketBookingMovie.controller;
 
-import com.app.TicketBookingMovie.dtos.MessageResponseDto;
 import com.app.TicketBookingMovie.dtos.PriceDetailDto;
 import com.app.TicketBookingMovie.dtos.PriceHeaderDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
+import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.PriceDetailService;
 import com.app.TicketBookingMovie.services.PriceHeaderService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,7 +31,7 @@ public class PriceController {
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createSalePrice(
+    public ResponseEntity<MessageResponse> createSalePrice(
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
@@ -45,9 +45,9 @@ public class PriceController {
         priceHeaderDto.setStatus(status);
         try {
             priceHeaderService.createPriceHeader(priceHeaderDto);
-            return ResponseEntity.ok(new MessageResponseDto("Tạo chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -57,7 +57,7 @@ public class PriceController {
     }
 
     @PutMapping
-    public ResponseEntity<MessageResponseDto> updateSalePrice(
+    public ResponseEntity<MessageResponse> updateSalePrice(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
@@ -71,9 +71,9 @@ public class PriceController {
         priceHeaderDto.setStatus(status);
         try {
             priceHeaderService.updatePriceHeader(priceHeaderDto);
-            return ResponseEntity.ok(new MessageResponseDto("Cập nhật chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -99,13 +99,13 @@ public class PriceController {
 
 
     @PostMapping("/detail")
-    public ResponseEntity<MessageResponseDto> createPriceDetail(
+    public ResponseEntity<MessageResponse> createPriceDetail(
             @RequestBody Set<PriceDetailDto> priceDetailDto) {
         try {
             priceDetailService.createPriceDetail(priceDetailDto);
-            return ResponseEntity.ok(new MessageResponseDto("Tạo chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -115,7 +115,7 @@ public class PriceController {
     }
 
     @PutMapping("/detail")
-    public ResponseEntity<MessageResponseDto> updatePriceDetail(
+    public ResponseEntity<MessageResponse> updatePriceDetail(
             @RequestParam("id") Long id,
             @RequestParam("price") BigDecimal price,
             @RequestParam("status") boolean status) {
@@ -125,9 +125,9 @@ public class PriceController {
         priceDetailDto.setStatus(status);
         try {
             priceDetailService.updatePriceDetail(price, status, id);
-            return ResponseEntity.ok(new MessageResponseDto("Cập nhật chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -151,23 +151,23 @@ public class PriceController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<MessageResponseDto> deleteSalePrice(@PathVariable("id") Long id) {
+    public ResponseEntity<MessageResponse> deleteSalePrice(@PathVariable("id") Long id) {
         try {
             priceHeaderService.deletePriceHeaderById(id);
-            return ResponseEntity.ok(new MessageResponseDto("Xóa chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Xóa chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     //delete sale price detail
     @DeleteMapping("/detail/{id}")
-    public ResponseEntity<MessageResponseDto> deleteSalePriceDetail(@PathVariable Long id) {
+    public ResponseEntity<MessageResponse> deleteSalePriceDetail(@PathVariable Long id) {
         try {
             priceDetailService.deletePriceDetail(id);
-            return ResponseEntity.ok(new MessageResponseDto("Xóa chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Xóa chi tiết chương trình thay đổi giá thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponseDto(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
     //delete sale price
