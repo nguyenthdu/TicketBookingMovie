@@ -7,6 +7,7 @@ import com.app.TicketBookingMovie.models.*;
 import com.app.TicketBookingMovie.models.enums.EDetailType;
 import com.app.TicketBookingMovie.models.enums.EPay;
 import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
+import com.app.TicketBookingMovie.models.enums.ETypePromotion;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
 import com.app.TicketBookingMovie.services.*;
 import org.modelmapper.ModelMapper;
@@ -156,25 +157,24 @@ public class InvoiceServiceImpl implements InvoiceService {
         boolean checkPromotionFood = applyAllFoodPromotions(promotionLines, invoiceFoodDetails);
         boolean checkPromotionTicket = applyAllTicketPromotions(promotionLines, invoiceTicketDetails);
         BigDecimal total = calculateTotalPrice(invoiceTicketDetails, invoiceFoodDetails);
-
+        PromotionLine promotionLineDiscount = new PromotionLine();
+        PromotionLine promotionLineFood = new PromotionLine();
+        PromotionLine promotionLineTicket = new PromotionLine();
         // Áp dụng khuyến mãi nếu có
         for (PromotionLine promotionLine : promotionLines) {
             if (isPromotionApplicable(promotionLine, total)) {
                 total = applyPromotion(promotionLine, total);
-                invoice.setPromotionLines(Set.of(promotionLine));
-                //cập nhật lại số lượng của promotion line
-                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
-
-            }
-            if (checkPromotionFood) {
-                invoice.setPromotionLines(Set.of(promotionLine));
-                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
-            }
-            if (checkPromotionTicket) {
-                invoice.setPromotionLines(Set.of(promotionLine));
-                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
+                 promotionLineDiscount = promotionLine;
             }
         }
+        if (checkPromotionFood ){
+            promotionLineFood = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotionFoodDetail() != null).findFirst().get();
+        }
+        if (checkPromotionTicket){
+            promotionLineTicket = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotionTicketDetail() != null).findFirst().get();
+        }
+
+        invoice.setPromotionLines(List.of(promotionLineDiscount,promotionLineFood,promotionLineTicket));
 
         //loại thanh toán
         switch (typePay) {
@@ -256,6 +256,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             if (discountDetail.getTypeDiscount() == ETypeDiscount.AMOUNT) {
                 // Nếu loại khuyến mãi là tiền, giảm giá trực tiếp từ tổng giá trị hóa đơn
                 total = total.subtract(discountDetail.getDiscountValue());
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
                 // Kiểm tra giá trị giảm giá không được vượt quá giá trị tối đa
             } else if (discountDetail.getTypeDiscount() == ETypeDiscount.PERCENT) {
                 // Nếu loại khuyến mãi là phần trăm, giảm giá theo tỷ lệ phần trăm
@@ -265,12 +266,14 @@ public class InvoiceServiceImpl implements InvoiceService {
                     discountAmount = BigDecimal.valueOf(discountDetail.getMaxValue());
                 }
                 total = total.subtract(discountAmount);
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
             }
         }
         return total;
     }
 
-    private void applyFoodPromotion(PromotionFoodDetail promotionFoodDetail, List<InvoiceFoodDetail> invoiceFoodDetails) {
+    private void applyFoodPromotion(PromotionLine promotionLine, List<InvoiceFoodDetail> invoiceFoodDetails) {
+        PromotionFoodDetail promotionFoodDetail = promotionLine.getPromotionFoodDetail();
         if (invoiceFoodDetails.isEmpty()) {
             return;
         }
@@ -290,7 +293,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .filter(detail -> detail.getFood().getId().equals(foodPromotionId))
                 .findFirst()
                 .orElse(null);
-        if(promotionFood.getFood().getQuantity()<quantityPromotion){
+        if (promotionFood.getFood().getQuantity() < quantityPromotion) {
             throw new AppException("Số lượng đồ ăn khuyến mãi không đủ để áp dụng khuyến mãi!!!", HttpStatus.BAD_REQUEST);
         }
         if (Objects.equals(foodRequiredId, foodPromotionId)) {
@@ -307,6 +310,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             if (quantityPromotion == promotionFood.getQuantity()) {
                 promotionFood.setPrice(promotionPrice);
                 promotionFood.setNote("Khuyến mãi");
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
             } else {
 
                 // Tạo InvoiceFoodDetail mới cho đồ ăn được tặng
@@ -321,15 +325,16 @@ public class InvoiceServiceImpl implements InvoiceService {
 
                 // Giảm số lượng của đồ ăn cần mua
                 promotionFood.setQuantity(promotionFood.getQuantity() - quantityPromotion);
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
+
             }
         }
     }
 
     private boolean applyAllFoodPromotions(List<PromotionLine> promotionLines, List<InvoiceFoodDetail> invoiceFoodDetails) {
         for (PromotionLine promotionLine : promotionLines) {
-            PromotionFoodDetail promotionFoodDetail = promotionLine.getPromotionFoodDetail();
-            if (promotionFoodDetail != null) {
-                applyFoodPromotion(promotionFoodDetail, invoiceFoodDetails);
+            if (promotionLine.getPromotionFoodDetail() != null) {
+                applyFoodPromotion(promotionLine, invoiceFoodDetails);
                 return true;
             }
         }
@@ -337,7 +342,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     //TODO: khuyến mãi loại ghế
-    private void applyTicketPromotion(PromotionTicketDetail promotionTicketDetail, List<InvoiceTicketDetail> invoiceTicketDetails) {
+    private void applyTicketPromotion(PromotionLine promotionLine, List<InvoiceTicketDetail> invoiceTicketDetails) {
+        PromotionTicketDetail promotionTicketDetail = promotionLine.getPromotionTicketDetail();
         Long typeSeatRequiredId = promotionTicketDetail.getTypeSeatRequired();
         int quantityRequired = promotionTicketDetail.getQuantityRequired();
         Long typeSeatFreeId = promotionTicketDetail.getTypeSeatPromotion();
@@ -375,7 +381,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 InvoiceTicketDetail promotionTicketDetail1 = promotionTicketDetails.get(i);
                 promotionTicketDetail1.setPrice(promotionPrice);
                 promotionTicketDetail1.setNote("Khuyến mãi");
-
+                promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
 
             }
 
@@ -385,9 +391,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private boolean applyAllTicketPromotions(List<PromotionLine> promotionLines, List<InvoiceTicketDetail> invoiceTicketDetails) {
         for (PromotionLine promotionLine : promotionLines) {
-            PromotionTicketDetail promotionTicketDetail = promotionLine.getPromotionTicketDetail();
-            if (promotionTicketDetail != null) {
-                applyTicketPromotion(promotionTicketDetail, invoiceTicketDetails);
+            if (promotionLine.getPromotionTicketDetail() != null) {
+                applyTicketPromotion(promotionLine, invoiceTicketDetails);
                 return true;
             }
         }
@@ -416,6 +421,11 @@ public class InvoiceServiceImpl implements InvoiceService {
     public Invoice findById(Long id) {
         return invoiceRepository.findById(id)
                 .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    public List<Invoice> findByUserId(Long id) {
+        return invoiceRepository.findByUserId(id);
     }
 
     @Override
@@ -648,11 +658,38 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    public List<PromotionLineDto> getPromotionLineByInvoiceId(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+        List<PromotionLine> promotionLines = new ArrayList<>(invoice.getPromotionLines());
+        return promotionLines.stream()
+                .map(promotionLine -> {
+                    PromotionLineDto promotionLineDto = modelMapper.map(promotionLine, PromotionLineDto.class);
+
+                    if (promotionLine.getTypePromotion().equals(ETypePromotion.DISCOUNT)) {
+                        PromotionDiscountDetailDto promotionDiscountDetailDto = modelMapper.map(promotionLine.getPromotionDiscountDetail(), PromotionDiscountDetailDto.class);
+                        promotionLineDto.setPromotionDiscountDetailDto(promotionDiscountDetailDto);
+                    }
+                    if (promotionLine.getTypePromotion().equals(ETypePromotion.FOOD)) {
+                        PromotionFoodDetailDto promotionFoodDetailDto = modelMapper.map(promotionLine.getPromotionFoodDetail(), PromotionFoodDetailDto.class);
+                        promotionLineDto.setPromotionFoodDetailDto(promotionFoodDetailDto);
+                    }
+                    if (promotionLine.getTypePromotion().equals(ETypePromotion.TICKET)) {
+                        //lấy promotion ticket detail
+                        PromotionTicketDetailDto promotionTicketDetailDto = modelMapper.map(promotionLine.getPromotionTicketDetail(), PromotionTicketDetailDto.class);
+                        promotionLineDto.setPromotionTicketDetailDto(promotionTicketDetailDto);
+                    }
+                    return promotionLineDto;
+                })
+                .toList();
+    }
+
+    @Override
     public void removePromotionLineFromInvoice(Long invoiceId, Long promotionLineId) {
         Invoice invoice = findById(invoiceId);
         //nếu không có chương trình khuyến mãi nào trong hóa đơn thì không thể xóa
         PromotionLine promotionLine = promotionLineService.findById(promotionLineId);
-        Set<PromotionLine> promotionLines = invoice.getPromotionLines();
+        List<PromotionLine> promotionLines = invoice.getPromotionLines();
 //hoàn lại số lượng của từng khuyến mã có trong hóa đơn
         promotionLines.remove(promotionLine);
         promotionLines.forEach(promotionLine1 -> promotionLineService.updateQuantityPromotionLine(promotionLine1.getId(), 1));

@@ -14,6 +14,7 @@ public interface PromotionLineService {
     void updatePromotionLine(PromotionLineDto promotionLineDto);
     PromotionLineDto getPromotionLineById(Long promotionLineId);
     PromotionLine findById(Long promotionLineId);
+    List<PromotionLine> getPromotionLineByInvoiceId(Long invoiceId);
     List<PromotionLine> getPromotionLineActive();
     PromotionLineDto showPromotionLineDiscountMatchInvoice(BigDecimal totalPrice);
     PromotionLineDto showPromotionLineFoodMatchInvoice(List<Long> foodId,Long cinemaId);

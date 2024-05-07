@@ -38,4 +38,6 @@ public interface PromotionLineRepository extends JpaRepository<PromotionLine, Lo
     @Modifying
     @Query("UPDATE PromotionLine pl SET pl.status = false WHERE pl.promotion.endDate < CURRENT_TIMESTAMP AND pl.status = true")
     void deactivatePromotionLineWithEndDateBeforeNow();
+//@Query("SELECT p FROM PromotionLine p WHERE p.invoice.id = ?1")
+//    List<PromotionLine> findAllByInvoiceId(Long invoiceId);
 }

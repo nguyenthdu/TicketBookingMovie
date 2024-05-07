@@ -5,9 +5,12 @@ import com.app.TicketBookingMovie.dtos.RevenueByCinemaDto;
 import com.app.TicketBookingMovie.dtos.RevenueByMovieDto;
 import com.app.TicketBookingMovie.dtos.RevenueByUserDto;
 import com.app.TicketBookingMovie.models.*;
+import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
+import com.app.TicketBookingMovie.models.enums.ETypePromotion;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
 import com.app.TicketBookingMovie.repository.ReturnInvoiceRepository;
 import com.app.TicketBookingMovie.services.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class StatisticalServiceImpl implements StatisticalService {
+    @Autowired
     private final InvoiceService invoiceService;
     private final UserService userService;
     private final CinemaService cinemaService;
@@ -26,6 +30,7 @@ public class StatisticalServiceImpl implements StatisticalService {
     private final InvoiceRepository invoiceRepository;
     private final PromotionLineService promotionLineService;
     private final ReturnInvoiceRepository returnInvoiceRepository;
+
 
     public StatisticalServiceImpl(InvoiceService invoiceService, UserService userService, CinemaService cinemaService, MovieService movieService, InvoiceRepository invoiceRepository, PromotionLineService promotionLineService, ReturnInvoiceRepository returnInvoiceRepository) {
         this.invoiceService = invoiceService;
@@ -170,8 +175,31 @@ public class StatisticalServiceImpl implements StatisticalService {
                     revenueByUserDto.setPhone(user.getPhone());
                     revenueByUserDto.setTotalInvoice(entry.getValue().size()); // Số lượng hóa đơn là số lượng hóa đơn của người dùng
                     revenueByUserDto.setTotalTicket(entry.getValue().stream().mapToInt(invoice -> invoice.getInvoiceTicketDetails().size()).sum()); // Tổng số vé là tổng số vé của tất cả các hóa đơn của người dùng
-//                    BigDecimal totalDiscount = entry.getValue().stream().map(Invoice::getPromotionLines).reduce(BigDecimal.ZERO, BigDecimal::add); // Tính tổng giảm giá từ tổng giá trị của các hóa đơn của người dùng
-//                    revenueByUserDto.setTotalDiscount(totalDiscount);
+                    //tính chiếu khấu của hóa đơn mà khác hàng nhận được
+                    //lấy danh sách hóa đơn của user
+                    List<Invoice> invoices = invoiceService.findByUserId(user.getId());
+                    BigDecimal totalDiscount = BigDecimal.ZERO;
+                    for (Invoice invoice : invoices) {
+                        //lấy khuyến mãi có loại là discount
+                        PromotionLine promotionLine = invoice.getPromotionLines().stream().filter(promotionLine1 -> promotionLine1.getTypePromotion().equals(ETypePromotion.DISCOUNT)).findFirst().orElse(null);
+                        if (promotionLine != null) {
+                            if (promotionLine.getPromotionDiscountDetail().getTypeDiscount().equals(ETypeDiscount.PERCENT)) {
+                                // tính số giảm giá
+                                BigDecimal discountPercent = invoice.getTotalPrice().multiply(promotionLine.getPromotionDiscountDetail().getDiscountValue().divide(BigDecimal.valueOf(100)));
+                                if (discountPercent.compareTo(BigDecimal.valueOf(promotionLine.getPromotionDiscountDetail().getMaxValue())) == 1) {
+                                    totalDiscount = totalDiscount.add(BigDecimal.valueOf(promotionLine.getPromotionDiscountDetail().getMaxValue()));
+                                } else {
+                                    totalDiscount = totalDiscount.add(discountPercent);
+                                }
+                            } else {
+                                totalDiscount = totalDiscount.add(promotionLine.getPromotionDiscountDetail().getDiscountValue());
+                            }
+                        } else {
+                            totalDiscount = totalDiscount.add(BigDecimal.ZERO);
+                        }
+
+                    }
+                    revenueByUserDto.setTotalDiscount(totalDiscount);
                     BigDecimal totalRevenue = entry.getValue().stream().map(Invoice::getTotalPrice).reduce(BigDecimal.ZERO, BigDecimal::add); // Tính tổng doanh thu từ tổng giá trị của các hóa đơn của người dùng
                     revenueByUserDto.setTotalRevenue(totalRevenue);
                     return revenueByUserDto;

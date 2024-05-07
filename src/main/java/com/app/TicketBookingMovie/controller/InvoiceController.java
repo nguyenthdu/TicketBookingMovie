@@ -97,6 +97,7 @@ public class InvoiceController {
         invoiceDetails.setUserDto(invoiceService.getUserByInvoiceId(id));
         invoiceDetails.setInvoiceFoodDetailDtos(invoiceService.getInvoiceFoodDetailByInvoiceId(id));
         invoiceDetails.setInvoiceTicketDetailDtos(invoiceService.getInvoiceTicketDetailByInvoiceId(id));
+        invoiceDetails.setPromotionLineDtos(invoiceService.getPromotionLineByInvoiceId(id));
         return new ResponseEntity<>(invoiceDetails, HttpStatus.OK);
     }
 

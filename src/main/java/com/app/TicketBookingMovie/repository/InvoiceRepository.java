@@ -35,4 +35,5 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("SELECT i FROM Invoice i WHERE DATE(i.createdDate) = DATE(?1)")
     List<Invoice> findInvoiceByToday(LocalDate localDate);
 
+    List<Invoice> findByUserId(Long id);
 }

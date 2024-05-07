@@ -12,4 +12,5 @@ public class ResponeInvoiceDetail {
     private UserDto userDto;
     private List<InvoiceFoodDetailDto> invoiceFoodDetailDtos;
     private List<InvoiceTicketDetailDto> invoiceTicketDetailDtos;
+    private List<PromotionLineDto> promotionLineDtos;
 }

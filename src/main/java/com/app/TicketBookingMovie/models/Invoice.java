@@ -9,7 +9,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -39,7 +38,7 @@ public class Invoice {
     @JoinTable(name = "invoice_promotion_line",
             joinColumns = @JoinColumn(name = "invoice_id"),
             inverseJoinColumns = @JoinColumn(name = "promotion_line_id"))
-    private Set<PromotionLine> promotionLines;
+    private List<PromotionLine> promotionLines;
     @Enumerated(EnumType.STRING)
     private EPay typePay;
     private boolean status;

@@ -354,6 +354,13 @@ public class PromotionLineServiceImpl implements PromotionLineService {
     }
 
     @Override
+    public List<PromotionLine> getPromotionLineByInvoiceId(Long invoiceId) {
+//        return promotionLineRepository.findAllByInvoiceId(invoiceId);
+        return  null;
+    }
+
+
+    @Override
     public List<PromotionLineDto> getAllPromotionLineFromPromotionId(Integer page, Integer size, Long promotionId, String promotionLineCode, LocalDateTime startDate, LocalDateTime endDate, String typePromotion) {
         List<PromotionLine> promotionLines = promotionLineRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         if (promotionId != null) {

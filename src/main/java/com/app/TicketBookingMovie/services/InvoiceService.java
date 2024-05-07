@@ -13,6 +13,7 @@ public interface InvoiceService {
     //viết phương thức lấy hóa đơn theo id
     InvoiceDto getInvoiceById(Long id);
     Invoice findById(Long id);
+    List<Invoice> findByUserId(Long id);
     void updateStatusInvoice(Long id, boolean status);
     //viết phương thức lấy tất cả hóa đơn
     List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long  roomId, Long movieId, String showTimeCode, Long staffId, Long userId, LocalDate startDate, LocalDate endDate);
@@ -25,6 +26,7 @@ public interface InvoiceService {
     UserDto getUserByInvoiceId(Long id);
     List<InvoiceFoodDetailDto> getInvoiceFoodDetailByInvoiceId(Long id);
     List<InvoiceTicketDetailDto> getInvoiceTicketDetailByInvoiceId(Long id);
+    List<PromotionLineDto> getPromotionLineByInvoiceId(Long id);
     //xóa hóa đơn khỏi chương trình khuyến mãi
     void removePromotionLineFromInvoice(Long invoiceId, Long promotionLineId);
     //lấy danh sách tất cả hóa đơn
