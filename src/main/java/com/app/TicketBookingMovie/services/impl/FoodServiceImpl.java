@@ -152,6 +152,7 @@ public class FoodServiceImpl implements FoodService {
             food.setImage(food.getImage());
         }
         food.setCinema(cinemaService.findById(foodDto.getCinemaId()));
+        food.setCreatedDate(LocalDateTime.now());
         foodRepository.save(food);
 
     }

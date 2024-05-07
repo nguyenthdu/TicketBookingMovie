@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -55,10 +56,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     public void createInvoice(Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId, String typePay) {
         //kiểm tra nếu trong 1 ngày mà user đã đặt 8 ghế trong tất cả hóa đơn của ngày đó thì không được đặt nữa
         List<Invoice> invoices = invoiceRepository.findInvoiceByToday(LocalDateTime.now().toLocalDate());
-        long count = invoices.stream().filter(invoice -> invoice.getUser().getEmail().equals(emailUser)).count();
-        if (count >= 8) {
-            throw new AppException("Không thể đặt quá 8 ghế trong 1 ngày", HttpStatus.BAD_REQUEST);
-        }
+//        long count = invoices.stream().filter(invoice -> invoice.getUser().getEmail().equals(emailUser)).count();
+//        if (count >= 8) {
+//            throw new AppException("Không thể đặt quá 8 ghế trong 1 ngày", HttpStatus.BAD_REQUEST);
+//        }
         // Tạo một đối tượng Invoice mới
         Invoice invoice = new Invoice();
         invoice.setCode(randomCode()); // Tạo mã hóa đơn
@@ -270,6 +271,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     private void applyFoodPromotion(PromotionFoodDetail promotionFoodDetail, List<InvoiceFoodDetail> invoiceFoodDetails) {
+        if (invoiceFoodDetails.isEmpty()) {
+            return;
+        }
         Long foodRequiredId = promotionFoodDetail.getFoodRequired();
         int quantityRequired = promotionFoodDetail.getQuantityRequired();
         Long foodPromotionId = promotionFoodDetail.getFoodPromotion();
@@ -277,24 +281,47 @@ public class InvoiceServiceImpl implements InvoiceService {
         BigDecimal promotionPrice = promotionFoodDetail.getPrice();
 
         // Kiểm tra xem trong danh sách chi tiết đồ ăn có đủ điều kiện để áp dụng khuyến mãi hay không
-        Optional<InvoiceFoodDetail> requiredFoodDetailOptional = invoiceFoodDetails.stream()
-                .filter(detail -> detail.getFood().getId().equals(foodRequiredId) && detail.getQuantity() >= quantityRequired)
-                .findFirst();
+        InvoiceFoodDetail requiredFoodDetail = invoiceFoodDetails.stream()
+                .filter(detail -> detail.getFood().getId().equals(foodRequiredId))
+                .findFirst()
+                .orElse(null);
+//lấy hóa đơn có khuyến mãi
+        InvoiceFoodDetail promotionFood = invoiceFoodDetails.stream()
+                .filter(detail -> detail.getFood().getId().equals(foodPromotionId))
+                .findFirst()
+                .orElse(null);
+        if(promotionFood.getFood().getQuantity()<quantityPromotion){
+            throw new AppException("Số lượng đồ ăn khuyến mãi không đủ để áp dụng khuyến mãi!!!", HttpStatus.BAD_REQUEST);
+        }
+        if (Objects.equals(foodRequiredId, foodPromotionId)) {
+            if (promotionFood.getQuantity() - quantityRequired < quantityPromotion) {
+                quantityPromotion = promotionFood.getQuantity() - quantityRequired;
+            }
+        } else {
+            if (promotionFood.getQuantity() < quantityPromotion) {
+                quantityPromotion = promotionFood.getQuantity();
+            }
+        }
 
-        if (requiredFoodDetailOptional.isPresent()) {
-            InvoiceFoodDetail requiredFoodDetail = requiredFoodDetailOptional.get();
-            // Tạo InvoiceFoodDetail mới cho đồ ăn được tặng
-            InvoiceFoodDetail promotionFoodDetail1 = new InvoiceFoodDetail();
-            promotionFoodDetail1.setFood(foodService.findById(foodPromotionId));
-            promotionFoodDetail1.setQuantity(quantityPromotion);
-            promotionFoodDetail1.setPrice(promotionPrice);
-            promotionFoodDetail1.setNote("Khuyến mãi");
+        if (requiredFoodDetail != null && requiredFoodDetail.getQuantity() >= quantityRequired && quantityPromotion > 0) {
+            if (quantityPromotion == promotionFood.getQuantity()) {
+                promotionFood.setPrice(promotionPrice);
+                promotionFood.setNote("Khuyến mãi");
+            } else {
 
-            // Thêm vào danh sách chi tiết hóa đơn
-            invoiceFoodDetails.add(promotionFoodDetail1);
+                // Tạo InvoiceFoodDetail mới cho đồ ăn được tặng
+                InvoiceFoodDetail promotionFoodDetail1 = new InvoiceFoodDetail();
+                promotionFoodDetail1.setFood(foodService.findById(foodPromotionId));
+                promotionFoodDetail1.setQuantity(quantityPromotion);
+                promotionFoodDetail1.setPrice(promotionPrice);
+                promotionFoodDetail1.setNote("Khuyến mãi");
 
-            // Giảm số lượng của đồ ăn cần mua
-            requiredFoodDetail.setQuantity(requiredFoodDetail.getQuantity() - quantityPromotion);
+                // Thêm vào danh sách chi tiết hóa đơn
+                invoiceFoodDetails.add(promotionFoodDetail1);
+
+                // Giảm số lượng của đồ ăn cần mua
+                promotionFood.setQuantity(promotionFood.getQuantity() - quantityPromotion);
+            }
         }
     }
 
@@ -317,21 +344,41 @@ public class InvoiceServiceImpl implements InvoiceService {
         int quantityFree = promotionTicketDetail.getQuantityPromotion();
         BigDecimal promotionPrice = promotionTicketDetail.getPrice();
 
-        // kiểm tra xem loại ghế của ghế có đủ điều kiện để áp dụng khuyến mãi hay không
-        long requiredTicketCount = invoiceTicketDetails.stream()
+        // Kiểm tra xem loại ghế của ghế có đủ điều kiện để áp dụng khuyến mãi hay không
+        List<InvoiceTicketDetail> requiredTicketDetails = invoiceTicketDetails.stream()
                 .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId))
+                .collect(Collectors.toList());
+// lấy danh sách loại ghế khuyến mãi typeSeatFreeId
+        List<InvoiceTicketDetail> promotionTicketDetails = invoiceTicketDetails.stream()
+                .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatFreeId))
+                .collect(Collectors.toList());
+        //đếm số lượng food được khuyến mãi có trong hoá đơn
+        int countPromotionTicket = (int) invoiceTicketDetails.stream()
+                .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatFreeId))
                 .count();
-        if (requiredTicketCount >= quantityRequired) {
-            // Tìm các vé có loại ghế cần mua để áp dụng khuyến mãi
-            List<InvoiceTicketDetail> requiredTicketDetails = invoiceTicketDetails.stream()
-                    .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId))
-                    .toList();
-
-            for (int i = 0; i < quantityFree; i++) {
-                InvoiceTicketDetail requiredTicketDetail = requiredTicketDetails.get(i);
-                requiredTicketDetail.setPrice(promotionPrice);
-                requiredTicketDetail.setNote("Khuyến mãi");
+        //nếu số lượng yêu cầu lớn hơn số lượng có trong hóa đơn thì số lượng khuyến mãi = số luượng đã chọn
+        if (Objects.equals(typeSeatRequiredId, typeSeatFreeId)) {
+            if (countPromotionTicket - quantityRequired < quantityFree) {
+                quantityFree = countPromotionTicket - quantityRequired;
             }
+        } else {
+            if (countPromotionTicket < quantityFree) {
+                quantityFree = countPromotionTicket;
+            }
+        }
+        int requiredTicketCount = requiredTicketDetails.size();
+
+        if (requiredTicketCount >= quantityRequired && (quantityRequired + quantityFree) <= invoiceTicketDetails.size()) {
+            // Tính toán số lượng ghế được khuyến mãi
+            // Tạo InvoiceTicketDetail mới cho ghế được khuyến mãi
+            for (int i = 0; i < quantityFree; i++) {
+                InvoiceTicketDetail promotionTicketDetail1 = promotionTicketDetails.get(i);
+                promotionTicketDetail1.setPrice(promotionPrice);
+                promotionTicketDetail1.setNote("Khuyến mãi");
+
+
+            }
+
         }
     }
 

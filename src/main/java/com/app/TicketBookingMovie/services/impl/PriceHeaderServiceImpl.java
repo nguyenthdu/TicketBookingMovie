@@ -153,6 +153,7 @@ public class PriceHeaderServiceImpl implements PriceHeaderService {
         } else {
             priceHeader.setStatus(priceHeader.isStatus());
         }
+        priceHeader.setCreatedDate(LocalDateTime.now());
         // Save the updated sale price to the database
         priceHeaderRepository.save(priceHeader);
     }

@@ -165,7 +165,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 throw new AppException("Không thể cập nhật lịch chiếu đang hoạt động.", HttpStatus.BAD_REQUEST);
             }
         }
-
+        showTime.setCreatedDate(LocalDateTime.now());
         // Lưu lại cập nhật vào cơ sở dữ liệu
         showTimeRepository.save(showTime);
     }

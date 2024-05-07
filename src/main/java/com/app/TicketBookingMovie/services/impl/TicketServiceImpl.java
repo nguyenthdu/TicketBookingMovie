@@ -51,7 +51,7 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu", HttpStatus.NOT_FOUND));
 
         if (!showTime.isStatus()) {
-            throw new AppException("Không thể đặt lịch chiếu này", HttpStatus.BAD_REQUEST);
+            throw new AppException("Trạng thái của lịch chiếu không hoạt động!!!", HttpStatus.BAD_REQUEST);
         }
         //nếu như trên 8 ghế thì không cho đặt
         if (seatIds.size() > 8) {

@@ -188,7 +188,7 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         } else {
             promotionLine.setQuantity(promotionLine.getQuantity());
         }
-
+    promotionLine.setCreatedAt(LocalDateTime.now());
 
         promotionLineRepository.save(promotionLine);
 
@@ -243,17 +243,14 @@ public class PromotionLineServiceImpl implements PromotionLineService {
         for (PromotionLine promotionLine : promotionLines) {
             if (promotionLine.getTypePromotion().equals(ETypePromotion.FOOD)) {
                 PromotionFoodDetail promotionFoodDetail = promotionLine.getPromotionFoodDetail();
-                boolean isMatched = true;
+                boolean isMatched = false;
                 // Kiểm tra số lượng đồ ăn phù hợp với yêu cầu của chương trình khuyến mãi
                 for (Map.Entry<Long, Integer> entry : foodQuantityMap.entrySet()) {
                     Long foodId = entry.getKey();
                     Integer quantity = entry.getValue();
                     if (promotionFoodDetail.getFoodRequired().equals(foodId)) {
-                        if (quantity < promotionFoodDetail.getQuantityRequired()
-                                //và trạng thái của promotion line là true
-                                || !promotionLine.isStatus()
-                        ) {
-                            isMatched = false;
+                        if (quantity >= promotionFoodDetail.getQuantityRequired() && promotionLine.isStatus()) {
+                            isMatched = true;
                             break;
                         }
                     }

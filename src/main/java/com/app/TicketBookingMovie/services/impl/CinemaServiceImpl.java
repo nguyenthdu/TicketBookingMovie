@@ -90,6 +90,7 @@ public class CinemaServiceImpl implements CinemaService {
         } else {
             cinema.setStatus(cinema.isStatus());
         }
+        cinema.setCreatedDate(LocalDateTime.now());
         cinemaRepository.save(cinema);
 
 

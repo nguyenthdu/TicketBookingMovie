@@ -16,7 +16,6 @@ public interface UserService {
 	UserDto getUserById(Long id);
 	void deleteUser(Long id);
 	void updateUser(Long id, UserDto userDTO);
-	void updateUserProfile(String email, UserDto userDTO);
 	UserDto createGuest();
 	void createUserInTicket(UserDto userDto);
 

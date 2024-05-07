@@ -179,6 +179,7 @@ public class MovieServiceImpl implements MovieService {
         } else {
             movie.setProducer(movie.getProducer());
         }
+        movie.setCreatedDate(LocalDateTime.now());
         movieRepository.save(movie);
     }
 

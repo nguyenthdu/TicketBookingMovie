@@ -64,8 +64,8 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
         }else{
             categoryFood.setName(categoryFood.getName());
         }
+        categoryFood.setCreatedDate(LocalDateTime.now());
         cateogryFoodRepository.save(categoryFood);
-        modelMapper.map(categoryFood, CategoryFoodDto.class);
 
     }
 

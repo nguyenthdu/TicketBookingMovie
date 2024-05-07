@@ -17,7 +17,7 @@ import java.util.List;
 @Repository
 public interface PromotionLineRepository extends JpaRepository<PromotionLine, Long> {
     boolean existsByStartDateAndEndDateAndTypePromotionAndPromotion(LocalDateTime startDate, LocalDateTime endDate, ETypePromotion typePromotion, Promotion promotion);
-    @Query("SELECT p FROM PromotionLine p WHERE ?1 BETWEEN p.startDate AND p.endDate AND p.status = true")
+    @Query("SELECT p FROM PromotionLine p WHERE p.status = true AND p.quantity>0")
     List<PromotionLine> findActivePromotionLines(LocalDateTime currentTime);
 
     Page<PromotionLine> findAllByPromotionIdAndCode(Long promotionId, String promotionLineCode, Pageable pageable);

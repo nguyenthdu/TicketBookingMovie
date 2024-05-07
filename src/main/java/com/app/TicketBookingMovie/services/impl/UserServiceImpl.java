@@ -118,37 +118,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         } else {
             user.setPhone(user.getPhone());
         }
+        user.setCreatedDate(LocalDateTime.now());
         userRepository.save(user);
         modelMapper.map(user, UserDto.class);
-    }
-
-    @Override
-    public void updateUserProfile(String email, UserDto userDTO) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException("Not found user with email: " + email, HttpStatus.NOT_FOUND));
-        if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
-            throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
-        }
-        if (!userDTO.getUsername().isEmpty() && !userDTO.getUsername().isBlank()) {
-            user.setUsername(userDTO.getUsername());
-        } else {
-            user.setUsername(user.getUsername());
-        }
-        if (userDTO.isGender() != user.isGender()) {
-            user.setGender(userDTO.isGender());
-        } else {
-            user.setGender(user.isGender());
-        }
-        if (userDTO.getBirthday() != user.getBirthday()) {
-            user.setBirthday(userDTO.getBirthday());
-        } else {
-            user.setBirthday(user.getBirthday());
-        }
-        if (!userDTO.getPhone().isEmpty() && !userDTO.getPhone().isBlank()) {
-            user.setPhone(userDTO.getPhone());
-        } else {
-            user.setPhone(user.getPhone());
-        }
-        userRepository.save(user);
     }
 
     @Override

@@ -161,6 +161,7 @@ public class PriceDetailServiceImpl implements PriceDetailService {
         } else {
             priceDetail.setStatus(priceDetail.isStatus());
         }
+        priceDetail.setCreatedDate(LocalDateTime.now());
         priceDetailRepository.save(priceDetail);
     }
 

@@ -52,6 +52,7 @@ public class GenreServiceImpl implements GenreService {
         } else {
             genre.setName(genre.getName());
         }
+        genre.setCreatedDate(LocalDateTime.now());
         genreRepository.save(genre);
     }
 

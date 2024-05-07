@@ -196,6 +196,7 @@ public class StatisticalServiceImpl implements StatisticalService {
         int toIndex = Math.min(fromIndex + size, revenueByUserDtos.size());
         return revenueByUserDtos.subList(fromIndex, toIndex);
 
+
     }
 
     @Override

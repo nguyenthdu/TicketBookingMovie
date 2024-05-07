@@ -134,6 +134,7 @@ public class RoomServiceImpl implements RoomService {
             room.setType(room.getType());
         }
         room.setTotalSeats(room.getSeats().size());
+        room.setCreatedDate(LocalDateTime.now());
         // Save the updated room
         roomRepository.save(room);
         // Map Room to RoomDto and return
@@ -208,10 +209,14 @@ public class RoomServiceImpl implements RoomService {
         List<Room> roomPage = roomRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (code != null && !code.isEmpty()) {
             roomPage = roomPage.stream().filter(room -> room.getCode().equals(code)).collect(Collectors.toList());
+        } else if (cinemaId != null && cinemaId != 0) {
+            if (name != null && !name.isEmpty()) {
+                roomPage = roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId) && room.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
+            } else {
+                roomPage = roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId)).collect(Collectors.toList());
+            }
         } else if (name != null && !name.isEmpty()) {
             roomPage = roomPage.stream().filter(room -> room.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
-        } else if (cinemaId != null && cinemaId != 0) {
-            roomPage = roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId)).collect(Collectors.toList());
         }
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, roomPage.size());
@@ -240,14 +245,18 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public long countAllRooms(String code, String name, Long cinemaId) {
+        List<Room> roomPage = roomRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (code != null && !code.isEmpty()) {
-            return roomRepository.countByCodeContaining(code);
-        } else if (name != null && !name.isEmpty()) {
-            return roomRepository.countByNameContaining(name);
+            return roomPage.stream().filter(room -> room.getCode().equals(code)).count();
         } else if (cinemaId != null && cinemaId != 0) {
-            return roomRepository.countByCinemaId(cinemaId);
-        } else {
-            return roomRepository.count();
+            if (name != null && !name.isEmpty()) {
+                return roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId) && room.getName().toLowerCase().contains(name.toLowerCase())).count();
+            } else {
+                return roomPage.stream().filter(room -> room.getCinema().getId().equals(cinemaId)).count();
+            }
+        } else if (name != null && !name.isEmpty()) {
+            return roomPage.stream().filter(room -> room.getName().toLowerCase().contains(name.toLowerCase())).count();
         }
+        return roomPage.size();
     }
 }

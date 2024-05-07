@@ -140,6 +140,7 @@ public class PromotionServiceImpl implements PromotionService {
         } else {
             promotion.setStatus(promotion.isStatus());
         }
+        promotion.setCreatedAt(LocalDateTime.now());
         if (!promotion.isStatus()) {
             for (PromotionLine promotionLine : promotion.getPromotionLines()) {
                 promotionLine.setStatus(false);
