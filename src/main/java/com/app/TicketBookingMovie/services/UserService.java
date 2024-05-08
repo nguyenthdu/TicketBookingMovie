@@ -24,4 +24,5 @@ public interface UserService {
 	void createRoles();
 	void createAdmin();
     long countUsers(String code, String username, String phone, String email, Long roleId);
+	void updatePassword(Long id, String passwordOld, String passwordNew, String confirmPassword);
 }

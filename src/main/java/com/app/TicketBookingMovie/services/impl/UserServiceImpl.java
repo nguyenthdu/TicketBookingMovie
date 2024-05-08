@@ -315,6 +315,23 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
     }
 
+    @Override
+    public void updatePassword(Long id, String passwordOld, String passwordNew, String confirmPassword) {
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng" + id, HttpStatus.NOT_FOUND));
+        if (!passwordConfig.passwordEncoder().matches(passwordOld, user.getPassword())) {
+            throw new AppException("Mật khẩu không đúng!", HttpStatus.BAD_REQUEST);
+        }
+        if (!passwordNew.equals(confirmPassword)) {
+            throw new AppException("Mật khẩu không khớp!", HttpStatus.BAD_REQUEST);
+        }
+        //mật khẩu mới không được trùng với mật khẩu cũ
+        if (passwordConfig.passwordEncoder().matches(passwordNew, user.getPassword())) {
+            throw new AppException("Mật khẩu mới không được trùng với mật khẩu cũ!", HttpStatus.BAD_REQUEST);
+        }
+        user.setPassword(passwordConfig.passwordEncoder().encode(passwordNew));
+        userRepository.save(user);
+    }
+
 
 }
 

@@ -187,23 +187,15 @@ public ResponseEntity<?> deleteUser(@PathVariable Long id) {
 }
 
 // update password
-//    @PutMapping("/{id}/password")
-//    public ResponseEntity<?> updateUserPassword(@PathVariable Long id, @RequestParam String oldPassword, @RequestParam String newPassword, @RequestParam String confirmPassword) {
-//        try {
-//            User user = userRepository.findById(id).orElseThrow(() -> new AppException("User not found with id: " + id, HttpStatus.NOT_FOUND));
-//            if (!encoder.matches(oldPassword, user.getPassword())) {
-//                return ResponseEntity.badRequest().body(new MessageResponse("Old password is incorrect!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
-//            }
-//            if (!newPassword.equals(confirmPassword)) {
-//                return ResponseEntity.badRequest().body(new MessageResponse("New password and confirm password do not match!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
-//            }
-//            user.setPassword(encoder.encode(newPassword));
-//            userRepository.save(user);
-//            return ResponseEntity.ok(new MessageResponse("Password updated successfully!", HttpStatus.OK.value(), Instant.now().toString()));
-//        } catch (AppException e) {
-//            return ResponseEntity.status(e.getStatus()).body(new MessageResponse(e.getMessage(), e.getStatus(), Instant.now().toString()));
-//        }
-//    }
+    @PostMapping("/{id}/password")
+    public ResponseEntity<?> updateUserPassword(@PathVariable Long id, @RequestParam String oldPassword, @RequestParam String newPassword, @RequestParam String confirmPassword) {
+        try {
+            userService.updatePassword(id, oldPassword, newPassword, confirmPassword);
+            return ResponseEntity.ok().body(new MessageResponse("Đổi mật khẩu thành công!", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getStatus()).body(new MessageResponse(e.getMessage(), e.getStatus(), Instant.now().toString()));
+        }
+    }
 public void createRoles() {
     userService.createRoles();
 }
