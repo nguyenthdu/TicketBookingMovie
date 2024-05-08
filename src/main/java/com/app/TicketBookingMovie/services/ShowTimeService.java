@@ -23,6 +23,7 @@ public interface ShowTimeService {
     List<ShowTimeSeatDto> getShowTimeSeatById(Long id);
     void updateSeatStatus(ShowTime showTime);
     Set<LocalDate> getShowDatesByMovieId(Long movieId, Long cinemaId);
-
+    void updateStatusHoldSeat(Set<Long> seatIds,Long showTimeId, boolean status);
+    String checkSeatStatus(Set<Long> seatIds, Long showTimeId);
 
 }

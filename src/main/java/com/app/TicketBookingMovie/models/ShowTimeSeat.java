@@ -11,11 +11,10 @@ public class ShowTimeSeat {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @ManyToOne
     private Seat seat;
-
     @ManyToOne
     private ShowTime showTime;
     private boolean status;
+    private boolean hold = true;
 }

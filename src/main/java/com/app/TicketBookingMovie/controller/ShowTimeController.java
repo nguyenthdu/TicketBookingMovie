@@ -101,8 +101,26 @@ public class ShowTimeController {
     }
 
     @GetMapping("/dates")
-    public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@RequestParam Long movieId,@RequestParam Long cinemaId) {
+    public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@RequestParam Long movieId, @RequestParam Long cinemaId) {
         Set<LocalDate> showDates = showTimeService.getShowDatesByMovieId(movieId, cinemaId);
         return ResponseEntity.ok(showDates);
+    }
+
+    @PostMapping("/seat")
+    public ResponseEntity<MessageResponse> updateStatusHoldSeat(@RequestParam Set<Long> seatIds,
+                                                                @RequestParam Long showTimeId,
+                                                                @RequestParam boolean status) {
+        try {
+            showTimeService.updateStatusHoldSeat(seatIds, showTimeId, status);
+            return ResponseEntity.ok(new MessageResponse("Cập nhật trạng thái giữ ghế thành công!!!", HttpStatus.OK.value(), Instant.now().toString()));
+        } catch (AppException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+        }
+    }
+
+    @GetMapping("/seat")
+    public ResponseEntity<MessageResponse> checkSeatStatus(@RequestParam Set<Long> seatIds, @RequestParam Long showTimeId) {
+        String message = showTimeService.checkSeatStatus(seatIds, showTimeId);
+        return ResponseEntity.ok(new MessageResponse(message, HttpStatus.OK.value(), Instant.now().toString()));
     }
 }

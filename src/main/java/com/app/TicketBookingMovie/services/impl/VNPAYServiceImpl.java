@@ -2,6 +2,7 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.config.payments.VNPayConfig;
 import com.app.TicketBookingMovie.services.InvoiceService;
+import com.app.TicketBookingMovie.services.ShowTimeService;
 import com.app.TicketBookingMovie.services.VNPAYService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
@@ -16,13 +17,15 @@ import java.util.*;
 @Service
 public class VNPAYServiceImpl implements VNPAYService {
     private final InvoiceService invoiceService;
+    private final ShowTimeService showTimeService;
 
-    public VNPAYServiceImpl(InvoiceService invoiceService) {
+    public VNPAYServiceImpl(InvoiceService invoiceService, ShowTimeService showTimeService) {
         this.invoiceService = invoiceService;
+        this.showTimeService = showTimeService;
     }
 
     @Override
-    public String createOrder(HttpServletRequest request, int amount,Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId){
+    public String createOrder(HttpServletRequest request, int amount, Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId) {
         //Các bạn có thể tham khảo tài liệu hướng dẫn và điều chỉnh các tham số
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
@@ -36,7 +39,7 @@ public class VNPAYServiceImpl implements VNPAYService {
         vnp_Params.put("vnp_Version", vnp_Version);
         vnp_Params.put("vnp_Command", vnp_Command);
         vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
-        vnp_Params.put("vnp_Amount", String.valueOf(amount*100));
+        vnp_Params.put("vnp_Amount", String.valueOf(amount * 100));
         vnp_Params.put("vnp_CurrCode", "VND");
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
         //lưu các thông tin vào orderInfo
@@ -107,9 +110,9 @@ public class VNPAYServiceImpl implements VNPAYService {
         return paymentUrl;
     }
 
-    public int orderReturn(HttpServletRequest request){
+    public int orderReturn(HttpServletRequest request) {
         Map fields = new HashMap();
-        for (Enumeration params = request.getParameterNames(); params.hasMoreElements();) {
+        for (Enumeration params = request.getParameterNames(); params.hasMoreElements(); ) {
             String fieldName = null;
             String fieldValue = null;
             try {
@@ -131,27 +134,26 @@ public class VNPAYServiceImpl implements VNPAYService {
             fields.remove("vnp_SecureHash");
         }
         String signValue = VNPayConfig.hashAllFields(fields);
+        //lấy thông tin từ request để tạo hóa đơn
+        Long showTimeId = Long.parseLong(request.getParameter("vnp_OrderInfo").split(";")[0]);
+        Set<Long> seatIds = new HashSet<>();
+        String[] seatIdStr = request.getParameter("vnp_OrderInfo").split(";")[1].split(",");
+        for (String s : seatIdStr) {
+            seatIds.add(Long.parseLong(s));
+        }
+        List<Long> foodIds = new ArrayList<>();
+        String[] foodIdStr = request.getParameter("vnp_OrderInfo").split(";")[2].split(",");
+        for (String s : foodIdStr) {
+            foodIds.add(Long.parseLong(s));
+        }
+        String emailUser = request.getParameter("vnp_OrderInfo").split(";")[3];
+        Long staffId = Long.parseLong(request.getParameter("vnp_OrderInfo").split(";")[4]);
         if (signValue.equals(vnp_SecureHash)) {
             if ("00".equals(request.getParameter("vnp_TransactionStatus"))) {
-                //lấy thông tin từ request để tạo hóa đơn
-                Long showTimeId = Long.parseLong(request.getParameter("vnp_OrderInfo").split(";")[0]);
-                Set<Long> seatIds = new HashSet<>();
-                String[] seatIdStr = request.getParameter("vnp_OrderInfo").split(";")[1].split(",");
-                for (String s : seatIdStr) {
-                    seatIds.add(Long.parseLong(s));
-                }
-                List<Long> foodIds = new ArrayList<>();
-                String[] foodIdStr = request.getParameter("vnp_OrderInfo").split(";")[2].split(",");
-                for (String s : foodIdStr) {
-                    foodIds.add(Long.parseLong(s));
-                }
-                String emailUser = request.getParameter("vnp_OrderInfo").split(";")[3];
-                Long staffId = Long.parseLong(request.getParameter("vnp_OrderInfo").split(";")[4]);
-
                 invoiceService.createInvoice(showTimeId, seatIds, foodIds, emailUser, staffId, "VNPAY");
-
                 return 1;
             } else {
+                showTimeService.updateStatusHoldSeat(seatIds, showTimeId, true);
                 return 0;
             }
         } else {

@@ -101,6 +101,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 showTimeSeat.setSeat(seat);
                 showTimeSeat.setShowTime(newShowTime);
                 showTimeSeat.setStatus(true); // Khởi tạo trạng thái của ghế là true
+                showTimeSeat.setHold(true);
                 showTimeSeats.add(showTimeSeat);
             }
             newShowTime.setShowTimeSeat(showTimeSeats);
@@ -309,6 +310,37 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         return new LinkedHashSet<>(showDates);
 
 
+    }
+
+    @Override
+    public void updateStatusHoldSeat(Set<Long> seatIds,Long showTimeId, boolean status) {
+        //tìm ShowTimeSeat theo showTimeId và seatId
+        List<ShowTimeSeat> showTimeSeats = showTimeSeatRepository.findByShowTimeIdAndSeatIdIn(showTimeId, seatIds);
+        for (ShowTimeSeat showTimeSeat : showTimeSeats) {
+            showTimeSeat.setHold(status);
+        }
+        showTimeSeatRepository.saveAll(showTimeSeats);
+    }
+
+    @Override
+    public String checkSeatStatus(Set<Long> seatId, Long showTimeId) {
+        //kiểm tra trạng thái của ghế
+        List<ShowTimeSeat> showTimeSeats = showTimeSeatRepository.findByShowTimeIdAndSeatIdIn(showTimeId, seatId);
+        //mảng lưu tên những ghế đã được giữ
+        List<String> msg = new ArrayList<>();
+        for (ShowTimeSeat showTimeSeat : showTimeSeats) {
+            if(!showTimeSeat.isHold()){
+                msg.add(showTimeSeat.getSeat().getName());
+            }
+
+        }
+      if(!msg.isEmpty()){
+//          các tên ghế cách nhau bởi dấu phẩy
+            return "Ghế "+ String.join(",", msg) + " đã được chọn!!!";
+      }
+      else{
+          return null;
+      }
     }
 
     public String randomCode() {
