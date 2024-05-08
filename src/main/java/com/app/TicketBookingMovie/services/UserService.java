@@ -3,6 +3,7 @@ package com.app.TicketBookingMovie.services;
 import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.models.User;
 import com.app.TicketBookingMovie.payload.request.SignupRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
@@ -25,4 +26,5 @@ public interface UserService {
 	void createAdmin();
     long countUsers(String code, String username, String phone, String email, Long roleId);
 	void updatePassword(Long id, String passwordOld, String passwordNew, String confirmPassword);
+	ResponseEntity<?> confirmEmail(String confirmationToken);
 }

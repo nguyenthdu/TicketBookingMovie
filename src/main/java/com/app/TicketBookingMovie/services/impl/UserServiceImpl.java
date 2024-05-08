@@ -2,10 +2,12 @@ package com.app.TicketBookingMovie.services.impl;
 
 import com.app.TicketBookingMovie.dtos.UserDto;
 import com.app.TicketBookingMovie.exception.AppException;
+import com.app.TicketBookingMovie.models.ConfirmationToken;
 import com.app.TicketBookingMovie.models.Role;
 import com.app.TicketBookingMovie.models.User;
 import com.app.TicketBookingMovie.models.enums.ERole;
 import com.app.TicketBookingMovie.payload.request.SignupRequest;
+import com.app.TicketBookingMovie.repository.ConfirmationTokenRepository;
 import com.app.TicketBookingMovie.repository.RoleRepository;
 import com.app.TicketBookingMovie.repository.UserRepository;
 import com.app.TicketBookingMovie.security.JwtUtils;
@@ -13,8 +15,11 @@ import com.app.TicketBookingMovie.security.PasswordConfig;
 import com.app.TicketBookingMovie.security.UserDetailsImpl;
 import com.app.TicketBookingMovie.services.UserService;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -37,6 +42,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     // Inject the PasswordEncoder in the constructor
     private final PasswordConfig passwordConfig;
     JwtUtils jwtUtils;
+    @Autowired
+    ConfirmationTokenRepository confirmationTokenRepository;
+
+    @Autowired
+    EmailService emailService;
 
 
     public UserServiceImpl(JwtUtils jwtUtils, UserRepository userRepository, ModelMapper modelMapper, RoleRepository roleRepository, PasswordConfig passwordConfig) {
@@ -176,11 +186,24 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
 //        user.setCreatedDate(LocalDateTime.now());
-        user.setEnabled(true);
+        user.setEnabled(false);
         user.setCreatedDate(LocalDateTime.now());
         user.setPassword(passwordConfig.passwordEncoder()
                 .encode(signupRequest.getPassword()));
         userRepository.save(user);
+//verify email
+        ConfirmationToken confirmationToken = new ConfirmationToken(user);
+
+        confirmationTokenRepository.save(confirmationToken);
+
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+        mailMessage.setTo(user.getEmail());
+        mailMessage.setSubject("Đăng ký thành công!");
+        mailMessage.setText("Bấm vào đây để xác nhận email: "
+                +"http://localhost:8080/api/users/confirm-account?token="+confirmationToken.getConfirmationToken());
+        emailService.sendEmail(mailMessage);
+
+        System.out.println("Confirmation Token: " + confirmationToken.getConfirmationToken());
     }
 
     public String randomCode() {
@@ -330,6 +353,20 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
         user.setPassword(passwordConfig.passwordEncoder().encode(passwordNew));
         userRepository.save(user);
+    }
+
+    @Override
+    public ResponseEntity<?> confirmEmail(String confirmationToken) {
+        ConfirmationToken token = confirmationTokenRepository.findByConfirmationToken(confirmationToken);
+
+        if(token != null)
+        {
+            User user = userRepository.findByEmailIgnoreCase(token.getUserEntity().getEmail());
+            user.setEnabled(true);
+            userRepository.save(user);
+            return ResponseEntity.ok("Xác nhận email thành công!");
+        }
+        return ResponseEntity.badRequest().body("Lỗi không thể xác nhận email.");
     }
 
 
