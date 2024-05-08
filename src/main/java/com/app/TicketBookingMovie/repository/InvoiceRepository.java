@@ -36,4 +36,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findInvoiceByToday(LocalDate localDate);
 
     List<Invoice> findByUserId(Long id);
+    @Query("SELECT i FROM Invoice i JOIN i.promotionLines p WHERE p.id = ?1")
+    List<Invoice> findByPromotionLineId(Long promotionLineId);
 }

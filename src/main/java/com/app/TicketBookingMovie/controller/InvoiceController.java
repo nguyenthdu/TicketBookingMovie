@@ -1,11 +1,11 @@
 package com.app.TicketBookingMovie.controller;
 
 import com.app.TicketBookingMovie.dtos.InvoiceDto;
-import com.app.TicketBookingMovie.dtos.ResponeInvoiceDetail;
 import com.app.TicketBookingMovie.dtos.ReturnInvoiceDto;
 import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.payload.response.MessageResponse;
+import com.app.TicketBookingMovie.payload.response.ResponeInvoiceDetail;
 import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.services.InvoiceService;
 import com.app.TicketBookingMovie.services.ReturnInvoviceService;

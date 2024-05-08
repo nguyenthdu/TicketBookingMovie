@@ -1,11 +1,11 @@
-package com.app.TicketBookingMovie.dtos;
+package com.app.TicketBookingMovie.payload.response;
 
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-public class RevenueByUserDto {
+public class ResponseRevenueByUser {
     private String code;//mã người dùng
     private String name;//tên người dùng
     private String email;//email người dùng

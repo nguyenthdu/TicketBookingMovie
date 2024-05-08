@@ -699,9 +699,13 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public List<Invoice> getAll() {
-        return invoiceRepository.findAll();
+    public List<Invoice> getInvoiceByPromotionLineId(Long promotionLineId) {
+        PromotionLine promotionLine = promotionLineService.findById(promotionLineId);
+        return invoiceRepository.findByPromotionLineId(promotionLine.getId());
+
     }
+
+
 
     private String randomCode() {
         return "HD" + LocalDateTime.now().getNano();

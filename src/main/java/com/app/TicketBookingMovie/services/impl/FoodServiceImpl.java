@@ -96,7 +96,7 @@ public class FoodServiceImpl implements FoodService {
     @Override
     public FoodDto getFoodById(Long id) {
         Food food = foodRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm đồ ăn với id: : " + id, HttpStatus.NOT_FOUND));
         //xử lý in ra tên category
 
         return convertFoodDto(food);
@@ -106,7 +106,7 @@ public class FoodServiceImpl implements FoodService {
     @Override
     public Food findById(Long id) {
         return foodRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
 
     }
 
@@ -114,7 +114,7 @@ public class FoodServiceImpl implements FoodService {
     public void updateFood(FoodDto foodDto) {
         Cinema cinema = cinemaService.findById(foodDto.getCinemaId());
         Food food = foodRepository.findById(foodDto.getId())
-                .orElseThrow(() -> new AppException("Không tìm thấy: " + foodDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm đồ ăn với id: " + foodDto.getId(), HttpStatus.NOT_FOUND));
         if (!foodDto.getName().isEmpty() && !foodDto.getName().isBlank() && !foodDto.getName().equalsIgnoreCase(food.getName())) {
             if (foodRepository.findByNameAndCinemaId(foodDto.getName(), foodDto.getCinemaId()).isPresent()) {
                 throw new AppException("Tên " + foodDto.getName() + "đã tồn tại trong rạp " + cinema.getName(), HttpStatus.BAD_REQUEST);
@@ -169,7 +169,7 @@ public class FoodServiceImpl implements FoodService {
     @Override
     public void deleteFoodById(Long id) {
         Food food = foodRepository.findById(id)
-                .orElseThrow(() -> new AppException("Food not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
         awsService.deleteImage(food.getImage());
         foodRepository.deleteById(id);
     }

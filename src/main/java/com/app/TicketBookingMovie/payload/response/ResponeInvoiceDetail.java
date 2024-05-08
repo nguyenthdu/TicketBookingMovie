@@ -1,5 +1,6 @@
-package com.app.TicketBookingMovie.dtos;
+package com.app.TicketBookingMovie.payload.response;
 
+import com.app.TicketBookingMovie.dtos.*;
 import lombok.Data;
 
 import java.util.List;
