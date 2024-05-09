@@ -16,5 +16,4 @@ public class ShowTimeSeat {
     @ManyToOne
     private ShowTime showTime;
     private boolean status;
-    private boolean hold = true;
 }
