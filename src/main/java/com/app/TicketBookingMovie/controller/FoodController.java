@@ -96,7 +96,7 @@ public class FoodController {
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @RequestParam(value = "cinemaId") Long cinemaId,
+            @RequestParam(value = "cinemaId", required = false) Long cinemaId,
             @RequestParam(value = "sizeFood", required = false) String sizeFood) {
         PageResponse<FoodDto> pageResponse = new PageResponse<>();
         pageResponse.setContent(foodService.getAllFood(page, size,cinemaId, code, name, categoryId, sizeFood));
