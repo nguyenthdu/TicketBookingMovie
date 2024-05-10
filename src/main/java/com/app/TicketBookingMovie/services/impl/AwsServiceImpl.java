@@ -38,7 +38,7 @@ public class AwsServiceImpl implements AwsService {
             convertedFile.delete();
             return amazonS3.getUrl(BUCKET_NAME_MOVIE, fileName).toString();
         } catch (IOException e) {
-            throw new AppException("Upload image failed", HttpStatus.BAD_REQUEST);
+            throw new AppException("Lỗi khi upload hình ảnh", HttpStatus.BAD_REQUEST);
         }
 
 
@@ -60,7 +60,7 @@ public class AwsServiceImpl implements AwsService {
         String fileName = Objects.requireNonNull(file.getOriginalFilename());
         String fileType = fileName.substring(fileName.lastIndexOf("."));
         if (!fileType.equals(".jpg") && !fileType.equals(".png"))
-            throw new AppException("Only .jpg and .png files are allowed", HttpStatus.BAD_REQUEST);
+            throw new AppException("Chỉ hỗ trợ file ảnh định dạng jpg hoặc png", HttpStatus.BAD_REQUEST);
     }
 
     private File convertMultiPartFileToFile(MultipartFile file) throws IOException {
@@ -73,7 +73,7 @@ public class AwsServiceImpl implements AwsService {
 
     private void checkFileSize(MultipartFile file) {
         if (file.getSize() > MAX_SIZE) {
-            throw new AppException("File size is too large. must < 10mb", HttpStatus.BAD_REQUEST);
+            throw new AppException("Kích thước file ảnh quá lớn, vui lòng chọn file ảnh có kích thước nhỏ hơn 10MB", HttpStatus.BAD_REQUEST);
         }
     }
 

@@ -64,13 +64,13 @@ public class TypeSeatServiceImpl implements TypeSeatService {
     @Override
     public TypeSeat findById(Long id) {
         return typeSeatRepository.findById(id)
-                .orElseThrow(() -> new AppException("TypeSeat not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy loại ghế với id: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
     public void updateTypeSeatById(TypeSeatDto typeSeatDto) {
         TypeSeat typeSeat = typeSeatRepository.findById(typeSeatDto.getId())
-                .orElseThrow(() -> new AppException("TypeSeat not found with id: " + typeSeatDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy loại ghế với id: " + typeSeatDto.getId(), HttpStatus.NOT_FOUND));
         TypeSeat updatedTypeSeat = typeSeatRepository.save(typeSeat);
         modelMapper.map(updatedTypeSeat, TypeSeatDto.class);
 

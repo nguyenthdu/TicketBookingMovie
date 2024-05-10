@@ -27,7 +27,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -210,7 +209,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         String htmlContent = constructEmailContent(invoice);
 
         // Send the email
-        sendEmail(emailUser, "Thông tin hóa đơn đặt vé xem phim tại InfinityCinema", htmlContent);
+        //nếu email không bắt đầu bằng guest thì gửi email
+        if (!emailUser.startsWith("guest")) {
+            sendEmail(emailUser, "Đặt vé thành công", htmlContent);
+        }
 
 
     }
@@ -324,11 +326,18 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .filter(detail -> detail.getFood().getId().equals(foodRequiredId))
                 .findFirst()
                 .orElse(null);
+        //nếu đô ăn truyền vào không có trong hóa đơn thì trả về false
+        if (requiredFoodDetail == null) {
+            return false;
+        }
 //lấy hóa đơn có khuyến mãi
         InvoiceFoodDetail promotionFood = invoiceFoodDetails.stream()
                 .filter(detail -> detail.getFood().getId().equals(foodPromotionId))
                 .findFirst()
                 .orElse(null);
+        if (promotionFood == null) {
+            return false;
+        }
         if (promotionFood.getFood().getQuantity() < quantityPromotion) {
             throw new AppException("Số lượng đồ ăn khuyến mãi không đủ để áp dụng khuyến mãi!!!", HttpStatus.BAD_REQUEST);
         }
@@ -342,7 +351,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
         }
 
-        if (requiredFoodDetail != null && requiredFoodDetail.getQuantity() >= quantityRequired && quantityPromotion > 0) {
+        if (requiredFoodDetail.getQuantity() >= quantityRequired && quantityPromotion > 0) {
             if (quantityPromotion == promotionFood.getQuantity()) {
                 promotionFood.setPrice(promotionPrice);
                 promotionFood.setNote("Khuyến mãi");
@@ -396,11 +405,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Kiểm tra xem loại ghế của ghế có đủ điều kiện để áp dụng khuyến mãi hay không
         List<InvoiceTicketDetail> requiredTicketDetails = invoiceTicketDetails.stream()
                 .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatRequiredId))
-                .collect(Collectors.toList());
+                .toList();
 // lấy danh sách loại ghế khuyến mãi typeSeatFreeId
         List<InvoiceTicketDetail> promotionTicketDetails = invoiceTicketDetails.stream()
                 .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatFreeId))
-                .collect(Collectors.toList());
+                .toList();
         //đếm số lượng food được khuyến mãi có trong hoá đơn
         int countPromotionTicket = (int) invoiceTicketDetails.stream()
                 .filter(detail -> detail.getTicket().getSeat().getSeatType().getId().equals(typeSeatFreeId))
@@ -449,7 +458,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public InvoiceDto getInvoiceById(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
         invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
         invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
@@ -466,7 +475,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public Invoice findById(Long id) {
         return invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
     }
 
     @Override
@@ -568,7 +577,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public CinemaDto getCinemaByInvoiceId(Long id) {
         CinemaDto cinemaDto = new CinemaDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         cinemaDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getId());
         cinemaDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
         AddressDto addressDto = getAddressDto(invoice);
@@ -591,7 +600,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public RoomDto getRoomByInvoiceId(Long id) {
         RoomDto roomDto = new RoomDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         roomDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId());
         roomDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
         //lấy giá phòng  từ price detail
@@ -610,7 +619,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public MovieDto getMovieByInvoiceId(Long id) {
         MovieDto movieDto = new MovieDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         movieDto.setCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getCode());
         movieDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
         movieDto.setDurationMinutes(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDurationMinutes());
@@ -634,7 +643,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public ShowTimeDto getShowTimeByInvoiceId(Long id) {
         ShowTimeDto showTimeDto = new ShowTimeDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         showTimeDto.setCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
         showTimeDto.setShowDate(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowDate());
         showTimeDto.setShowTime(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowTime());
@@ -645,7 +654,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public UserDto getUserByInvoiceId(Long id) {
         UserDto userDto = new UserDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         userDto.setCode(invoice.getUser().getCode());
         userDto.setUsername(invoice.getUser().getUsername());
         userDto.setEmail(invoice.getUser().getEmail());
@@ -656,7 +665,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public List<InvoiceFoodDetailDto> getInvoiceFoodDetailByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         List<InvoiceFoodDetail> invoiceFoodDetails = invoice.getInvoiceFoodDetails();
         List<InvoiceFoodDetailDto> invoiceFoodDetailDtos = new ArrayList<>();
         for (InvoiceFoodDetail invoiceFoodDetail : invoiceFoodDetails) {
@@ -676,7 +685,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public List<InvoiceTicketDetailDto> getInvoiceTicketDetailByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         List<InvoiceTicketDetail> invoiceTicketDetails = invoice.getInvoiceTicketDetails();
         List<InvoiceTicketDetailDto> invoiceTicketDetailDtos = new ArrayList<>();
         for (InvoiceTicketDetail invoiceTicketDetail : invoiceTicketDetails) {
@@ -706,7 +715,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public List<PromotionLineDto> getPromotionLineByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Invoice not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
         List<PromotionLine> promotionLines = new ArrayList<>(invoice.getPromotionLines());
         return promotionLines.stream()
                 .map(promotionLine -> {
@@ -767,7 +776,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         BigDecimal totalPrice = invoice.getTotalPrice();
         //định dạng tiền tệ
         DecimalFormat formatter = new DecimalFormat("###,###,###");
-        String total = formatter.format(totalPrice);
+        String total = formatter.format(totalPrice)+" Vnd";
         String typePayment = invoice.getTypePay().toString();
         //nếu là CASH thì là tiền mặt
         if (typePayment.equals("CASH")) {

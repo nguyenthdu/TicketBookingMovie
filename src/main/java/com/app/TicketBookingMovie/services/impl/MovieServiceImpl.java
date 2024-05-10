@@ -58,14 +58,14 @@ public class MovieServiceImpl implements MovieService {
         // Chuyển đổi id của thể loại phim sang các đối tượng Genre
         Set<Genre> genres = new HashSet<>();
         for (Long genreId : movieDTO.getGenreIds()) {
-            Optional<Genre> genreOptional = Optional.ofNullable(genreRepository.findById(genreId).orElseThrow(() -> new AppException("Genre not found with id: " + genreId, HttpStatus.NOT_FOUND)));
+            Optional<Genre> genreOptional = Optional.ofNullable(genreRepository.findById(genreId).orElseThrow(() -> new AppException("Không tìm thấy thể loại phim với id:  " + genreId, HttpStatus.NOT_FOUND)));
             genreOptional.ifPresent(genres::add);
         }
         movie.setGenres(genres);
         //Chuyển đổi id cinema sang các đối tượng Cinema
         Set<Cinema> cinemas = new HashSet<>();
         for (Long cinemeId : movieDTO.getCinemaIds()) {
-            Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Cinema not found with id: " + cinemeId, HttpStatus.NOT_FOUND)));
+            Optional<Cinema> cinemaOptional = Optional.ofNullable(cinemaRepository.findById(cinemeId).orElseThrow(() -> new AppException("Không tìm thấy rạp với id: " + cinemeId, HttpStatus.NOT_FOUND)));
             cinemaOptional.ifPresent(cinemas::add);
         }
         movie.setCinemas(cinemas);
@@ -80,7 +80,7 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public MovieDto getMovieById(Long id) {
-        Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException("Movie not found with id: " + id, HttpStatus.NOT_FOUND));
+        Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + id, HttpStatus.NOT_FOUND));
         Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
         Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
         MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
@@ -92,13 +92,13 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public Movie findById(Long id) {
-        return movieRepository.findById(id).orElseThrow(() -> new AppException("Movie not found with id: " + id, HttpStatus.NOT_FOUND));
+        return movieRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
     public void updateMovieById(MovieDto movieDTO) {
         Movie movie = movieRepository.findById(movieDTO.getId())
-                .orElseThrow(() -> new AppException("Movie not found with id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + movieDTO.getId(), HttpStatus.NOT_FOUND));
         // Xử lý ảnh
         if (!movieDTO.getImageLink().isEmpty() && !movieDTO.getImageLink().isBlank() && !movieDTO.getImageLink().equals(movie.getImageLink())) {
             awsService.deleteImage(movie.getImageLink());
@@ -186,7 +186,8 @@ public class MovieServiceImpl implements MovieService {
     @Override
     public void deleteMovieById(Long id) {
         Movie movie = movieRepository.findById(id)
-                .orElseThrow(() -> new AppException("Movie not found with id: " + id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + id, HttpStatus.NOT_FOUND));
+
         awsService.deleteImage(movie.getImageLink());
         // Xóa phim từ cơ sở dữ liệu
         movieRepository.delete(movie);

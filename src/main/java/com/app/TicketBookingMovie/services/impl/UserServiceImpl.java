@@ -67,25 +67,25 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với id: " + email));
         return UserDetailsImpl.build(user);
     }
 
     @Override
     public User getCurrentUser(String email) {
-        return userRepository.findByEmail(email).orElseThrow(() -> new AppException("Not found user with email: " + email, HttpStatus.NOT_FOUND));
+        return userRepository.findByEmail(email).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + email, HttpStatus.NOT_FOUND));
 
     }
 
     @Override
     public User findById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+        return userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
     }
 
 
     @Override
     public UserDto getUserById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
         return modelMapper.map(user, UserDto.class);
     }
 
@@ -93,10 +93,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public void deleteUser(Long id) {
         //xoa sẽ chuyển trạng thái user thành false
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
         //khong the xoa user voi role la admin
         if (user.getRoles().stream().anyMatch(role -> role.getName().equals(ERole.ROLE_ADMIN))) {
-            throw new AppException("Can't delete user with role admin!", HttpStatus.BAD_REQUEST);
+            throw new AppException("Không thể xóa người dùng với quyền admin!", HttpStatus.BAD_REQUEST);
         }
         user.setEnabled(false);
         userRepository.save(user);
@@ -104,7 +104,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public void updateUser(Long id, UserDto userDTO) {
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Not found user with id: " + id, HttpStatus.NOT_FOUND));
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
         if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
             throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
         }

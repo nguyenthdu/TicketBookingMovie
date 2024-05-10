@@ -31,14 +31,14 @@ public class AddressServiceImpl implements AddressService {
     @Override
     public AddressDto getAddressById(Long addressId) {
         Address address = addressRepository.findById(addressId)
-                .orElseThrow(() -> new AppException("Address not found with id: " + addressId, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy địa chỉ với id: " + addressId, HttpStatus.NOT_FOUND));
         return modelMapper.map(address, AddressDto.class);
     }
 
     @Override
     public AddressDto updateAddress(AddressDto addressDto) {
         Address address = addressRepository.findById(addressDto.getId())
-                .orElseThrow(() -> new AppException("Address not found with id: " + addressDto.getId(), HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy địa chỉ với id: " + addressDto.getId(), HttpStatus.NOT_FOUND));
         if(!addressDto.getWard().isEmpty() && !addressDto.getWard().isBlank()){
             address.setWard(addressDto.getWard());
         } else {
