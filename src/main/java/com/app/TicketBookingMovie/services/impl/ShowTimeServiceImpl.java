@@ -101,6 +101,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 showTimeSeat.setSeat(seat);
                 showTimeSeat.setShowTime(newShowTime);
                 showTimeSeat.setStatus(true); // Khởi tạo trạng thái của ghế là true
+                showTimeSeat.setHold(true);
                 showTimeSeats.add(showTimeSeat);
             }
             newShowTime.setShowTimeSeat(showTimeSeats);
@@ -316,7 +317,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         //tìm ShowTimeSeat theo showTimeId và seatId
         List<ShowTimeSeat> showTimeSeats = showTimeSeatRepository.findByShowTimeIdAndSeatIdIn(showTimeId, seatIds);
         for (ShowTimeSeat showTimeSeat : showTimeSeats) {
-            showTimeSeat.setStatus(status);
+            showTimeSeat.setHold(status);
         }
         showTimeSeatRepository.saveAll(showTimeSeats);
     }
@@ -328,7 +329,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         //mảng lưu tên những ghế đã được giữ
         List<String> msg = new ArrayList<>();
         for (ShowTimeSeat showTimeSeat : showTimeSeats) {
-            if(!showTimeSeat.isStatus()){
+            if(!showTimeSeat.isHold()){
                 msg.add(showTimeSeat.getSeat().getName());
             }
 

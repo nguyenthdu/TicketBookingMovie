@@ -362,38 +362,38 @@ public class StatisticalServiceImpl implements StatisticalService {
         }
         // Tính toán tổng số lượng hóa đơn, tổng số lượng vé và tổng doanh thu
         List<ResponseRevenuePromotionLine> responseRevenuePromotionLines = pagePromotionLines.stream().map(promotionLine -> {
-                    ResponseRevenuePromotionLine responseRevenuePromotionLine = new ResponseRevenuePromotionLine();
-                    responseRevenuePromotionLine.setCode(promotionLine.getCode());
-                    responseRevenuePromotionLine.setName(promotionLine.getName());
-                    responseRevenuePromotionLine.setImage(promotionLine.getImage());
-                    responseRevenuePromotionLine.setStartDate(promotionLine.getStartDate());
-                    responseRevenuePromotionLine.setEndDate(promotionLine.getEndDate());
-                    responseRevenuePromotionLine.setPromotionType(String.valueOf(promotionLine.getTypePromotion()));
-                    if(!promotionLine.getTypePromotion().equals(ETypePromotion.DISCOUNT)) {
-                        if(promotionLine.getTypePromotion().equals(ETypePromotion.FOOD)){
-                            Food food = foodService.findById(promotionLine.getPromotionFoodDetail().getFoodPromotion());
-                            responseRevenuePromotionLine.setPromotionCode(food.getCode());
-                            responseRevenuePromotionLine.setPromotionName(food.getName());
-                            responseRevenuePromotionLine.setPromotionQuantity(promotionLine.getPromotionFoodDetail().getQuantityPromotion());
-                        }
-                        if (promotionLine.getTypePromotion().equals(ETypePromotion.TICKET)){
-                           TypeSeat typeSeat = typeSeatService.findById(promotionLine.getPromotionTicketDetail().getTypeSeatPromotion());
-                            responseRevenuePromotionLine.setPromotionCode(typeSeat.getCode());
-                            responseRevenuePromotionLine.setPromotionName(String.valueOf(typeSeat.getName()));
-                            responseRevenuePromotionLine.setPromotionQuantity(promotionLine.getPromotionTicketDetail().getQuantityPromotion());
-                        }
-                    }else {
-                        responseRevenuePromotionLine.setPromotionValue(promotionLine.getPromotionDiscountDetail().getDiscountValue());
-                        responseRevenuePromotionLine.setValueType(String.valueOf(promotionLine.getPromotionDiscountDetail().getTypeDiscount()));
-                    }
-                    responseRevenuePromotionLine.setQuantityNotUsed(promotionLine.getQuantity()); // Tổng số vé là tổng số vé của tất cả các hóa đơn của khuyến mãi
-                    //lấy số lượng hóa đơn đã sử dụng promotion
-                    List<Invoice> invoices = invoiceService.getInvoiceByPromotionLineId(promotionLine.getId());
-                    int quantityUsed = invoices.size();
-                    responseRevenuePromotionLine.setQuantityUsed(quantityUsed);
-                    responseRevenuePromotionLine.setTotalQuantity(promotionLine.getQuantity() + quantityUsed);
-                    return responseRevenuePromotionLine;
-                }).collect(Collectors.toList());
+            ResponseRevenuePromotionLine responseRevenuePromotionLine = new ResponseRevenuePromotionLine();
+            responseRevenuePromotionLine.setCode(promotionLine.getCode());
+            responseRevenuePromotionLine.setName(promotionLine.getName());
+            responseRevenuePromotionLine.setImage(promotionLine.getImage());
+            responseRevenuePromotionLine.setStartDate(promotionLine.getStartDate());
+            responseRevenuePromotionLine.setEndDate(promotionLine.getEndDate());
+            responseRevenuePromotionLine.setPromotionType(String.valueOf(promotionLine.getTypePromotion()));
+            if (!promotionLine.getTypePromotion().equals(ETypePromotion.DISCOUNT)) {
+                if (promotionLine.getTypePromotion().equals(ETypePromotion.FOOD)) {
+                    Food food = foodService.findById(promotionLine.getPromotionFoodDetail().getFoodPromotion());
+                    responseRevenuePromotionLine.setPromotionCode(food.getCode());
+                    responseRevenuePromotionLine.setPromotionName(food.getName());
+                    responseRevenuePromotionLine.setPromotionQuantity(promotionLine.getPromotionFoodDetail().getQuantityPromotion());
+                }
+                if (promotionLine.getTypePromotion().equals(ETypePromotion.TICKET)) {
+                    TypeSeat typeSeat = typeSeatService.findById(promotionLine.getPromotionTicketDetail().getTypeSeatPromotion());
+                    responseRevenuePromotionLine.setPromotionCode(typeSeat.getCode());
+                    responseRevenuePromotionLine.setPromotionName(String.valueOf(typeSeat.getName()));
+                    responseRevenuePromotionLine.setPromotionQuantity(promotionLine.getPromotionTicketDetail().getQuantityPromotion());
+                }
+            } else {
+                responseRevenuePromotionLine.setPromotionValue(promotionLine.getPromotionDiscountDetail().getDiscountValue());
+                responseRevenuePromotionLine.setValueType(String.valueOf(promotionLine.getPromotionDiscountDetail().getTypeDiscount()));
+            }
+            responseRevenuePromotionLine.setQuantityNotUsed(promotionLine.getQuantity()); // Tổng số vé là tổng số vé của tất cả các hóa đơn của khuyến mãi
+            //lấy số lượng hóa đơn đã sử dụng promotion
+            List<Invoice> invoices = invoiceService.getInvoiceByPromotionLineId(promotionLine.getId());
+            int quantityUsed = invoices.size();
+            responseRevenuePromotionLine.setQuantityUsed(quantityUsed);
+            responseRevenuePromotionLine.setTotalQuantity(promotionLine.getQuantity() + quantityUsed);
+            return responseRevenuePromotionLine;
+        }).collect(Collectors.toList());
 
         // Sắp xếp kết quả
 
@@ -403,20 +403,15 @@ public class StatisticalServiceImpl implements StatisticalService {
             } else if (sortDirection == Sort.Direction.DESC) {
                 responseRevenuePromotionLines.sort(Comparator.comparing(ResponseRevenuePromotionLine::getStartDate).reversed());
             }
-        } else if (sortType.equalsIgnoreCase("date")) {
-            if (sortDirection == Sort.Direction.ASC) {
-                responseRevenuePromotionLines.sort(Comparator.comparing(ResponseRevenuePromotionLine::getName));
-            } else if (sortDirection == Sort.Direction.DESC) {
-                responseRevenuePromotionLines.sort(Comparator.comparing(ResponseRevenuePromotionLine::getName).reversed());
-            }
+
         } else if (sortType.equalsIgnoreCase("quantityUsed")) {
             if (sortDirection == Sort.Direction.ASC) {
                 responseRevenuePromotionLines.sort(Comparator.comparing(ResponseRevenuePromotionLine::getQuantityUsed));
             } else if (sortDirection == Sort.Direction.DESC) {
-                responseRevenuePromotionLines.sort(Comparator.comparing(ResponseRevenuePromotionLine:: getQuantityUsed).reversed());
+                responseRevenuePromotionLines.sort(Comparator.comparing(ResponseRevenuePromotionLine::getQuantityUsed).reversed());
             }
 
-            
+
         }
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, responseRevenuePromotionLines.size());

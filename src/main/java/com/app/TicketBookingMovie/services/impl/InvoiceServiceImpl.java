@@ -22,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -113,7 +115,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         List<InvoiceFoodDetail> invoiceFoodDetails = new ArrayList<>();
         if (!foodIds.isEmpty()) {
             Map<Long, Integer> foodQuantityMap = new HashMap<>(); // Map lưu trữ số lượng của từng loại đồ ăn
-
             for (Long foodId : foodIds) {
                 if (foodQuantityMap.containsKey(foodId)) {
                     foodQuantityMap.put(foodId, foodQuantityMap.get(foodId) + 1);
@@ -165,24 +166,26 @@ public class InvoiceServiceImpl implements InvoiceService {
         boolean checkPromotionFood = applyAllFoodPromotions(promotionLines, invoiceFoodDetails);
         boolean checkPromotionTicket = applyAllTicketPromotions(promotionLines, invoiceTicketDetails);
         BigDecimal total = calculateTotalPrice(invoiceTicketDetails, invoiceFoodDetails);
-        PromotionLine promotionLineDiscount = new PromotionLine();
-        PromotionLine promotionLineFood = new PromotionLine();
-        PromotionLine promotionLineTicket = new PromotionLine();
+        PromotionLine promotionLineFood;
+        PromotionLine promotionLineTicket;
+        ArrayList<PromotionLine> promotionApply = new ArrayList<>();
         // Áp dụng khuyến mãi nếu có
         for (PromotionLine promotionLine : promotionLines) {
             if (isPromotionApplicable(promotionLine, total)) {
                 total = applyPromotion(promotionLine, total);
-                 promotionLineDiscount = promotionLine;
+                promotionApply.add(promotionLine);
             }
         }
-        if (checkPromotionFood ){
+        if (checkPromotionFood) {
             promotionLineFood = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotionFoodDetail() != null).findFirst().get();
+            promotionApply.add(promotionLineFood);
         }
-        if (checkPromotionTicket){
+        if (checkPromotionTicket) {
             promotionLineTicket = promotionLines.stream().filter(promotionLine -> promotionLine.getPromotionTicketDetail() != null).findFirst().get();
+            promotionApply.add(promotionLineTicket);
         }
+        invoice.setPromotionLines(promotionApply);
 
-        invoice.setPromotionLines(List.of(promotionLineDiscount,promotionLineFood,promotionLineTicket));
 
         //loại thanh toán
         switch (typePay) {
@@ -204,10 +207,10 @@ public class InvoiceServiceImpl implements InvoiceService {
 //        mailMessage.setText("Thông tin đơn hàng");
 //        emailService.sendEmail(mailMessage);
         // Construct the HTML content for the email
-//        String htmlContent = constructEmailContent(invoice);
-//
-//        // Send the email
-//        sendEmail(emailUser, "Thông tin hóa đơn", htmlContent);
+        String htmlContent = constructEmailContent(invoice);
+
+        // Send the email
+        sendEmail(emailUser, "Thông tin hóa đơn đặt vé xem phim tại InfinityCinema", htmlContent);
 
 
     }
@@ -305,10 +308,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         return total;
     }
 
-    private void applyFoodPromotion(PromotionLine promotionLine, List<InvoiceFoodDetail> invoiceFoodDetails) {
+    private boolean applyFoodPromotion(PromotionLine promotionLine, List<InvoiceFoodDetail> invoiceFoodDetails) {
         PromotionFoodDetail promotionFoodDetail = promotionLine.getPromotionFoodDetail();
         if (invoiceFoodDetails.isEmpty()) {
-            return;
+            return false;
         }
         Long foodRequiredId = promotionFoodDetail.getFoodRequired();
         int quantityRequired = promotionFoodDetail.getQuantityRequired();
@@ -361,21 +364,28 @@ public class InvoiceServiceImpl implements InvoiceService {
                 promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
 
             }
+            return true;
+
         }
+        return false;
     }
 
     private boolean applyAllFoodPromotions(List<PromotionLine> promotionLines, List<InvoiceFoodDetail> invoiceFoodDetails) {
         for (PromotionLine promotionLine : promotionLines) {
             if (promotionLine.getPromotionFoodDetail() != null) {
-                applyFoodPromotion(promotionLine, invoiceFoodDetails);
-                return true;
+                if (applyFoodPromotion(promotionLine, invoiceFoodDetails)) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
     //TODO: khuyến mãi loại ghế
-    private void applyTicketPromotion(PromotionLine promotionLine, List<InvoiceTicketDetail> invoiceTicketDetails) {
+    private boolean applyTicketPromotion(PromotionLine promotionLine, List<InvoiceTicketDetail> invoiceTicketDetails) {
+        if (invoiceTicketDetails.isEmpty()) {
+            return false;
+        }
         PromotionTicketDetail promotionTicketDetail = promotionLine.getPromotionTicketDetail();
         Long typeSeatRequiredId = promotionTicketDetail.getTypeSeatRequired();
         int quantityRequired = promotionTicketDetail.getQuantityRequired();
@@ -417,16 +427,19 @@ public class InvoiceServiceImpl implements InvoiceService {
                 promotionLineService.updateQuantityPromotionLine(promotionLine.getId(), -1);
 
             }
+            return true;
 
         }
+        return false;
     }
 
 
     private boolean applyAllTicketPromotions(List<PromotionLine> promotionLines, List<InvoiceTicketDetail> invoiceTicketDetails) {
         for (PromotionLine promotionLine : promotionLines) {
             if (promotionLine.getPromotionTicketDetail() != null) {
-                applyTicketPromotion(promotionLine, invoiceTicketDetails);
-                return true;
+                if (applyTicketPromotion(promotionLine, invoiceTicketDetails)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -739,14 +752,34 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
 
-
     private String randomCode() {
         return "HD" + LocalDateTime.now().getNano();
     }
+
     private String constructEmailContent(Invoice invoice) {
         // Create HTML content for the email
         StringBuilder contentBuilder = new StringBuilder();
-            String name = "thanh";
+        String name = invoice.getUser().getUsername();
+        String code = invoice.getCode();
+        //chỉ lấy ngày thắng năm đặt
+        LocalDate showDate = invoice.getCreatedDate().toLocalDate();
+        String createdDate = showDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        BigDecimal totalPrice = invoice.getTotalPrice();
+        //định dạng tiền tệ
+        DecimalFormat formatter = new DecimalFormat("###,###,###");
+        String total = formatter.format(totalPrice);
+        String typePayment = invoice.getTypePay().toString();
+        //nếu là CASH thì là tiền mặt
+        if (typePayment.equals("CASH")) {
+            typePayment = "Tiền mặt";
+        }
+        String movieName = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName();
+        String durationMinutes = String.valueOf(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDurationMinutes());
+        String country = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getCountry();
+        String director = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDirector();
+        //diễn viên cách nhau bở dấu phẩy khi cast có dạng " aaa, bbbb, ccc"
+        String cast = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getCast();
+        String imageLink = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink();
         // Add more invoice details here
         contentBuilder.append("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional //EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" +
                 "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">" +
@@ -880,7 +913,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 "  <div style=\"font-size: 14px; line-height: 140%; text-align: center; word-wrap: break-word;\">" +
                 "    <p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 30px; line-height: 42px; font-family: Montserrat, sans-serif; color: #e03e2d;\"><strong><span style=\"line-height: 19.6px;\">InfinityCinema</span></strong></span></p>" +
                 "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 22px; line-height: 30.8px; font-family: Montserrat, sans-serif; color: #000000;\"><strong><span style=\"line-height: 19.6px;\">Đặt vé thành công</span></strong></span><span style=\"font-size: 22px; line-height: 30.8px; font-family: Montserrat, sans-serif; color: #000000;\"><span style=\"line-height: 19.6px;\"></span></span></p>" +
-                "<p style=\"font-size: 14px; line-height: 140%; text-align: left;\"><span style=\"font-size: 14px; line-height: 19.6px; font-family: Montserrat, sans-serif; color: #000000;\"><span style=\"line-height: 19.6px;\">Cảm ơn Thanh Dư đã chọn hệ thống rạp chiếu phim InfinityCinema, chúc bạn và bạn bè, người thân có buổi xem phim vui vẻ\uD83D\uDE0A\uD83D\uDE0A\uD83D\uDE0A</span></span><span style=\"font-size: 14px; line-height: 19.6px; font-family: Montserrat, sans-serif; color: #000000;\"><span style=\"line-height: 19.6px;\"></span></span></p>" +
+                "<p style=\"font-size: 14px; line-height: 140%; text-align: left;\"><span style=\"font-size: 14px; line-height: 19.6px; font-family: Montserrat, sans-serif; color: #000000;\"><span style=\"line-height: 19.6px;\">Cảm ơn <strong>").append(name).append("</strong> đã chọn hệ thống rạp chiếu phim InfinityCinema, chúc bạn và bạn bè, người thân có buổi xem phim vui vẻ\uD83D\uDE0A\uD83D\uDE0A\uD83D\uDE0A</span></span><span style=\"font-size: 14px; line-height: 19.6px; font-family: Montserrat, sans-serif; color: #000000;\"><span style=\"line-height: 19.6px;\"></span></span></p>" +
                 "<p style=\"font-size: 14px; line-height: 140%; text-align: left;\"> </p>" +
                 "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 18px; line-height: 25.2px; font-family: Montserrat, sans-serif;\"><strong><span style=\"line-height: 25.2px; font-size: 18px;\">Thông tin hóa đơn</span></strong></span></p>" +
                 "  </div>" +
@@ -939,7 +972,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 "      <td style=\"overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:arial,helvetica,sans-serif;\" align=\"left\">" +
                 "        " +
                 "  <div style=\"font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;\">" +
-                "    <p style=\"font-size: 14px; line-height: 140%;\"><strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">Mã hóa đơn:</span></strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\"> #333333</span><br /><strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">Ngày đặt:</span></strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">123123</span></p>" +
+                "    <p style=\"font-size: 14px; line-height: 140%;\"><strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">Mã hóa đơn:</span></strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">").append(code).append("</span><br /><strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">Ngày đặt:</span></strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">").append(createdDate).append("</span></p>" +
                 "<p style=\"font-size: 14px; line-height: 140%;\"> </p>" +
                 "  </div>" +
                 "" +
@@ -963,8 +996,8 @@ public class InvoiceServiceImpl implements InvoiceService {
                 "      <td style=\"overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:arial,helvetica,sans-serif;\" align=\"left\">" +
                 "        " +
                 "  <div style=\"font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;\">" +
-                "    <p style=\"font-size: 14px; line-height: 140%;\"><strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">Tổng tiền: </span></strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">123</span></p>" +
-                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\"><strong>Phương thức thanh toán</strong>: VNPAY</span></p>" +
+                "    <p style=\"font-size: 14px; line-height: 140%;\"><strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">Tổng tiền: </span></strong><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\">").append(total).append("</span></p>" +
+                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-family: Montserrat, sans-serif; font-size: 14px; line-height: 19.6px;\"><strong>Phương thức thanh toán: </strong>").append(typePayment).append("</span></p>" +
                 "<p style=\"font-size: 14px; line-height: 140%;\"> </p>" +
                 "  </div>" +
                 "" +
@@ -1005,7 +1038,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 "  <tr>" +
                 "    <td style=\"padding-right: 0px;padding-left: 0px;\" align=\"center\">" +
                 "      " +
-                "      <img align=\"center\" border=\"0\" src=\"images/image-1.png\" alt=\"Hand Bag\" title=\"Hand Bag\" style=\"outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: inline-block !important;border: none;height: auto;float: none;width: 85%;max-width: 212.5px;\" width=\"212.5\"/>" +
+                "      <img align=\"center\" border=\"0\" src=\"").append(imageLink).append("\" alt=\"Hand Bag\" title=\"Hand Bag\" style=\"outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: inline-block !important;border: none;height: auto;float: none;width: 85%;max-width: 212.5px;\" width=\"212.5\"/>" +
                 "      " +
                 "    </td>" +
                 "  </tr>" +
@@ -1031,11 +1064,11 @@ public class InvoiceServiceImpl implements InvoiceService {
                 "      <td style=\"overflow-wrap:break-word;word-break:break-word;padding:30px 10px 66px 20px;font-family:arial,helvetica,sans-serif;\" align=\"left\">" +
                 "        " +
                 "  <div style=\"font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;\">" +
-                "    <p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 18px; line-height: 25.2px;\"><span style=\"font-family: Montserrat, sans-serif;\"><strong>Đấu phá thương khung</strong></span></span></p>" +
-                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Thời lượng: 123 phút</span></p>" +
-                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Quốc gia: Việt nam</span></p>" +
-                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Đạo diễn: Thanh dư</span></p>" +
-                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Diễn viên: aaa</span></p>" +
+                "    <p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 18px; line-height: 25.2px;\"><span style=\"font-family: Montserrat, sans-serif;\"><strong>").append(movieName).append("</strong></span></span></p>" +
+                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Thời lượng: ").append(durationMinutes).append(" phút</span></p>" +
+                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Quốc gia: ").append(country).append("</span></p>" +
+                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Đạo diễn: ").append(director).append("</span></p>" +
+                "<p style=\"font-size: 14px; line-height: 140%;\"><span style=\"font-size: 16px; line-height: 22.4px;\">Diễn viên: ").append(cast).append("</span></p>" +
                 "<p style=\"font-size: 14px; line-height: 140%;\"> </p>" +
                 "  </div>" +
                 "" +

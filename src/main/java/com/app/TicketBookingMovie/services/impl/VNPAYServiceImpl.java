@@ -43,19 +43,25 @@ public class VNPAYServiceImpl implements VNPAYService {
         vnp_Params.put("vnp_CurrCode", "VND");
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
         //lưu các thông tin vào orderInfo
-        String orderInfo = "";
-        orderInfo += showTimeId + ";";
+        StringBuilder orderInfo = new StringBuilder();
+        orderInfo.append(showTimeId).append(";");
         for (Long seatId : seatIds) {
-            orderInfo += seatId + ",";
+            orderInfo.append(seatId).append(",");
         }
-        orderInfo += ";";
-        for (Long foodId : foodIds) {
-            orderInfo += foodId + ",";
+        orderInfo.append(";");
+        if(foodIds.isEmpty()){
+            orderInfo.append(" ,");
         }
-        orderInfo += ";";
-        orderInfo += emailUser + ";";
-        orderInfo += staffId;
-        vnp_Params.put("vnp_OrderInfo", orderInfo);
+        else{
+            for (Long foodId : foodIds) {
+                orderInfo.append(foodId).append(",");
+            }
+        }
+
+        orderInfo.append(";");
+        orderInfo.append(emailUser).append(";");
+        orderInfo.append(staffId);
+        vnp_Params.put("vnp_OrderInfo", orderInfo.toString());
         vnp_Params.put("vnp_OrderType", orderType);
 
 
@@ -144,7 +150,9 @@ public class VNPAYServiceImpl implements VNPAYService {
         List<Long> foodIds = new ArrayList<>();
         String[] foodIdStr = request.getParameter("vnp_OrderInfo").split(";")[2].split(",");
         for (String s : foodIdStr) {
-            foodIds.add(Long.parseLong(s));
+            if(!s.equals(" ")) {
+                foodIds.add(Long.parseLong(s));
+            }
         }
         String emailUser = request.getParameter("vnp_OrderInfo").split(";")[3];
         Long staffId = Long.parseLong(request.getParameter("vnp_OrderInfo").split(";")[4]);
