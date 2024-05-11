@@ -71,8 +71,6 @@ public class RoomServiceImpl implements RoomService {
         room.setCreatedDate(LocalDateTime.now());
         roomRepository.save(room);
         cinemaService.countTotalRooms(roomDto.getCinemaId(), 1);
-        // Create seats and add them to the room
-        modelMapper.map(room, RoomDto.class);
     }
 
     public String randomCode() {
@@ -111,6 +109,7 @@ public class RoomServiceImpl implements RoomService {
             }
         }
 
+
         // Remove excess seats from the room
         for (Seat seatToRemove : seatsToRemove) {
             room.getSeats().remove(seatToRemove);
@@ -137,8 +136,7 @@ public class RoomServiceImpl implements RoomService {
         room.setCreatedDate(LocalDateTime.now());
         // Save the updated room
         roomRepository.save(room);
-        // Map Room to RoomDto and return
-        modelMapper.map(room, RoomDto.class);
+
     }
 
     private void getTypeRoom(RoomDto roomDto, Room room) {

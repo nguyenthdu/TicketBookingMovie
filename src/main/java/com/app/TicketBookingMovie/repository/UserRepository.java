@@ -15,13 +15,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Boolean existsByPhone(String phone);
 
-    long countByCodeContaining(String code);
+    long countByCode(String code);
 
     long countByUsernameContaining(String username);
 
-    long countByPhoneContaining(String phone);
+    long countByPhone(String phone);
 
-    long countByEmailContaining(String email);
+    long countByEmail(String email);
 
     @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE r.id = ?1")
     long countByRoleId(Long roleId);

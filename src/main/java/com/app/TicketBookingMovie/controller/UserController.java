@@ -122,11 +122,13 @@ public class UserController {
     public ResponseEntity<MessageResponse> registerMor(@Valid
                                                        @RequestParam("username") String username,
                                                        @RequestParam("email") String email,
+                                                       @RequestParam("phone") String phone,
                                                        @RequestParam("gender") boolean gener,
                                                        @RequestParam("password") String password) {
         SignupRequest signUpRequest = new SignupRequest();
         signUpRequest.setUsername(username);
         signUpRequest.setEmail(email);
+        signUpRequest.setPhone(phone);
         signUpRequest.setGender(gener);
         signUpRequest.setPassword(password);
         try {

@@ -218,10 +218,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public void createMor(SignupRequest signupRequest) {
         if (userRepository.existsByEmail(signupRequest.getEmail())) {
-            throw new AppException("Email is already taken!", HttpStatus.BAD_REQUEST);
+            throw new AppException("Email đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
-        if (userRepository.existsByPhone(signupRequest.getPhone())) {
-            throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
+        if(userRepository.existsByPhone(signupRequest.getPhone())) {
+            throw new AppException("Số điện thoại đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
         User user = new User();
         user.setCode(randomCodeMor());
@@ -232,8 +232,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setBirthday(birthday);
         Role role = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
-//        user.setCreatedDate(LocalDateTime.now());
-        user.setPhone("0120000000");
+        user.setPhone(signupRequest.getPhone());
         user.setEnabled(true);
         user.setCreatedDate(LocalDateTime.now());
         user.setPassword(passwordConfig.passwordEncoder()
@@ -324,13 +323,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public long countUsers(String code, String username, String phone, String email, Long roleId) {
         if (code != null && !code.isEmpty()) {
-            return userRepository.countByCodeContaining(code);
+            return userRepository.countByCode(code);
         } else if (username != null && !username.isEmpty()) {
             return userRepository.countByUsernameContaining(username);
         } else if (phone != null && !phone.isEmpty()) {
-            return userRepository.countByPhoneContaining(phone);
+            return userRepository.countByPhone(phone);
         } else if (email != null && !email.isEmpty()) {
-            return userRepository.countByEmailContaining(email);
+            return userRepository.countByEmail(email);
         } else if (roleId != null && roleId != 0) {
             return userRepository.countByRoleId(roleId);
         } else {
