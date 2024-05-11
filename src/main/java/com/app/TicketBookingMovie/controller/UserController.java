@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -90,6 +91,7 @@ public class UserController {
 
     //TODO: get all users
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR')")
     public ResponseEntity<PageResponse<UserDto>> getAllUsers(
             @RequestParam(defaultValue = "0", name = "page", required = false) Integer page,
             @RequestParam(defaultValue = "10", name = "size", required = false) Integer size,
@@ -109,12 +111,14 @@ public class UserController {
 
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     //TODO: register morderater
     @PostMapping("/mor")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> registerMor(@Valid
                                                        @RequestParam("username") String username,
                                                        @RequestParam("email") String email,
@@ -167,6 +171,7 @@ public class UserController {
 
     // update
     @PutMapping()
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MessageResponse> updateUser(@RequestParam("id") Long id, @RequestParam("username") String username, @RequestParam("gender") boolean gender, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthday, @RequestParam("phone") String phone) {
         UserDto userDTO = new UserDto();
         userDTO.setUsername(username);
@@ -194,6 +199,7 @@ public class UserController {
 
     // update password
     @PostMapping("/{id}/password")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<?> updateUserPassword(@PathVariable Long id, @RequestParam String oldPassword, @RequestParam String newPassword, @RequestParam String confirmPassword) {
         try {
             userService.updatePassword(id, oldPassword, newPassword, confirmPassword);
@@ -213,22 +219,23 @@ public class UserController {
         userService.createAdmin();
     }
 
-    @PostMapping("/userInTicket")
-    public ResponseEntity<MessageResponse> createUserInTicket(
-            @RequestParam("username") String username,
-            @RequestParam("email") String email) {
-        UserDto userDto = new UserDto();
-        userDto.setUsername(username);
-        userDto.setEmail(email);
-        try {
-            userService.createUserInTicket(userDto);
-            return ResponseEntity.ok(new MessageResponse("Đăng ký thành công!", HttpStatus.OK.value(), Instant.now().toString()));
-        } catch (AppException e) {
-            return ResponseEntity.status(e.getStatus()).body(new MessageResponse(e.getMessage(), e.getStatus(), Instant.now().toString()));
-        }
-    }
+//    @PostMapping("/userInTicket")
+//    public ResponseEntity<MessageResponse> createUserInTicket(
+//            @RequestParam("username") String username,
+//            @RequestParam("email") String email) {
+//        UserDto userDto = new UserDto();
+//        userDto.setUsername(username);
+//        userDto.setEmail(email);
+//        try {
+//            userService.createUserInTicket(userDto);
+//            return ResponseEntity.ok(new MessageResponse("Đăng ký thành công!", HttpStatus.OK.value(), Instant.now().toString()));
+//        } catch (AppException e) {
+//            return ResponseEntity.status(e.getStatus()).body(new MessageResponse(e.getMessage(), e.getStatus(), Instant.now().toString()));
+//        }
+//    }
 
     @PostMapping("/guest")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR')")
     public ResponseEntity<UserDto> createGuest() {
         try {
             return ResponseEntity.ok(userService.createGuest());

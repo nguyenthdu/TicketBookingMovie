@@ -31,7 +31,7 @@ public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 
 		final Map<String, Object> body = new HashMap<>();
 		body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
-		body.put("error", "Unauthorized");
+		body.put("error", "không có quyền truy cập!");
 		body.put("message", authException.getMessage());
 		body.put("path", request.getServletPath());
 

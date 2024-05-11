@@ -10,6 +10,7 @@ import com.app.TicketBookingMovie.services.ShowTimeService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -28,6 +29,7 @@ public class ShowTimeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createShowTime(@RequestBody Set<ShowTimeDto> showTimeDtos) {
         try {
             showTimeService.createShowTime(showTimeDtos);
@@ -36,14 +38,14 @@ public class ShowTimeController {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
-
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<ShowTimeDto> getShowTimeById(@PathVariable Long id) {
         ShowTimeDto showTimeDto = showTimeService.getShowTimeById(id);
         return ResponseEntity.ok(showTimeDto);
     }
-
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<ShowTimeDto>> getAllShowTimes(@RequestParam(defaultValue = "0") Integer page,
                                                                      @RequestParam(defaultValue = "10") Integer size,
                                                                      @RequestParam(required = false) String code,
@@ -61,6 +63,7 @@ public class ShowTimeController {
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateShowTime(
             @RequestParam("id") Long id,
             @RequestParam("showDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate showDate,
@@ -85,6 +88,7 @@ public class ShowTimeController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteShowTime(@PathVariable Long id) {
         try {
             showTimeService.deleteShowTime(id);
@@ -95,18 +99,21 @@ public class ShowTimeController {
     }
 
     @GetMapping("/seat/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<List<ShowTimeSeatDto>> getShowTimeSeatById(@PathVariable Long id) {
         List<ShowTimeSeatDto> showTimeSeatDtos = showTimeService.getShowTimeSeatById(id);
         return ResponseEntity.ok(showTimeSeatDtos);
     }
 
     @GetMapping("/dates")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@RequestParam Long movieId, @RequestParam Long cinemaId) {
         Set<LocalDate> showDates = showTimeService.getShowDatesByMovieId(movieId, cinemaId);
         return ResponseEntity.ok(showDates);
     }
 
     @PostMapping("/seat")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MessageResponse> updateStatusHoldSeat(@RequestParam Set<Long> seatIds,
                                                                 @RequestParam Long showTimeId,
                                                                 @RequestParam boolean status) {
@@ -119,6 +126,7 @@ public class ShowTimeController {
     }
 
     @GetMapping("/seat")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MessageResponse> checkSeatStatus(@RequestParam Set<Long> seatIds, @RequestParam Long showTimeId) {
         String message = showTimeService.checkSeatStatus(seatIds, showTimeId);
         return ResponseEntity.ok(new MessageResponse(message, HttpStatus.OK.value(), Instant.now().toString()));

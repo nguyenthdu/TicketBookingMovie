@@ -7,6 +7,7 @@ import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.FoodService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -21,6 +22,7 @@ public class FoodController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createFood(
             @RequestParam("name") String name,
             @RequestParam("image") String image,
@@ -47,11 +49,13 @@ public class FoodController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<FoodDto> getFoodById(@PathVariable Long id) {
         return ResponseEntity.ok(foodService.getFoodById(id));
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateFood(
             @RequestParam Long id,
             @RequestParam("name") String name,
@@ -80,6 +84,7 @@ public class FoodController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteFood(@PathVariable Long id) {
         try {
             foodService.deleteFoodById(id);
@@ -90,6 +95,7 @@ public class FoodController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<FoodDto>> getAllFood(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,

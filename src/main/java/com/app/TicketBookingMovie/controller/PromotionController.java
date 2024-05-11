@@ -10,6 +10,7 @@ import com.app.TicketBookingMovie.services.PromotionService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -30,6 +31,7 @@ public class PromotionController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createPromotion(
             @RequestParam("name") String name,
             @RequestParam("description") String description,
@@ -51,12 +53,13 @@ public class PromotionController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionDto> getPromotionById(@PathVariable Long id) {
-
         return ResponseEntity.ok(promotionService.getPromotionById(id));
     }
 
     @PutMapping()
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updatePromotion(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
@@ -80,12 +83,14 @@ public class PromotionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deletePromotion(@PathVariable Long id) {
         promotionService.deletePromotion(id);
         return ResponseEntity.ok(new MessageResponse("Xóa chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PromotionDto>> getAllPromotion(
             @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
             @RequestParam(value = "size", required = false, defaultValue = "10") Integer size,
@@ -103,6 +108,7 @@ public class PromotionController {
 
 
     @PostMapping("/line")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createPromotionLine(@RequestBody PromotionLineDto promotionLineDto) {
         try {
             promotionLineService.createPromotionLine(promotionLineDto);
@@ -114,11 +120,13 @@ public class PromotionController {
 
 
     @GetMapping("/line/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> getPromotionLineById(@PathVariable Long id) {
         return ResponseEntity.ok(promotionLineService.getPromotionLineById(id));
     }
 
     @GetMapping("/line")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PromotionLineDto>> getAllPromotionLineFromPromotionId(
             @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
             @RequestParam(value = "size", required = false, defaultValue = "10") Integer size,
@@ -138,6 +146,7 @@ public class PromotionController {
     }
 
     @PutMapping("/line")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updatePromotionLine(
             @RequestParam("id") Long id,
             @RequestParam(value = "name", required = false) String name,
@@ -165,6 +174,7 @@ public class PromotionController {
     }
 
     @DeleteMapping("/line/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deletePromotionLine(@PathVariable Long id) {
         promotionLineService.deletePromotionLine(id);
         return ResponseEntity.ok(new MessageResponse("Xóa hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
@@ -172,16 +182,19 @@ public class PromotionController {
 
     // lấy danh sách promtion line đang hoạt động phù hợp với giá trị hóa đơn
     @GetMapping("/line_discount/active")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> showPromotionLineDiscountMatchInvoice(@RequestParam("totalPrice") BigDecimal totalPrice) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineDiscountMatchInvoice(totalPrice));
     }
 
     @GetMapping("/line_food/active")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> showPromotionLineFoodMatchInvoice(@RequestParam("foodId") List<Long> foodId, @RequestParam("cinemaId")Long cinemaId) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineFoodMatchInvoice(foodId, cinemaId));
     }
 
     @GetMapping("/line_ticket/active")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> showPromotionLineTicketMatchInvoice(@RequestParam("seatId") List<Long> seatId
             , @RequestParam("showTimeId") Long showTimeId) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineTicketMatchInvoice(seatId, showTimeId));

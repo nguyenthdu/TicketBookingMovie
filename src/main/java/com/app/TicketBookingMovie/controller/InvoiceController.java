@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -23,6 +24,7 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("api/invoice")
+@PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
 public class InvoiceController {
     JwtUtils jwtUtils;
     private final InvoiceService invoiceService;

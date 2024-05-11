@@ -7,6 +7,7 @@ import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.CategoryFoodService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -21,6 +22,7 @@ public class CategoryFoodController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createCategoryFood(
             @RequestParam("name") String name) {
         CategoryFoodDto categoryFoodDto = new CategoryFoodDto();
@@ -34,11 +36,13 @@ public class CategoryFoodController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<CategoryFoodDto> getCategoryFood(@PathVariable Long id) {
         return ResponseEntity.ok(categoryFoodService.getCategoryFoodById(id));
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateCategoryFood(
             @RequestParam("id") Long id,
             @RequestParam("name") String name) {
@@ -54,6 +58,7 @@ public class CategoryFoodController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteCategoryFood(@PathVariable Long id) {
         try {
             categoryFoodService.deleteCategoryFoodById(id);
@@ -64,6 +69,7 @@ public class CategoryFoodController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<CategoryFoodDto>> getAllCategoryFood(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,

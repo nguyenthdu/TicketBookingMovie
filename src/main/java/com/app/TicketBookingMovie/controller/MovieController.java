@@ -9,6 +9,7 @@ import com.app.TicketBookingMovie.services.MovieService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -20,29 +21,12 @@ import java.util.Set;
 public class MovieController {
     private final MovieService movieService;
 
-
     public MovieController(MovieService movieService) {
         this.movieService = movieService;
     }
 
-    @GetMapping
-    public ResponseEntity<PageResponse<MovieDto>> getAllMovies(
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long genreId,
-            @RequestParam(required = false) Long cinemaId) {
-        PageResponse<MovieDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId, cinemaId));
-        pageResponse.setTotalElements(movieService.countAllMovies(code, name, genreId, cinemaId));
-        pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
-        pageResponse.setCurrentPage(page);
-        pageResponse.setPageSize(size);
-        return ResponseEntity.ok(pageResponse);
-    }
-
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createMovie(
             @RequestParam("name") String name,
             @RequestParam("image") String image,
@@ -81,6 +65,7 @@ public class MovieController {
 
     //fidn by id
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MovieDto> getMovieById(@PathVariable("id") Long id) {
         MovieDto movieDTO = movieService.getMovieById(id);
         return ResponseEntity.ok(movieDTO);
@@ -88,6 +73,7 @@ public class MovieController {
 
     //update
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateMovie(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
@@ -129,6 +115,7 @@ public class MovieController {
 
     //delete
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteMovie(@PathVariable("id") Long id) {
         try {
             movieService.deleteMovieById(id);
@@ -139,6 +126,7 @@ public class MovieController {
 
     }
     @GetMapping("/upcoming")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
 
             @RequestParam(defaultValue = "0") Integer page,
@@ -151,6 +139,7 @@ public class MovieController {
         return ResponseEntity.ok(pageResponse);
     }
     @GetMapping("/showing")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<MovieDto>> getMoviesShowing(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -162,5 +151,21 @@ public class MovieController {
         return ResponseEntity.ok(pageResponse);
     }
 
-
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
+    public ResponseEntity<PageResponse<MovieDto>> getAllMovies(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long genreId,
+            @RequestParam(required = false) Long cinemaId) {
+        PageResponse<MovieDto> pageResponse = new PageResponse<>();
+        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId, cinemaId));
+        pageResponse.setTotalElements(movieService.countAllMovies(code, name, genreId, cinemaId));
+        pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
+        pageResponse.setCurrentPage(page);
+        pageResponse.setPageSize(size);
+        return ResponseEntity.ok(pageResponse);
+    }
 }

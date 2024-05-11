@@ -10,6 +10,7 @@ import com.app.TicketBookingMovie.services.PriceHeaderService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -31,6 +32,7 @@ public class PriceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createSalePrice(
             @RequestParam("name") String name,
             @RequestParam("description") String description,
@@ -52,11 +54,13 @@ public class PriceController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PriceHeaderDto> getSalePrice(@PathVariable("id") Long id) {
         return ResponseEntity.ok(priceHeaderService.getPriceHeaderById(id));
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateSalePrice(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
@@ -79,6 +83,7 @@ public class PriceController {
 
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PriceHeaderDto>> getAllSalePrice(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
@@ -99,6 +104,7 @@ public class PriceController {
 
 
     @PostMapping("/detail")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createPriceDetail(
             @RequestBody Set<PriceDetailDto> priceDetailDto) {
         try {
@@ -110,11 +116,13 @@ public class PriceController {
     }
 
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PriceDetailDto> getSalePriceDetail(@PathVariable("id") Long id) {
         return ResponseEntity.ok(priceDetailService.getPriceDetail(id));
     }
 
     @PutMapping("/detail")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updatePriceDetail(
             @RequestParam("id") Long id,
             @RequestParam("price") BigDecimal price,
@@ -132,6 +140,7 @@ public class PriceController {
     }
 
     @GetMapping("/detail")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PriceDetailDto>> getAllSalePriceDetail(
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int size,
@@ -151,6 +160,7 @@ public class PriceController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteSalePrice(@PathVariable("id") Long id) {
         try {
             priceHeaderService.deletePriceHeaderById(id);
@@ -162,6 +172,7 @@ public class PriceController {
 
     //delete sale price detail
     @DeleteMapping("/detail/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteSalePriceDetail(@PathVariable Long id) {
         try {
             priceDetailService.deletePriceDetail(id);

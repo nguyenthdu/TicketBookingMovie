@@ -7,6 +7,7 @@ import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.GenreService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -21,6 +22,7 @@ public class GenreController {
     }
 
     @PostMapping()
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createGenre(@RequestParam("name") String name) {
         GenreDto genreDTO = new GenreDto();
         genreDTO.setName(name);
@@ -34,11 +36,13 @@ public class GenreController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<GenreDto> getGenreById(@PathVariable Long id) {
         return ResponseEntity.ok(genreService.getGenreById(id));
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateGenreById(@RequestParam("id") Long id, @RequestParam("name") String name) {
         GenreDto genreDTO = new GenreDto();
         genreDTO.setId(id);
@@ -52,6 +56,7 @@ public class GenreController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteGenreById(@PathVariable Long id) {
         try {
             genreService.deleteGenreById(id);
@@ -62,6 +67,7 @@ public class GenreController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<GenreDto>> getAllGenres(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,

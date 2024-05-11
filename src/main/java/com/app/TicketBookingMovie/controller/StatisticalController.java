@@ -9,6 +9,7 @@ import com.app.TicketBookingMovie.payload.response.ResponseRevenuePromotionLine;
 import com.app.TicketBookingMovie.services.StatisticalService;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("api/statistical")
+@PreAuthorize("hasRole('ADMIN')")
 public class StatisticalController {
     private final StatisticalService statisticalService;
 

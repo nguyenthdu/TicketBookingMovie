@@ -8,6 +8,7 @@ import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.CinemaService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -22,6 +23,7 @@ public class CinemaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createCinema(
             @RequestParam("name") String name,
             @RequestParam("status") boolean status,
@@ -49,11 +51,13 @@ public class CinemaController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<CinemaDto> getCinemaById(@PathVariable Long id) {
         return ResponseEntity.ok(cinemaService.getCinemaById(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<CinemaDto>> getAllCinema(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -75,6 +79,7 @@ public class CinemaController {
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateCinema(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
@@ -104,6 +109,7 @@ public class CinemaController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteCinemaById(@PathVariable Long id) {
         try {
             cinemaService.deleteCinemaById(id);

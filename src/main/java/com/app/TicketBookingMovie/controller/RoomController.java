@@ -7,6 +7,7 @@ import com.app.TicketBookingMovie.services.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -22,6 +23,7 @@ public class RoomController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createRoom(@RequestBody RoomDto roomDto) {
         try {
             roomService.createRoom(roomDto);
@@ -32,6 +34,7 @@ public class RoomController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateRoom(@PathVariable Long id, @RequestBody RoomDto roomDto) {
         roomDto.setId(id);
         try {
@@ -43,11 +46,13 @@ public class RoomController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<RoomDto> getRoomById(@PathVariable Long id) {
         return new ResponseEntity<>(roomService.getRoomById(id), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteRoom(@PathVariable Long id) {
         try {
             roomService.deleteRoom(id);
@@ -58,6 +63,7 @@ public class RoomController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<RoomDto>> getAllRoomsPage(@RequestParam(defaultValue = "0") Integer page,
                                                                  @RequestParam(defaultValue = "10") Integer size,
                                                                  @RequestParam(required = false) String code,
