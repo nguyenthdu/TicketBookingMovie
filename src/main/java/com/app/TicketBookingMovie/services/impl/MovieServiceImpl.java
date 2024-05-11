@@ -20,10 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -194,26 +191,50 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId, Long cinemaId) {
-        List<Movie> movies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+    public List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId, Long cinemaId, String typeShow) {
+        List<Movie> allMovies = new ArrayList<>();
+
+        // Lấy danh sách tất cả các phim
+        if ("Upcoming".equalsIgnoreCase(typeShow)) {
+            allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "releaseDate"))
+                    .stream()
+                    .filter(movie -> movie.getShowTimes().stream().allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
+                    .toList();
+        } else if ("Showing".equalsIgnoreCase(typeShow)) {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Movie> allMoviesPage = movieRepository.findAll(pageable);
+            allMovies = allMoviesPage.getContent()
+                    .stream()
+                    .filter(movie -> movie.getShowTimes().stream().anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
+                    .toList();
+        } else {
+            allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+        }
+
+        // Lọc theo các tiêu chí khác nếu có
         if (code != null && !code.isEmpty()) {
-            movies = movies.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
+            allMovies = allMovies.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
             if (name != null && !name.isEmpty()) {
-                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
+                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
             } else if (genreId != null && genreId != 0) {
-                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
+                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
             } else {
-                movies = movies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId))).collect(Collectors.toList());
+                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId))).collect(Collectors.toList());
             }
         } else if (genreId != null && genreId != 0) {
-            movies = movies.stream().filter(movie -> movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
+            allMovies = allMovies.stream().filter(movie -> movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            movies = movies.stream().filter(movie -> movie.getName().contains(name)).collect(Collectors.toList());
+            allMovies = allMovies.stream().filter(movie -> movie.getName().contains(name)).collect(Collectors.toList());
         }
+
+        // Đếm số lượng phim
+        long countAll = allMovies.size();
+
+        // Phân trang
         int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, movies.size());
-        return movies.subList(fromIndex, toIndex).stream()
+        int toIndex = Math.min(fromIndex + size, allMovies.size());
+        List<MovieDto> movieDtos = allMovies.subList(fromIndex, toIndex).stream()
                 .map(movie -> {
                     MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
                     Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
@@ -223,28 +244,53 @@ public class MovieServiceImpl implements MovieService {
                     return movieDTO;
                 }).collect(Collectors.toList());
 
+
+        // Trả về danh sách phim và số lượng phim
+        return movieDtos;
     }
 
     @Override
-    public long countAllMovies(String code, String name, Long genreId, Long cinemaId) {
+    public long countAllMovies(String code, String name, Long genreId, Long cinemaId, String typeShow) {
+        List<Movie> allMovies = new ArrayList<>();
+
+        // Lấy danh sách tất cả các phim
+        if ("Upcoming".equalsIgnoreCase(typeShow)) {
+            allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "releaseDate"))
+                    .stream()
+                    .filter(movie -> movie.getShowTimes().stream().allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
+                    .toList();
+        } else if ("Showing".equalsIgnoreCase(typeShow)) {
+            Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE); // Lấy tất cả phim đang chiếu
+            Page<Movie> allMoviesPage = movieRepository.findAll(pageable);
+            allMovies = allMoviesPage.getContent()
+                    .stream()
+                    .filter(movie -> movie.getShowTimes().stream().anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
+                    .toList();
+        } else {
+            allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+        }
+
+        // Lọc theo các tiêu chí khác nếu có
         if (code != null && !code.isEmpty()) {
-            return movieRepository.countByCodeContaining(code);
+            allMovies = allMovies.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
             if (name != null && !name.isEmpty()) {
-                return movieRepository.countByCinemasIdAndNameContaining(cinemaId, name);
+                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
             } else if (genreId != null && genreId != 0) {
-                return movieRepository.countByCinemasIdAndGenreId(cinemaId, genreId);
+                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
             } else {
-                return movieRepository.countByCinemaId(cinemaId);
+                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId))).collect(Collectors.toList());
             }
         } else if (genreId != null && genreId != 0) {
-            return movieRepository.countByGenreId(genreId);
+            allMovies = allMovies.stream().filter(movie -> movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            return movieRepository.countByNameContaining(name);
-        } else {
-            return movieRepository.count();
+            allMovies = allMovies.stream().filter(movie -> movie.getName().contains(name)).collect(Collectors.toList());
         }
+
+        // Đếm số lượng phim
+        return allMovies.size();
     }
+
     //TODO: Lấy danh sách phim sắp chiếu
     @Override
     public List<MovieDto> getMoviesUpcoming(Integer page, Integer size) {

@@ -155,10 +155,11 @@ public class MovieController {
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Long genreId,
-            @RequestParam(required = false) Long cinemaId) {
+            @RequestParam(required = false) Long cinemaId,
+            @RequestParam(required = false) String typeShow){
         PageResponse<MovieDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId, cinemaId));
-        pageResponse.setTotalElements(movieService.countAllMovies(code, name, genreId, cinemaId));
+        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId, cinemaId,typeShow));
+        pageResponse.setTotalElements(movieService.countAllMovies(code, name, genreId, cinemaId,typeShow));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
