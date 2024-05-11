@@ -39,13 +39,11 @@ public class ShowTimeController {
         }
     }
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<ShowTimeDto> getShowTimeById(@PathVariable Long id) {
         ShowTimeDto showTimeDto = showTimeService.getShowTimeById(id);
         return ResponseEntity.ok(showTimeDto);
     }
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<ShowTimeDto>> getAllShowTimes(@RequestParam(defaultValue = "0") Integer page,
                                                                      @RequestParam(defaultValue = "10") Integer size,
                                                                      @RequestParam(required = false) String code,
@@ -99,21 +97,18 @@ public class ShowTimeController {
     }
 
     @GetMapping("/seat/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<List<ShowTimeSeatDto>> getShowTimeSeatById(@PathVariable Long id) {
         List<ShowTimeSeatDto> showTimeSeatDtos = showTimeService.getShowTimeSeatById(id);
         return ResponseEntity.ok(showTimeSeatDtos);
     }
 
     @GetMapping("/dates")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@RequestParam Long movieId, @RequestParam Long cinemaId) {
         Set<LocalDate> showDates = showTimeService.getShowDatesByMovieId(movieId, cinemaId);
         return ResponseEntity.ok(showDates);
     }
 
     @PostMapping("/seat")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MessageResponse> updateStatusHoldSeat(@RequestParam Set<Long> seatIds,
                                                                 @RequestParam Long showTimeId,
                                                                 @RequestParam boolean status) {
@@ -126,7 +121,6 @@ public class ShowTimeController {
     }
 
     @GetMapping("/seat")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MessageResponse> checkSeatStatus(@RequestParam Set<Long> seatIds, @RequestParam Long showTimeId) {
         String message = showTimeService.checkSeatStatus(seatIds, showTimeId);
         return ResponseEntity.ok(new MessageResponse(message, HttpStatus.OK.value(), Instant.now().toString()));

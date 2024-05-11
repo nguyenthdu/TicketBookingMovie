@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Past;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -20,7 +21,8 @@ import java.util.Set;
         @UniqueConstraint(columnNames = "phone"),
         @UniqueConstraint(columnNames = "code")}
 )
-public class User {
+public class User implements Serializable {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

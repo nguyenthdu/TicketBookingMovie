@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public void updateUser(Long id, UserDto userDTO) {
         User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
         if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
-            throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
+            throw new AppException("Số điện thoại đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
         if (!userDTO.getUsername().isEmpty() && !userDTO.getUsername().isBlank()) {
             user.setUsername(userDTO.getUsername());
@@ -171,10 +171,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public void createUser(SignupRequest signupRequest) {
         if (userRepository.existsByEmail(signupRequest.getEmail())) {
-            throw new AppException("Email is already taken!", HttpStatus.BAD_REQUEST);
+            throw new AppException("Email đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
         if (userRepository.existsByPhone(signupRequest.getPhone())) {
-            throw new AppException("Phone is already taken!", HttpStatus.BAD_REQUEST);
+            throw new AppException("Số điện thoại đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
         User user = new User();
         user.setCode(randomCode());

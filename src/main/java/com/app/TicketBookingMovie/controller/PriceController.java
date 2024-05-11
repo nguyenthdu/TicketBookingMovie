@@ -54,7 +54,6 @@ public class PriceController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PriceHeaderDto> getSalePrice(@PathVariable("id") Long id) {
         return ResponseEntity.ok(priceHeaderService.getPriceHeaderById(id));
     }
@@ -83,7 +82,6 @@ public class PriceController {
 
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PriceHeaderDto>> getAllSalePrice(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
@@ -116,7 +114,6 @@ public class PriceController {
     }
 
     @GetMapping("/detail/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PriceDetailDto> getSalePriceDetail(@PathVariable("id") Long id) {
         return ResponseEntity.ok(priceDetailService.getPriceDetail(id));
     }
@@ -140,7 +137,6 @@ public class PriceController {
     }
 
     @GetMapping("/detail")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PriceDetailDto>> getAllSalePriceDetail(
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int size,

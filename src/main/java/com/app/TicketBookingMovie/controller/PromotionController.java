@@ -53,7 +53,6 @@ public class PromotionController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionDto> getPromotionById(@PathVariable Long id) {
         return ResponseEntity.ok(promotionService.getPromotionById(id));
     }
@@ -90,7 +89,6 @@ public class PromotionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PromotionDto>> getAllPromotion(
             @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
             @RequestParam(value = "size", required = false, defaultValue = "10") Integer size,
@@ -120,13 +118,11 @@ public class PromotionController {
 
 
     @GetMapping("/line/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> getPromotionLineById(@PathVariable Long id) {
         return ResponseEntity.ok(promotionLineService.getPromotionLineById(id));
     }
 
     @GetMapping("/line")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<PromotionLineDto>> getAllPromotionLineFromPromotionId(
             @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
             @RequestParam(value = "size", required = false, defaultValue = "10") Integer size,
@@ -182,19 +178,16 @@ public class PromotionController {
 
     // lấy danh sách promtion line đang hoạt động phù hợp với giá trị hóa đơn
     @GetMapping("/line_discount/active")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> showPromotionLineDiscountMatchInvoice(@RequestParam("totalPrice") BigDecimal totalPrice) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineDiscountMatchInvoice(totalPrice));
     }
 
     @GetMapping("/line_food/active")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> showPromotionLineFoodMatchInvoice(@RequestParam("foodId") List<Long> foodId, @RequestParam("cinemaId")Long cinemaId) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineFoodMatchInvoice(foodId, cinemaId));
     }
 
     @GetMapping("/line_ticket/active")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PromotionLineDto> showPromotionLineTicketMatchInvoice(@RequestParam("seatId") List<Long> seatId
             , @RequestParam("showTimeId") Long showTimeId) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineTicketMatchInvoice(seatId, showTimeId));

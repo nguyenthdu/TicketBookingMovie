@@ -51,13 +51,11 @@ public class CinemaController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<CinemaDto> getCinemaById(@PathVariable Long id) {
         return ResponseEntity.ok(cinemaService.getCinemaById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<CinemaDto>> getAllCinema(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,

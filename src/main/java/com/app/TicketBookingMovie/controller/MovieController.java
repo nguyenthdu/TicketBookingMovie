@@ -65,7 +65,6 @@ public class MovieController {
 
     //fidn by id
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MovieDto> getMovieById(@PathVariable("id") Long id) {
         MovieDto movieDTO = movieService.getMovieById(id);
         return ResponseEntity.ok(movieDTO);
@@ -126,7 +125,6 @@ public class MovieController {
 
     }
     @GetMapping("/upcoming")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
 
             @RequestParam(defaultValue = "0") Integer page,
@@ -139,7 +137,6 @@ public class MovieController {
         return ResponseEntity.ok(pageResponse);
     }
     @GetMapping("/showing")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<MovieDto>> getMoviesShowing(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -152,7 +149,6 @@ public class MovieController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<MovieDto>> getAllMovies(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,

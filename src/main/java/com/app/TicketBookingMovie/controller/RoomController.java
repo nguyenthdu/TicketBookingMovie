@@ -46,7 +46,6 @@ public class RoomController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<RoomDto> getRoomById(@PathVariable Long id) {
         return new ResponseEntity<>(roomService.getRoomById(id), HttpStatus.OK);
     }
@@ -63,7 +62,6 @@ public class RoomController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<RoomDto>> getAllRoomsPage(@RequestParam(defaultValue = "0") Integer page,
                                                                  @RequestParam(defaultValue = "10") Integer size,
                                                                  @RequestParam(required = false) String code,

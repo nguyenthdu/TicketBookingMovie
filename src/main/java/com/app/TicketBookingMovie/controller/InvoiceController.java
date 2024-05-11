@@ -39,6 +39,7 @@ public class InvoiceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MessageResponse> createInvoice(@RequestParam("showTimeId") Long showTimeId,
                                                          @RequestParam("seatIds") Set<Long> seatIds,
                                                          @RequestParam(value = "foodIds", required = false) List<Long> foodIds,
@@ -55,6 +56,7 @@ public class InvoiceController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<InvoiceDto> getInvoiceById(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(invoiceService.getInvoiceById(id));
@@ -65,6 +67,7 @@ public class InvoiceController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<InvoiceDto>> getAllInvoices(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
@@ -89,6 +92,7 @@ public class InvoiceController {
     }
 
     @GetMapping("detail/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<ResponeInvoiceDetail> getInvoiceDetails(@PathVariable Long id) {
         // Gọi tất cả các phương thức và tạo đối tượng InvoiceDetailsDto
         ResponeInvoiceDetail invoiceDetails = new ResponeInvoiceDetail();
@@ -104,6 +108,7 @@ public class InvoiceController {
     }
 
     @PostMapping("cancel")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<MessageResponse> cancelInvoice(@RequestParam("invoiceId") Long invoiceId,
                                                          @RequestParam("reason") String reason) {
         ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
@@ -119,6 +124,7 @@ public class InvoiceController {
     }
 
     @GetMapping("return")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<ReturnInvoiceDto>> getAllReturnInvoices(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
@@ -138,6 +144,7 @@ public class InvoiceController {
     }
 
     @GetMapping("return/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<ReturnInvoiceDto> getReturnInvoiceById(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(returnInvoviceService.getReturnInvoice(id));

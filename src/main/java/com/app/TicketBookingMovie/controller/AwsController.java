@@ -33,6 +33,7 @@ public class AwsController {
     }
 
     @DeleteMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteImage(
             @RequestParam("imageUrl") String imageUrl
     ) {

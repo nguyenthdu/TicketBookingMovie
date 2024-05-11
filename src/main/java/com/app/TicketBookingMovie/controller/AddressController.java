@@ -42,7 +42,6 @@ public class AddressController {
     }
 
     @GetMapping("{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<AddressDto> getAddressById(@PathVariable Long id) {
         return ResponseEntity.ok(addressService.getAddressById(id));
     }

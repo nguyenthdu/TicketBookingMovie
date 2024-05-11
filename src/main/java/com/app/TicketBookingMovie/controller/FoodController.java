@@ -49,7 +49,6 @@ public class FoodController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<FoodDto> getFoodById(@PathVariable Long id) {
         return ResponseEntity.ok(foodService.getFoodById(id));
     }
@@ -95,7 +94,6 @@ public class FoodController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
     public ResponseEntity<PageResponse<FoodDto>> getAllFood(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,

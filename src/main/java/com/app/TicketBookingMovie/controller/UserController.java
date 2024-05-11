@@ -88,6 +88,49 @@ public class UserController {
         }
 
     }
+    //đăng nhập chỉ user có quyển mor hoặc admin mới có thể đăng nhập
+    @PostMapping("/signinWeb")
+    public ResponseEntity<?> authenticateUserWeb(@Valid @RequestParam("email") String email,
+                                                 @RequestParam("password") String password) {
+        SigninRequest loginRequest = new SigninRequest();
+        loginRequest.setEmail(email);
+        loginRequest.setPassword(password);
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
+
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            List<String> roles = userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList());
+            if (!userDetails.isEnabled()) {
+                return ResponseEntity.badRequest().build();
+            }
+            if (!roles.contains("ROLE_ADMIN") && !roles.contains("ROLE_MODERATOR")) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Bạn không có quyền truy cập vào trang này!!!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+            }
+            return ResponseEntity.ok(new JwtResponse(jwt,
+                    userDetails.getId(),
+                    userDetails.getCode(),
+                    userDetails.getUsername(),
+                    userDetails.getEmail(),
+                    roles,
+                    userDetails.getBirthday(),
+                    userDetails.getPhone(),
+                    userDetails.isEnabled(),
+                    userDetails.isGender(),
+                    userDetails.getCreatedDate()));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Email hoặc mật khẩu không đúng!!!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+        } catch (DisabledException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Tài khoản này chưa được kích hoạt!"
+                    , HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
+        }
+
+    }
 
     //TODO: get all users
     @GetMapping
