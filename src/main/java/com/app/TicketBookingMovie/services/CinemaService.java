@@ -15,4 +15,6 @@ public interface CinemaService {
     void countTotalRooms(Long id, int number);
 
     long countAllCinemas(String code, String name, String street,String ward, String district, String city, String nation);
+
+    List<Cinema> findAll();
 }

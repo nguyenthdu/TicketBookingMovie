@@ -27,7 +27,7 @@ public class CategoryFoodController {
         categoryFoodDto.setName(name);
         try {
             categoryFoodService.createCategoryFood(categoryFoodDto);
-            return ResponseEntity.ok(new MessageResponse("Category Food created successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo loại đồ ăn thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -47,7 +47,7 @@ public class CategoryFoodController {
         categoryFoodDto.setName(name);
         try {
             categoryFoodService.updateCategoryFood(categoryFoodDto);
-            return ResponseEntity.ok(new MessageResponse("Category Food updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật loại đồ ăn thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -57,7 +57,7 @@ public class CategoryFoodController {
     public ResponseEntity<MessageResponse> deleteCategoryFood(@PathVariable Long id) {
         try {
             categoryFoodService.deleteCategoryFoodById(id);
-            return ResponseEntity.ok(new MessageResponse("Category Food deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Xóa loại đồ ăn thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

@@ -30,25 +30,21 @@ public class StatisticalServiceImpl implements StatisticalService {
     private final CinemaService cinemaService;
     private final MovieService movieService;
     private final InvoiceRepository invoiceRepository;
-    private final PromotionLineService promotionLineService;
     private final ReturnInvoiceRepository returnInvoiceRepository;
     private final PromotionLineRepository promotionLineRepository;
     private final FoodService foodService;
-    private final TicketService ticketService;
     private final TypeSeatService typeSeatService;
 
 
-    public StatisticalServiceImpl(InvoiceService invoiceService, UserService userService, CinemaService cinemaService, MovieService movieService, InvoiceRepository invoiceRepository, PromotionLineService promotionLineService, ReturnInvoiceRepository returnInvoiceRepository, PromotionLineRepository promotionLineRepository, FoodService foodService, TicketService ticketService, TypeSeatService typeSeatService) {
+    public StatisticalServiceImpl(InvoiceService invoiceService, UserService userService, CinemaService cinemaService, MovieService movieService, InvoiceRepository invoiceRepository, ReturnInvoiceRepository returnInvoiceRepository, PromotionLineRepository promotionLineRepository, FoodService foodService, TypeSeatService typeSeatService) {
         this.invoiceService = invoiceService;
         this.userService = userService;
         this.cinemaService = cinemaService;
         this.movieService = movieService;
         this.invoiceRepository = invoiceRepository;
-        this.promotionLineService = promotionLineService;
         this.returnInvoiceRepository = returnInvoiceRepository;
         this.promotionLineRepository = promotionLineRepository;
         this.foodService = foodService;
-        this.ticketService = ticketService;
         this.typeSeatService = typeSeatService;
     }
 
@@ -102,6 +98,20 @@ public class StatisticalServiceImpl implements StatisticalService {
         return responseRevenueByCinemas.subList(fromIndex, toIndex);
     }
 
+    @Override
+    public long countRevenueByCinema(String cinemaCode, LocalDate startDate, LocalDate endDate) {
+       //lấy danh sách những rạp có hóa đơn và nhóm theo rạp
+        List<Cinema> cinemas = invoiceRepository.findAll().stream().filter(Invoice::isStatus).map(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema()).collect(Collectors.groupingBy(Cinema::getId)).entrySet().stream().map(entry -> cinemaService.findById(entry.getKey())).collect(Collectors.toList());
+
+        if (!cinemaCode.isEmpty() && !cinemaCode.isBlank() && startDate != null && endDate != null) {
+            cinemas = cinemas.stream().filter(cinema -> cinema.getCode().equals(cinemaCode)).collect(Collectors.toList());
+        } else if (startDate != null && endDate != null) {
+            cinemas = cinemas.stream().collect(Collectors.toList());
+        }
+        return cinemas.size();
+
+    }
+
     //TODO: Thống kê doanh thu theo phim
     @Override
     public List<ResponseRevenueByMovie> getRevenueByMovie(Integer page, Integer size, String movieCode, LocalDate startDate, LocalDate endDate, String sortType, Sort.Direction sortDirection) {
@@ -149,6 +159,17 @@ public class StatisticalServiceImpl implements StatisticalService {
         int toIndex = Math.min(fromIndex + size, responseRevenueByMovies.size());
         return responseRevenueByMovies.subList(fromIndex, toIndex);
 
+    }
+
+    @Override
+    public long countRevenueByMovie(String movieCode, LocalDate startDate, LocalDate endDate) {
+        List<Movie> pageInvoices = invoiceRepository.findAll().stream().filter(Invoice::isStatus).map(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie()).collect(Collectors.groupingBy(Movie::getId)).entrySet().stream().map(entry -> movieService.findById(entry.getKey())).collect(Collectors.toList());
+        if (!movieCode.isEmpty() && !movieCode.isBlank() && startDate != null && endDate != null) {
+            pageInvoices = pageInvoices.stream().filter(movie -> movie.getCode().equals(movieCode)).collect(Collectors.toList());
+        } else if (startDate != null && endDate != null) {
+            pageInvoices = pageInvoices.stream().collect(Collectors.toList());
+        }
+        return pageInvoices.size();
     }
 
     @Override
@@ -238,27 +259,50 @@ public class StatisticalServiceImpl implements StatisticalService {
     }
 
     @Override
+    public long countRevenueByUser(String userCode, String email, String phone, LocalDate startDate, LocalDate endDate) {
+        List<User> pageInvoices = invoiceRepository.findAll().stream().filter(Invoice::isStatus).map(invoice -> invoice.getUser()).collect(Collectors.groupingBy(User::getId)).entrySet().stream().map(entry -> userService.findById(entry.getKey())).collect(Collectors.toList());
+        if (!userCode.isEmpty() && !userCode.isBlank() && startDate != null && endDate != null) {
+            pageInvoices = pageInvoices.stream().filter(user -> user.getCode().equals(userCode)).collect(Collectors.toList());
+        } else if (!email.isEmpty() && !email.isBlank() && startDate != null && endDate != null) {
+            pageInvoices = pageInvoices.stream().filter(user -> user.getEmail().equals(email)).collect(Collectors.toList());
+        } else if (!phone.isEmpty() && !phone.isBlank() && startDate != null && endDate != null) {
+            pageInvoices = pageInvoices.stream().filter(user -> user.getPhone().equals(phone)).collect(Collectors.toList());
+        } else if (startDate != null && endDate != null) {
+            pageInvoices = pageInvoices.stream().collect(Collectors.toList());
+        }
+        return pageInvoices.size();
+    }
+    @Override
     public List<ResponseRevenueByUser> getRevenueByStaff(Integer page, Integer size, String userCode, String email, String phone, LocalDate startDate, LocalDate endDate, String sortType, Sort.Direction sortDirection) {
-        List<Invoice> pageInvoices = invoiceRepository.findAll().stream().filter(Invoice::isStatus).collect(Collectors.toList());
+        List<Invoice> pageInvoices = invoiceRepository.findAll().stream()
+                .filter(Invoice::isStatus)
+                .collect(Collectors.toList());
         // Lựa chọn phương thức thống kê dựa trên các điều kiện đầu vào
         if (!userCode.isEmpty() && !userCode.isBlank() && startDate != null && endDate != null) {
-            pageInvoices = pageInvoices.stream().filter(invoice -> invoice.getStaff().getCode().equals(userCode)
-                    && invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1))
-            ).collect(Collectors.toList());
+            pageInvoices = pageInvoices.stream()
+                    .filter(invoice -> invoice.getStaff() != null && invoice.getStaff().getCode().equals(userCode)
+                            && invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1)))
+                    .collect(Collectors.toList());
         } else if (!email.isEmpty() && !email.isBlank() && startDate != null && endDate != null) {
-            pageInvoices = pageInvoices.stream().filter(invoice -> invoice.getStaff().getEmail().equals(email)
-                    && invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1))
-            ).collect(Collectors.toList());
+            pageInvoices = pageInvoices.stream()
+                    .filter(invoice -> invoice.getStaff() != null && invoice.getStaff().getEmail().equals(email)
+                            && invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1)))
+                    .collect(Collectors.toList());
         } else if (!phone.isEmpty() && !phone.isBlank() && startDate != null && endDate != null) {
-            pageInvoices = pageInvoices.stream().filter(invoice -> invoice.getStaff().getPhone().equals(phone)
-                    && invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1))
-            ).collect(Collectors.toList());
+            pageInvoices = pageInvoices.stream()
+                    .filter(invoice -> invoice.getStaff() != null && invoice.getStaff().getPhone().equals(phone)
+                            && invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1)))
+                    .collect(Collectors.toList());
         } else if (startDate != null && endDate != null) {
-            pageInvoices = pageInvoices.stream().filter(invoice -> invoice.getCreatedDate().isAfter(startDate.atStartOfDay())
-                    && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
+            pageInvoices = pageInvoices.stream()
+                    .filter(invoice -> invoice.getStaff() != null
+                            && invoice.getCreatedDate().isAfter(startDate.atStartOfDay())
+                            && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1)))
+                    .collect(Collectors.toList());
         }
         // Tính toán tổng số lượng hóa đơn, tổng số lượng vé, tổng giảm giá và tổng doanh thu
-        List<ResponseRevenueByUser> responseRevenueByUsers = pageInvoices.stream().filter(invoice -> invoice.getStaff() != null)
+        List<ResponseRevenueByUser> responseRevenueByUsers = pageInvoices.stream()
+                .filter(invoice -> invoice.getStaff() != null)
                 .collect(Collectors.groupingBy(invoice -> invoice.getStaff().getId()))
                 .entrySet().stream()
                 .map(entry -> {
@@ -270,8 +314,6 @@ public class StatisticalServiceImpl implements StatisticalService {
                     responseRevenueByUser.setPhone(user.getPhone());
                     responseRevenueByUser.setTotalInvoice(entry.getValue().size()); // Số lượng hóa đơn là số lượng hóa đơn của nhân viên
                     responseRevenueByUser.setTotalTicket(entry.getValue().stream().mapToInt(invoice -> invoice.getInvoiceTicketDetails().size()).sum()); // Tổng số vé là tổng số vé của tất cả các hóa đơn của nhân viên
-//                    BigDecimal totalDiscount = entry.getValue().stream().map(Invoice::getPromotionLines).reduce(BigDecimal.ZERO, BigDecimal::add); // Tính tổng giảm giá từ tổng giá trị của các hóa đơn của nhân viên
-//                    responseRevenueByUser.setTotalDiscount(totalDiscount);
                     BigDecimal totalRevenue = entry.getValue().stream().map(Invoice::getTotalPrice).reduce(BigDecimal.ZERO, BigDecimal::add); // Tính tổng doanh thu từ tổng giá trị của các hóa đơn của nhân viên
                     responseRevenueByUser.setTotalRevenue(totalRevenue);
                     return responseRevenueByUser;
@@ -293,8 +335,41 @@ public class StatisticalServiceImpl implements StatisticalService {
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, responseRevenueByUsers.size());
         return responseRevenueByUsers.subList(fromIndex, toIndex);
-
     }
+
+    @Override
+    public long countRevenueByStaff(String userCode, String email, String phone, LocalDate startDate, LocalDate endDate) {
+        List<User> pageInvoices = invoiceRepository.findAll().stream()
+                .filter(Invoice::isStatus)
+                .map(Invoice::getStaff)
+                .filter(user -> user != null && user.getId() != null) // Kiểm tra user và id không null
+                .collect(Collectors.groupingBy(User::getId)).entrySet().stream().map(entry -> userService.findById(entry.getKey())).collect(Collectors.toList());
+
+        if ((userCode != null && !userCode.isEmpty() && startDate != null && endDate != null) ||
+                (email != null && !email.isEmpty() && startDate != null && endDate != null) ||
+                (phone != null && !phone.isEmpty() && startDate != null && endDate != null)) {
+
+            return pageInvoices.stream()
+                    .filter(user -> {
+                        if (userCode != null && !userCode.isEmpty()) {
+                            return user.getCode().equals(userCode);
+                        } else if (email != null && !email.isEmpty()) {
+                            return user.getEmail().equals(email);
+                        } else {
+                            return user.getPhone().equals(phone);
+                        }
+                    })
+                    .count();
+
+        } else if (startDate != null && endDate != null) {
+            return pageInvoices.size();
+        }
+
+        return 0;
+    }
+
+
+
 
     @Override
     public List<ReturnInvoiceDto> getReturnInvoice(Integer page, Integer size, String code, String userCode, LocalDate startDate, LocalDate endDate, String sortType, Sort.Direction sortDirection) {
@@ -346,6 +421,24 @@ public class StatisticalServiceImpl implements StatisticalService {
         int toIndex = Math.min(fromIndex + size, returnInvoiceDtos.size());
         return returnInvoiceDtos.subList(fromIndex, toIndex);
 
+    }
+
+    @Override
+    public long countReturnInvoice(String code, String userCode, LocalDate startDate, LocalDate endDate) {
+        List<ReturnInvoice> pageReturnInvoice = returnInvoiceRepository.findAll();
+        if (!code.isEmpty() && !code.isBlank() && startDate != null && endDate != null) {
+            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getCode().equals(code)
+                    && returnInvoice.getCancelDate().isAfter(startDate.atStartOfDay()) && returnInvoice.getCancelDate().isBefore(endDate.atStartOfDay().plusDays(1))
+            ).collect(Collectors.toList());
+        } else if (!userCode.isEmpty() && !userCode.isBlank() && startDate != null && endDate != null) {
+            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getInvoice().getUser().getCode().equals(userCode)
+                    && returnInvoice.getCancelDate().isAfter(startDate.atStartOfDay()) && returnInvoice.getCancelDate().isBefore(endDate.atStartOfDay().plusDays(1))
+            ).collect(Collectors.toList());
+        } else if (startDate != null && endDate != null) {
+            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getCancelDate().isAfter(startDate.atStartOfDay())
+                    && returnInvoice.getCancelDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
+        }
+        return pageReturnInvoice.size();
     }
 
     @Override
@@ -417,6 +510,20 @@ public class StatisticalServiceImpl implements StatisticalService {
         int toIndex = Math.min(fromIndex + size, responseRevenuePromotionLines.size());
         return responseRevenuePromotionLines.subList(fromIndex, toIndex);
 
+    }
+
+    @Override
+    public long countRevenueByPromotionLine(String promotionLineCode, LocalDate startDate, LocalDate endDate) {
+        List<PromotionLine> pagePromotionLines = promotionLineRepository.findAll();
+        if (!promotionLineCode.isEmpty() && !promotionLineCode.isBlank() && startDate != null && endDate != null) {
+            pagePromotionLines = pagePromotionLines.stream().filter(promotionLine -> promotionLine.getCode().equals(promotionLineCode)
+                    && promotionLine.getStartDate().isAfter(startDate.atStartOfDay()) && promotionLine.getStartDate().isBefore(endDate.atStartOfDay().plusDays(1))
+            ).collect(Collectors.toList());
+        } else if (startDate != null && endDate != null) {
+            pagePromotionLines = pagePromotionLines.stream().filter(promotionLine -> promotionLine.getStartDate().isAfter(startDate.atStartOfDay())
+                    && promotionLine.getStartDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
+        }
+        return pagePromotionLines.size();
     }
 
 }

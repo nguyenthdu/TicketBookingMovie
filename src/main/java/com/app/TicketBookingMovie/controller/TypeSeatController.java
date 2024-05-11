@@ -41,7 +41,7 @@ public class TypeSeatController {
 //        typeSeatDto.setPrice(price);
         try {
             typeSeatService.updateTypeSeatById(typeSeatDto);
-            return ResponseEntity.ok(new MessageResponse("Update type seat successfully with: " + typeSeatDto.getId(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật loại ghế thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.ok(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

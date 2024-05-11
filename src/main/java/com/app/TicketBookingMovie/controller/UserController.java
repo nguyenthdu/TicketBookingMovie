@@ -21,6 +21,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -62,7 +63,7 @@ public class UserController {
 
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             List<String> roles = userDetails.getAuthorities().stream()
-                    .map(item -> item.getAuthority())
+                    .map(GrantedAuthority::getAuthority)
                     .collect(Collectors.toList());
             if (!userDetails.isEnabled()) {
                 return ResponseEntity.badRequest().build();
@@ -81,7 +82,7 @@ public class UserController {
         } catch (BadCredentialsException e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Email hoặc mật khẩu không đúng!!!", HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         } catch (DisabledException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Tài khoản này đã bị xóa!!!"
+            return ResponseEntity.badRequest().body(new MessageResponse("Tài khoản này chưa được kích hoạt!"
                     , HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
 
@@ -126,7 +127,7 @@ public class UserController {
         signUpRequest.setPassword(password);
         try {
             userService.createMor(signUpRequest);
-            return ResponseEntity.ok(new MessageResponse("User registered successfully!", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo nhân viên thành công!", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.status(e.getStatus()).body(new MessageResponse(e.getMessage(), e.getStatus(), Instant.now().toString()));
         }
@@ -152,7 +153,7 @@ public class UserController {
 
         try {
             userService.createUser(signUpRequest);
-            return ResponseEntity.ok(new MessageResponse("Đăng ký thành công. Vui lòng vào gmail để xác nhận email.", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Đăng ký thành công. Vui lòng vào gmail để xác thực tài khoản sau đó mới có thể đăng nhập.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.ok(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

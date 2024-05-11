@@ -31,7 +31,7 @@ public class ShowTimeController {
     public ResponseEntity<MessageResponse> createShowTime(@RequestBody Set<ShowTimeDto> showTimeDtos) {
         try {
             showTimeService.createShowTime(showTimeDtos);
-            return ResponseEntity.ok(new MessageResponse("Show time created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo lịch chiếu thành công.", HttpStatus.CREATED.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -78,7 +78,7 @@ public class ShowTimeController {
 
         try {
             showTimeService.updateShowTime(showTimeDto);
-            return ResponseEntity.ok(new MessageResponse("Show time updated successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật lịch chiếu thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -88,7 +88,7 @@ public class ShowTimeController {
     public ResponseEntity<MessageResponse> deleteShowTime(@PathVariable Long id) {
         try {
             showTimeService.deleteShowTime(id);
-            return ResponseEntity.ok(new MessageResponse("Show time deleted successfully", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Xóa lịch chiếu thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

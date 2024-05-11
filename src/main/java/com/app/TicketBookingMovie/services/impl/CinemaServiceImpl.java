@@ -162,5 +162,10 @@ public class CinemaServiceImpl implements CinemaService {
         }
     }
 
+    @Override
+    public List<Cinema> findAll() {
+        return cinemaRepository.findAll();
+    }
+
 
 }

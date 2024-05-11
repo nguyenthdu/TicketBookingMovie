@@ -40,7 +40,7 @@ public class FoodController {
         foodDto.setStatus(status);
         try {
             foodService.createFood(foodDto);
-            return ResponseEntity.ok(new MessageResponse("Thêm thành công" + name, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo đồ ăn thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

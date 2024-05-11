@@ -35,7 +35,7 @@ public class StatisticalController {
                                                                                     @RequestParam(required = false) String sortType) {
         PageResponse<ResponseRevenueByCinema> pageResponse = new PageResponse<>();
         pageResponse.setContent(statisticalService.getRevenueByCinema(page, size, cinemaCode, startDate, endDate, sortType, sortDirection));
-        pageResponse.setTotalElements(pageResponse.getContent().size());
+        pageResponse.setTotalElements(statisticalService.countRevenueByCinema(cinemaCode, startDate, endDate));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -53,7 +53,7 @@ public class StatisticalController {
 
         PageResponse<ResponseRevenueByMovie> pageResponse = new PageResponse<>();
         pageResponse.setContent(statisticalService.getRevenueByMovie(page, size, movieCode, startDate, endDate, sortType, sortDirection));
-        pageResponse.setTotalElements(pageResponse.getContent().size());
+        pageResponse.setTotalElements(statisticalService.countRevenueByMovie(movieCode, startDate, endDate));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -74,7 +74,7 @@ public class StatisticalController {
 
         PageResponse<ResponseRevenueByUser> pageResponse = new PageResponse<>();
         pageResponse.setContent(statisticalService.getRevenueByUser(page, size, userCode, email, phone, startDate, endDate, sortType, sortDirection));
-        pageResponse.setTotalElements(pageResponse.getContent().size());
+        pageResponse.setTotalElements(statisticalService.countRevenueByUser(userCode, email, phone, startDate, endDate));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -94,7 +94,7 @@ public class StatisticalController {
 
         PageResponse<ResponseRevenueByUser> pageResponse = new PageResponse<>();
         pageResponse.setContent(statisticalService.getRevenueByStaff(page, size, userCode, email, phone, startDate, endDate, sortType, sortDirection));
-        pageResponse.setTotalElements(pageResponse.getContent().size());
+        pageResponse.setTotalElements(statisticalService.countRevenueByStaff(userCode, email, phone, startDate, endDate));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -113,7 +113,7 @@ public class StatisticalController {
 
         PageResponse<ReturnInvoiceDto> pageResponse = new PageResponse<>();
         pageResponse.setContent(statisticalService.getReturnInvoice(page, size, code, userCode, startDate, endDate, sortType, sortDirection));
-        pageResponse.setTotalElements(pageResponse.getContent().size());
+        pageResponse.setTotalElements(statisticalService.countReturnInvoice(code, userCode, startDate, endDate));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -130,7 +130,7 @@ public class StatisticalController {
 
         PageResponse<ResponseRevenuePromotionLine> pageResponse = new PageResponse<>();
         pageResponse.setContent(statisticalService.getRevenueByPromotionLine(page, size, promotionLineCode, startDate, endDate, sortType, sortDirection));
-        pageResponse.setTotalElements(pageResponse.getContent().size());
+        pageResponse.setTotalElements(statisticalService.countRevenueByPromotionLine(promotionLineCode, startDate, endDate));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);

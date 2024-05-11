@@ -26,7 +26,7 @@ public class GenreController {
         genreDTO.setName(name);
         try {
             genreService.createGenre(genreDTO);
-            return ResponseEntity.ok().body(new MessageResponse("Genre created successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Tạo thể loại phim thành công.", HttpStatus.CREATED.value(), Instant.now().toString()));
         }catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -45,7 +45,7 @@ public class GenreController {
         genreDTO.setName(name);
         try {
             genreService.updateGenreById(genreDTO);
-            return ResponseEntity.ok().body(new MessageResponse("Genre updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Cập nhật thể lọai phim thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -55,7 +55,7 @@ public class GenreController {
     public ResponseEntity<MessageResponse> deleteGenreById(@PathVariable Long id) {
         try {
             genreService.deleteGenreById(id);
-            return ResponseEntity.ok().body(new MessageResponse("Genre deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Xoá thể loại phim thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

@@ -42,7 +42,7 @@ public class CinemaController {
         cinemaDto.setAddress(address);
         try{
             cinemaService.createCinema(cinemaDto);
-            return  ResponseEntity.ok(new MessageResponse("Create cinema successfully", HttpStatus.CREATED.value(), Instant.now().toString()));
+            return  ResponseEntity.ok(new MessageResponse("Tạo rạp thành công.", HttpStatus.CREATED.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.ok(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -97,7 +97,7 @@ public class CinemaController {
         cinemaDto.setAddress(address);
         try {
             cinemaService.updateCinema(cinemaDto);
-            return ResponseEntity.ok(new MessageResponse("Update cinema successfully with id:" + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật rạp thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.ok(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -107,7 +107,7 @@ public class CinemaController {
     public ResponseEntity<MessageResponse> deleteCinemaById(@PathVariable Long id) {
         try {
             cinemaService.deleteCinemaById(id);
-            return ResponseEntity.ok(new MessageResponse("Delete cinema successfully with id:" + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Xóa rạp thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.ok(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

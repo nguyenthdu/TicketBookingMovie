@@ -73,7 +73,7 @@ public class MovieController {
         movieDTO.setStatus(status);
         try {
             movieService.createMovie(movieDTO);
-            return ResponseEntity.ok().body(new MessageResponse("Movie created successfully with movie name: " + name, HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Tạo phim thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
@@ -120,7 +120,7 @@ public class MovieController {
         movieDTO.setStatus(status);
         try {
             movieService.updateMovieById(movieDTO);
-            return ResponseEntity.ok().body(new MessageResponse("Movie updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Cập nhật phim thành công.", HttpStatus.OK.value(), Instant.now().toString()));
 
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
@@ -132,7 +132,7 @@ public class MovieController {
     public ResponseEntity<MessageResponse> deleteMovie(@PathVariable("id") Long id) {
         try {
             movieService.deleteMovieById(id);
-            return ResponseEntity.ok().body(new MessageResponse("Movie deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Xóa phim thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }

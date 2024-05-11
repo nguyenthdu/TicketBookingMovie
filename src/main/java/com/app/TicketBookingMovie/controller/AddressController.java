@@ -33,7 +33,7 @@ public class AddressController {
         addressDto.setNation(nation);
         try {
             addressService.createAddress(addressDto);
-            return ResponseEntity.ok(new MessageResponse("Address created successfully!" + addressDto.getId(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo địa chỉ thành công." + addressDto.getId(), HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
             return ResponseEntity.ok(new MessageResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }

@@ -25,7 +25,7 @@ public class RoomController {
     public ResponseEntity<MessageResponse> createRoom(@RequestBody RoomDto roomDto) {
         try {
             roomService.createRoom(roomDto);
-            return ResponseEntity.ok().body(new MessageResponse("Room created successfully: " + roomDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Tạo phòng thành công.: " + roomDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
@@ -36,7 +36,7 @@ public class RoomController {
         roomDto.setId(id);
         try {
             roomService.updateRoom(roomDto);
-            return ResponseEntity.ok().body(new MessageResponse("Room updated successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Cập nhật phòng thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
@@ -51,7 +51,7 @@ public class RoomController {
     public ResponseEntity<MessageResponse> deleteRoom(@PathVariable Long id) {
         try {
             roomService.deleteRoom(id);
-            return ResponseEntity.ok().body(new MessageResponse("Room deleted successfully with id: " + id, HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok().body(new MessageResponse("Xóa phòng thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), HttpStatus.BAD_REQUEST.value(), Instant.now().toString()));
         }
