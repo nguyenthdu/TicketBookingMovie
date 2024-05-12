@@ -1,11 +1,9 @@
-FROM maven:3.8.5-openjdk-17 AS build
-WORKDIR /TicketMookingMovie
-COPY pom.xml .
-RUN mvn dependency:go-offline
+FROM maven:3.9.4-eclipse-temurin-17-alpine as build
+WORKDIR /app
+COPY . .
+RUN mvn clean package -Dmaven.test.failure.ignore=true
 
-COPY src /TicketMookingMovie/src
-RUN mvn package -DskipTests
 
-FROM openjdk:17-jdk
-COPY --from=build /TicketMookingMovie/out/artifacts/TicketMookingMovie.jar /TicketMookingMovie.jar
-CMD ["java", "-jar", "/TicketMookingMovie.jar"]
+FROM openjdk:17-jdk-alpine
+COPY --from=build /app/target/TicketBookingMovie-0.0.1-SNAPSHOT.jar app.jar
+ENTRYPOINT [ "java", "-jar" , "app.jar" ]
