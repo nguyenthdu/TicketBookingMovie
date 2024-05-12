@@ -6,6 +6,8 @@ import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.PageResponse;
 import com.app.TicketBookingMovie.payload.response.MessageResponse;
 import com.app.TicketBookingMovie.services.MovieService;
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,12 +20,11 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("/api/movie")
+@AllArgsConstructor
 public class MovieController {
+    @Autowired
     private final MovieService movieService;
 
-    public MovieController(MovieService movieService) {
-        this.movieService = movieService;
-    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -62,13 +63,12 @@ public class MovieController {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
-
-    //fidn by id
     @GetMapping("/{id}")
     public ResponseEntity<MovieDto> getMovieById(@PathVariable("id") Long id) {
         MovieDto movieDTO = movieService.getMovieById(id);
         return ResponseEntity.ok(movieDTO);
     }
+
 
     //update
     @PutMapping
@@ -124,6 +124,25 @@ public class MovieController {
         }
 
     }
+
+
+    @GetMapping
+    public ResponseEntity<PageResponse<MovieDto>> getAllMovies(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long genreId,
+            @RequestParam(required = false) Long cinemaId,
+            @RequestParam(required = false) String typeShow){
+        PageResponse<MovieDto> pageResponse = new PageResponse<>();
+        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId, cinemaId,typeShow));
+        pageResponse.setTotalElements(movieService.countAllMovies(code, name, genreId, cinemaId,typeShow));
+        pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
+        pageResponse.setCurrentPage(page);
+        pageResponse.setPageSize(size);
+        return ResponseEntity.ok(pageResponse);
+    }
     @GetMapping("/upcoming")
     public ResponseEntity<PageResponse<MovieDto>> getMoviesNotShowed(
 
@@ -144,24 +163,6 @@ public class MovieController {
         pageResponse.setContent(movieService.getMoviesShowing(page, size));
         pageResponse.setTotalElements(movieService.getMoviesShowing(page, size).size());
         pageResponse.setTotalPages(page);
-        pageResponse.setPageSize(size);
-        return ResponseEntity.ok(pageResponse);
-    }
-
-    @GetMapping
-    public ResponseEntity<PageResponse<MovieDto>> getAllMovies(
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long genreId,
-            @RequestParam(required = false) Long cinemaId,
-            @RequestParam(required = false) String typeShow){
-        PageResponse<MovieDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(movieService.getAllMovies(page, size, code, name, genreId, cinemaId,typeShow));
-        pageResponse.setTotalElements(movieService.countAllMovies(code, name, genreId, cinemaId,typeShow));
-        pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
-        pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
         return ResponseEntity.ok(pageResponse);
     }

@@ -13,7 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "address")
-public class Address {
+public class Address   {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

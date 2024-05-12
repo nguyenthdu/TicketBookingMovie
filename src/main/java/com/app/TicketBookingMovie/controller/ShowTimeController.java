@@ -64,11 +64,11 @@ public class ShowTimeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateShowTime(
             @RequestParam("id") Long id,
-            @RequestParam("showDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate showDate,
-            @RequestParam("showTime") @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime showTime,
-            @RequestParam("movieId") Long movieId,
-            @RequestParam("roomId") Long roomId,
-            @RequestParam("status") boolean status) {
+            @RequestParam(value = "showDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate showDate,
+            @RequestParam(value = "showTime",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime showTime,
+            @RequestParam(value = "movieId",required = false) Long movieId,
+            @RequestParam(value = "roomId",required = false) Long roomId,
+            @RequestParam(value = "status",required = false) boolean status) {
         ShowTimeDto showTimeDto = new ShowTimeDto();
         showTimeDto.setId(id);
         showTimeDto.setShowDate(showDate);

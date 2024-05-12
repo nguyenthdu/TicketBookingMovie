@@ -15,6 +15,6 @@ public interface CategoryFoodService {
 
 
     void deleteCategoryFoodById(Long id);
-    List<CategoryFoodDto> getAllCategoryFood(int page, int size,String code, String name);
+    List<CategoryFoodDto> getAllCategoryFood(int page, int size,String code, String name) ;
     long countAllCategoryFood(String code, String name);
 }

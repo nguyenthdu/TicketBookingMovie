@@ -10,11 +10,14 @@ import com.app.TicketBookingMovie.models.enums.ETypeDiscount;
 import com.app.TicketBookingMovie.models.enums.ETypePromotion;
 import com.app.TicketBookingMovie.repository.InvoiceRepository;
 import com.app.TicketBookingMovie.services.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -27,9 +30,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
+@AllArgsConstructor
 public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
@@ -39,25 +44,23 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final PriceDetailService priceDetailService;
     private final PromotionLineService promotionLineService;
     private final ModelMapper modelMapper;
+    private final RedisTemplate<Object, Object> redisTemplate;
+    private final ObjectMapper redisObjectMapper;
     @Autowired
     EmailService emailService;
     @Autowired
     private JavaMailSender emailSender; // Inject JavaMailSender
 
-    public InvoiceServiceImpl(InvoiceRepository invoiceRepository,
-                              TicketService ticketService,
-                              FoodService foodService,
-                              UserService userService,
-                              PriceDetailService priceDetailService,
-                              PromotionLineService promotionLineService,
-                              ModelMapper modelMapper) {
-        this.invoiceRepository = invoiceRepository;
-        this.ticketService = ticketService;
-        this.foodService = foodService;
-        this.userService = userService;
-        this.priceDetailService = priceDetailService;
-        this.promotionLineService = promotionLineService;
-        this.modelMapper = modelMapper;
+    public String generateKey(Long key) {
+        return "Invoice:" + key;
+    }
+
+    public void clear() {
+        //xóa dữ liệu của user
+        Set<Object> keys = redisTemplate.keys("Invoice:*");
+        if (keys != null) {
+            redisTemplate.delete(keys);
+        }
     }
 
 
@@ -213,6 +216,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (!emailUser.startsWith("guest")) {
             sendEmail(emailUser, "Đặt vé thành công", htmlContent);
         }
+        clear();
 
 
     }
@@ -457,17 +461,41 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     public InvoiceDto getInvoiceById(Long id) {
-        Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
-        InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
-        invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
-        invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
-        invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
-        invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
-        invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
-        invoiceDto.setStaffName(invoice.getStaff().getUsername());
-        invoiceDto.setUserName(invoice.getUser().getUsername());
-        return invoiceDto;
+
+        String key = generateKey(id);
+        Object cachedData = redisTemplate.opsForValue().get(key);
+        if (cachedData == null) {
+            Invoice invoice = invoiceRepository.findById(id)
+                    .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
+            InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+            invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+            invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+            invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+            invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+            invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
+            if(invoice.getStaff()==null){
+                invoiceDto.setStaffName(null);
+            }else {
+                invoiceDto.setStaffName(invoice.getStaff().getUsername());
+            }
+            invoiceDto.setUserName(invoice.getUser().getUsername());
+            redisTemplate.opsForValue().set(key, invoiceDto);
+            return invoiceDto;
+        } else {
+            return redisObjectMapper.convertValue(cachedData, InvoiceDto.class);
+        }
+//
+//        Invoice invoice = invoiceRepository.findById(id)
+//                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+//        InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+//        invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+//        invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+//        invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+//        invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+//        invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
+//        invoiceDto.setStaffName(invoice.getStaff().getUsername());
+//        invoiceDto.setUserName(invoice.getUser().getUsername());
+//        return invoiceDto;
 
 
     }
@@ -475,7 +503,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public Invoice findById(Long id) {
         return invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
@@ -488,96 +516,129 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = findById(id);
         invoice.setStatus(status);
         invoiceRepository.save(invoice);
+        clear();
 
     }
 
     @Override
     public List<InvoiceDto> getAllInvoices(Integer page, Integer size, String invoiceCode, Long cinemaId, Long
             roomId, Long movieId, String showTimeCode, Long staffId, Long userId, LocalDate startDate, LocalDate endDate) {
+        String key = "Invoice:all";
+        Object cachedData = redisTemplate.opsForValue().get(key);
+        List<Invoice> invoices = List.of();
+        List<InvoiceDto> invoiceDtos;
+        if (cachedData == null) {
+            invoices = invoiceRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+            invoiceDtos = invoices.stream()
+                    .map(invoice -> {
+                        InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+                        invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
+                        invoiceDto.setRoomId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId());
+                        invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
+                        invoiceDto.setCinemaId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getId());
+                        invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
+                        invoiceDto.setMovieId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getId());
+                        invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
+                        invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
+                        if(invoice.getStaff()==null){
+                            invoiceDto.setStaffName(null);
+                            invoiceDto.setStaffId(invoice.getStaff().getId());
+                        }else {
+                            invoiceDto.setStaffName(invoice.getStaff().getUsername());
+                            invoiceDto.setStaffId(invoice.getStaff().getId());
+                        }
+                        invoiceDto.setUserId(invoice.getUser().getId());
+                        invoiceDto.setUserName(invoice.getUser().getUsername());
+                        return invoiceDto;
+                    }).collect(Collectors.toList());
+            redisTemplate.opsForValue().set(key, invoiceDtos);
+        } else {
+            List<Object> list = (List<Object>) cachedData;
+            invoiceDtos = list.stream().map(o -> redisObjectMapper.convertValue(o, InvoiceDto.class)).toList();
+        }
 
-        List<Invoice> pageInvoice = invoiceRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (invoiceCode != null && !invoiceCode.isEmpty()) {
-            pageInvoice = pageInvoice.stream()
+            invoiceDtos = invoiceDtos.stream()
                     .filter(invoice -> invoice.getCode().equals(invoiceCode))
                     .toList();
         } else if (cinemaId != null) {
-            pageInvoice = pageInvoice.stream()
-                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getId().equals(cinemaId))
-                    .toList();
+          invoiceDtos = invoiceDtos.stream().filter(invoice -> invoice.getCinemaId().equals(cinemaId)).toList();
         } else if (roomId != null) {
-            pageInvoice = pageInvoice.stream()
-                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId().equals(roomId))
+            invoiceDtos = invoiceDtos.stream()
+                    .filter(invoice -> invoice.getRoomId().equals(roomId))
                     .toList();
         } else if (movieId != null) {
-            pageInvoice = pageInvoice.stream()
-                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getId().equals(movieId))
+            invoiceDtos = invoiceDtos.stream()
+                    .filter(invoice -> invoice.getMovieId().equals(movieId))
                     .toList();
         } else if (showTimeCode != null && !showTimeCode.isEmpty()) {
-            pageInvoice = pageInvoice.stream()
-                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode().equals(showTimeCode))
+            invoiceDtos = invoiceDtos.stream()
+                    .filter(invoice -> invoice.getShowTimeCode().equals(showTimeCode))
                     .toList();
         } else if (staffId != null) {
-            pageInvoice = pageInvoice.stream()
-                    .filter(invoice -> invoice.getStaff().getId().equals(staffId))
+            invoiceDtos = invoiceDtos.stream()
+                    .filter(invoice -> invoice.getStaffId().equals(staffId))
                     .toList();
         } else if (userId != null) {
-            pageInvoice = pageInvoice.stream()
-                    .filter(invoice -> invoice.getUser().getId().equals(userId))
+            invoiceDtos = invoiceDtos.stream()
+                    .filter(invoice -> invoice.getUserId().equals(userId))
                     .toList();
         } else if (startDate != null && endDate != null) {
-            pageInvoice = pageInvoice.stream()
-                    .filter(invoice -> invoice.getCreatedDate().toLocalDate().isAfter(startDate) && invoice.getCreatedDate().toLocalDate().isBefore(endDate.plusDays(1)))
+            invoiceDtos = invoiceDtos.stream()
+                    .filter(invoice -> invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay()))
                     .toList();
         }
-
-
         int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, pageInvoice.size());
-        return pageInvoice.subList(fromIndex, toIndex).stream()
-                .map(invoice -> {
-                    InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
-                    invoiceDto.setShowTimeCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
-                    invoiceDto.setRoomName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
-                    invoiceDto.setCinemaName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
-                    invoiceDto.setMovieName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
-                    invoiceDto.setMovieImage(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getImageLink());
-                    invoiceDto.setStaffName(invoice.getStaff().getUsername());
-                    invoiceDto.setUserName(invoice.getUser().getUsername());
-                    return invoiceDto;
-                })
-                .toList();
+        int toIndex = Math.min(fromIndex + size, invoiceDtos.size());
+        return invoiceDtos.subList(fromIndex, toIndex);
 
     }
 
     @Override
     public long countAllInvoices(String invoiceCode, Long cinemaId, Long roomId, Long movieId, String
             showTimeCode, Long staffId, Long userId, LocalDate startDate, LocalDate endDate) {
+        List<Invoice> invoices = invoiceRepository.findAll();
         if (invoiceCode != null && !invoiceCode.isEmpty()) {
-            return invoiceRepository.countByCode(invoiceCode);
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getCode().equals(invoiceCode))
+                    .toList();
         } else if (cinemaId != null) {
-            return invoiceRepository.countByCinemaId(cinemaId);
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getId().equals(cinemaId))
+                    .toList();
         } else if (roomId != null) {
-            return invoiceRepository.countByRoomId(roomId);
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId().equals(roomId))
+                    .toList();
         } else if (movieId != null) {
-            return invoiceRepository.countByMovieId(movieId);
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getId().equals(movieId))
+                    .toList();
         } else if (showTimeCode != null && !showTimeCode.isEmpty()) {
-            return invoiceRepository.countByShowTimeCode(showTimeCode);
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode().equals(showTimeCode))
+                    .toList();
         } else if (staffId != null) {
-            return invoiceRepository.countByStaffId(staffId);
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getStaff().getId().equals(staffId))
+                    .toList();
         } else if (userId != null) {
-            return invoiceRepository.countByUserId(userId);
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getUser().getId().equals(userId))
+                    .toList();
         } else if (startDate != null && endDate != null) {
-            return invoiceRepository.countByCreatedDate(startDate, endDate);
-        } else {
-            return invoiceRepository.count();
+            invoices = invoices.stream()
+                    .filter(invoice -> invoice.getCreatedDate().isAfter(startDate.atStartOfDay()) && invoice.getCreatedDate().isBefore(endDate.atStartOfDay().plusDays(1)))
+                    .toList();
         }
+        return invoices.size();
     }
 
     @Override
     public CinemaDto getCinemaByInvoiceId(Long id) {
         CinemaDto cinemaDto = new CinemaDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         cinemaDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getId());
         cinemaDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getCinema().getName());
         AddressDto addressDto = getAddressDto(invoice);
@@ -600,7 +661,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public RoomDto getRoomByInvoiceId(Long id) {
         RoomDto roomDto = new RoomDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         roomDto.setId(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getId());
         roomDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getRoom().getName());
         //lấy giá phòng  từ price detail
@@ -619,7 +680,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public MovieDto getMovieByInvoiceId(Long id) {
         MovieDto movieDto = new MovieDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         movieDto.setCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getCode());
         movieDto.setName(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getName());
         movieDto.setDurationMinutes(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getMovie().getDurationMinutes());
@@ -643,7 +704,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public ShowTimeDto getShowTimeByInvoiceId(Long id) {
         ShowTimeDto showTimeDto = new ShowTimeDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         showTimeDto.setCode(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getCode());
         showTimeDto.setShowDate(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowDate());
         showTimeDto.setShowTime(invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowTime());
@@ -654,7 +715,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public UserDto getUserByInvoiceId(Long id) {
         UserDto userDto = new UserDto();
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         userDto.setCode(invoice.getUser().getCode());
         userDto.setUsername(invoice.getUser().getUsername());
         userDto.setEmail(invoice.getUser().getEmail());
@@ -665,7 +726,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public List<InvoiceFoodDetailDto> getInvoiceFoodDetailByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         List<InvoiceFoodDetail> invoiceFoodDetails = invoice.getInvoiceFoodDetails();
         List<InvoiceFoodDetailDto> invoiceFoodDetailDtos = new ArrayList<>();
         for (InvoiceFoodDetail invoiceFoodDetail : invoiceFoodDetails) {
@@ -685,7 +746,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public List<InvoiceTicketDetailDto> getInvoiceTicketDetailByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         List<InvoiceTicketDetail> invoiceTicketDetails = invoice.getInvoiceTicketDetails();
         List<InvoiceTicketDetailDto> invoiceTicketDetailDtos = new ArrayList<>();
         for (InvoiceTicketDetail invoiceTicketDetail : invoiceTicketDetails) {
@@ -715,7 +776,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public List<PromotionLineDto> getPromotionLineByInvoiceId(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: "+ id, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy hóa đơn với id: " + id, HttpStatus.NOT_FOUND));
         List<PromotionLine> promotionLines = new ArrayList<>(invoice.getPromotionLines());
         return promotionLines.stream()
                 .map(promotionLine -> {
@@ -751,6 +812,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         invoice.setPromotionLines(promotionLines);
         invoiceRepository.save(invoice);
+        clear();
     }
 
     @Override
@@ -776,7 +838,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         BigDecimal totalPrice = invoice.getTotalPrice();
         //định dạng tiền tệ
         DecimalFormat formatter = new DecimalFormat("###,###,###");
-        String total = formatter.format(totalPrice)+" Vnd";
+        String total = formatter.format(totalPrice) + " Vnd";
         String typePayment = invoice.getTypePay().toString();
         //nếu là CASH thì là tiền mặt
         if (typePayment.equals("CASH")) {

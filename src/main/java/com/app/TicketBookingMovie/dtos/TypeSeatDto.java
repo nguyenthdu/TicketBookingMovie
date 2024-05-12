@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class TypeSeatDto {
+public class TypeSeatDto   {
     private Long id;
     private String code;
     private String name;

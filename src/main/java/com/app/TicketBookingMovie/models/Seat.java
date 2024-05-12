@@ -1,6 +1,7 @@
 package com.app.TicketBookingMovie.models;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +13,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "seat")
-public class Seat {
+public class Seat   {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,6 +25,7 @@ public class Seat {
     @ManyToOne
     private TypeSeat seatType;
     @OneToMany(mappedBy = "seat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<ShowTimeSeat> showTimeSeats = new HashSet<>();
 
 

@@ -14,9 +14,11 @@ import com.app.TicketBookingMovie.security.JwtUtils;
 import com.app.TicketBookingMovie.security.PasswordConfig;
 import com.app.TicketBookingMovie.security.UserDetailsImpl;
 import com.app.TicketBookingMovie.services.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 
 
 @Service
+@AllArgsConstructor
 public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
     //TODO:  keyword final, bạn đảm bảo rằng field userRepository không thể được thay đổi sau khi đối tượng UserServiceImpl được tạo. Điều này tăng cường độ tin cậy và giúp code dễ hiểu hơn.
@@ -41,6 +44,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final RoleRepository roleRepository;
     // Inject the PasswordEncoder in the constructor
     private final PasswordConfig passwordConfig;
+    private final RedisTemplate<Object, Object> redisTemplate;
+    private final ObjectMapper redisObjectMapper;
     JwtUtils jwtUtils;
     @Autowired
     ConfirmationTokenRepository confirmationTokenRepository;
@@ -48,21 +53,30 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Autowired
     EmailService emailService;
 
-
-    public UserServiceImpl(JwtUtils jwtUtils, UserRepository userRepository, ModelMapper modelMapper, RoleRepository roleRepository, PasswordConfig passwordConfig) {
-        this.jwtUtils = jwtUtils;
-        this.userRepository = userRepository;
-        this.modelMapper = modelMapper;
-        this.roleRepository = roleRepository;
-        this.passwordConfig = passwordConfig;
-
-    }
   /*TODO: constructor injection tốt hơn
   * Testability (Khả năng test): Constructor injection giúp bạn dễ dàng kiểm soát các dependency được sử dụng trong unit test. Bạn chỉ cần tạo một mock object cho UserRepository và truyền trực tiếp vào constructor của UserServiceImpl.
 	Explicit Dependencies (Sự rõ ràng): Constructor injection làm cho dependencies của một class trở nên rõ ràng. Bất kỳ ai nhìn vào constructor cũng đều có thể hiểu được những dependency mà class cần để hoạt động.
 	Immutability (Tính bất biến): Bằng cách sử dụng keyword final, bạn đảm bảo rằng field userRepository không thể được thay đổi sau khi đối tượng UserServiceImpl được tạo. Điều này tăng cường độ tin cậy và giúp code dễ hiểu hơn.
    */
+    public String randomCode() {
+        return "KH" + LocalDateTime.now().getNano();
+    }
 
+    public String randomCodeMor() {
+        return "MO" + LocalDateTime.now().getNano();
+    }
+
+    public String generateKey(Long key) {
+        return "User:" + key;
+    }
+
+    public void clear() {
+        //xóa dữ liệu của user
+       Set<Object> keys = redisTemplate.keys("User:*");
+        if (keys != null) {
+            redisTemplate.delete(keys);
+        }
+    }
 
     @Override
     @Transactional
@@ -85,8 +99,18 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserDto getUserById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
-        return modelMapper.map(user, UserDto.class);
+        String key = generateKey(id);
+        Object cachedData = redisTemplate.opsForValue().get(key);
+        if (cachedData == null) {
+            User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
+          UserDto userDto = modelMapper.map(user, UserDto.class);
+          redisTemplate.opsForValue().set(key, userDto);
+            return userDto;
+        } else {
+            return  redisObjectMapper.convertValue(cachedData, UserDto.class);
+        }
+//        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
+//        return modelMapper.map(user, UserDto.class);
     }
 
 
@@ -100,6 +124,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
         user.setEnabled(false);
         userRepository.save(user);
+        clear();
     }
 
     @Override
@@ -130,7 +155,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
         user.setCreatedDate(LocalDateTime.now());
         userRepository.save(user);
-        modelMapper.map(user, UserDto.class);
+        clear();
     }
 
     @Override
@@ -140,13 +165,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         LocalDateTime now = LocalDateTime.now();
         user.setUsername("Khách hàng_" + now.getDayOfMonth() + now.getMonthValue() + now.getYear() + "_" + now.getHour() + now.getMinute() + now.getSecond());
         Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
-        user.setRoles(Set.of(role));
+        user.setRoles(null);
         String email = "guest" + now.getNano() + "@gmail.com";
         user.setEmail(email);
         user.setEnabled(true);
         user.setCreatedDate(now);
         userRepository.save(user);
         return modelMapper.map(user, UserDto.class);
+
     }
 
     @Override
@@ -200,18 +226,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         mailMessage.setTo(user.getEmail());
         mailMessage.setSubject("Đăng ký thành công!");
         mailMessage.setText("Bấm vào đây để xác nhận email: "
-                +"http://localhost:8080/api/users/confirm-account?token="+confirmationToken.getConfirmationToken());
+                + "http://localhost:8080/api/users/confirm-account?token=" + confirmationToken.getConfirmationToken());
         emailService.sendEmail(mailMessage);
 
         System.out.println("Confirmation Token: " + confirmationToken.getConfirmationToken());
-    }
-
-    public String randomCode() {
-        return "KH" + LocalDateTime.now().getNano();
-    }
-
-    public String randomCodeMor() {
-        return "MO" + LocalDateTime.now().getNano();
+        clear();
     }
 
 
@@ -220,7 +239,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (userRepository.existsByEmail(signupRequest.getEmail())) {
             throw new AppException("Email đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
-        if(userRepository.existsByPhone(signupRequest.getPhone())) {
+        if (userRepository.existsByPhone(signupRequest.getPhone())) {
             throw new AppException("Số điện thoại đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
         User user = new User();
@@ -238,6 +257,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setPassword(passwordConfig.passwordEncoder()
                 .encode(signupRequest.getPassword()));
         userRepository.save(user);
+        clear();
     }
 
     @Override
@@ -290,34 +310,66 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public List<UserDto> getAllUsersPage(Integer page,
                                          Integer size, String code, String username,
                                          String phone, String email, Long roleId) {
-        List<User> users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+        String key = "User:all";
+        List<User> users;
+        List<UserDto> userDtos;
+        Object cachedData = redisTemplate.opsForValue().get(key);
+        if (cachedData == null) {
+//            users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+            users = userRepository.findByRoles_NameInOrderByCreatedDateDesc(Set.of(ERole.ROLE_USER, ERole.ROLE_MODERATOR));
+            userDtos = users.stream()
+                    .map(user -> modelMapper.map(user, UserDto.class))
+                    .collect(Collectors.toList());
+            redisTemplate.opsForValue().set(key, userDtos);
+        } else {
+            List<Object> list = (List<Object>) cachedData;
+            userDtos = list.stream()
+                    .map(obj -> redisObjectMapper.convertValue(obj, UserDto.class)).toList();
+        }
+
         if (code != null && !code.isEmpty()) {
-            users = users.stream()
+//            users = users.stream()
+//                    .filter(user -> user.getCode().equals(code))
+//                    .collect(Collectors.toList());
+            userDtos = userDtos.stream()
                     .filter(user -> user.getCode().equals(code))
                     .collect(Collectors.toList());
         } else if (username != null && !username.isEmpty()) {
-            users = users.stream()
+//            users = users.stream()
+//                    .filter(user -> user.getUsername().toLowerCase().contains(username.toLowerCase()))
+//                    .collect(Collectors.toList());
+            userDtos = userDtos.stream()
                     .filter(user -> user.getUsername().toLowerCase().contains(username.toLowerCase()))
                     .collect(Collectors.toList());
         } else if (phone != null && !phone.isEmpty()) {
-            users = users.stream()
+//            users = users.stream()
+//                    .filter(user -> user.getPhone() != null && user.getPhone().equals(phone))
+//                    .collect(Collectors.toList());
+            userDtos = userDtos.stream()
                     .filter(user -> user.getPhone() != null && user.getPhone().equals(phone))
                     .collect(Collectors.toList());
         } else if (email != null && !email.isEmpty()) {
-            users = users.stream()
+//            users = users.stream()
+//                    .filter(user -> user.getEmail() != null && user.getEmail().equals(email))
+//                    .collect(Collectors.toList());
+            userDtos = userDtos.stream()
                     .filter(user -> user.getEmail() != null && user.getEmail().equals(email))
                     .collect(Collectors.toList());
         } else if (roleId != null && roleId > 0) {
-            users = users.stream()
+//            users = users.stream()
+//                    .filter(user -> user.getRoles().stream().anyMatch(role -> role.getId().equals(roleId)))
+//                    .collect(Collectors.toList());
+            userDtos = userDtos.stream()
                     .filter(user -> user.getRoles().stream().anyMatch(role -> role.getId().equals(roleId)))
                     .collect(Collectors.toList());
         }
         int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, users.size());
-        return users.subList(fromIndex, toIndex).stream()
-                .map(user -> modelMapper.map(user, UserDto.class))
-                .collect(Collectors.toList());
+        int toIndex = Math.min(fromIndex + size, userDtos.size());
+//        return users.subList(fromIndex, toIndex).stream()
+//                .map(user -> modelMapper.map(user, UserDto.class))
+//                .collect(Collectors.toList());
 
+        return userDtos.subList(fromIndex, toIndex);
     }
 
     @Override
@@ -352,14 +404,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
         user.setPassword(passwordConfig.passwordEncoder().encode(passwordNew));
         userRepository.save(user);
+        clear();
     }
 
     @Override
     public ResponseEntity<?> confirmEmail(String confirmationToken) {
         ConfirmationToken token = confirmationTokenRepository.findByConfirmationToken(confirmationToken);
 
-        if(token != null)
-        {
+        if (token != null) {
             User user = userRepository.findByEmailIgnoreCase(token.getUserEntity().getEmail());
             user.setEnabled(true);
             userRepository.save(user);

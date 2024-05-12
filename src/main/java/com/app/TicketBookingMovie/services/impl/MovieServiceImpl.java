@@ -10,13 +10,17 @@ import com.app.TicketBookingMovie.repository.GenreRepository;
 import com.app.TicketBookingMovie.repository.MovieRepository;
 import com.app.TicketBookingMovie.services.AwsService;
 import com.app.TicketBookingMovie.services.MovieService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,28 +28,32 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class MovieServiceImpl implements MovieService {
-
     private final ModelMapper modelMapper;
     private final MovieRepository movieRepository;
     private final GenreRepository genreRepository;
     private final CinemaRepository cinemaRepository;
     private final AwsService awsService;
-
-    public MovieServiceImpl(ModelMapper modelMapper, MovieRepository movieRepository, GenreRepository genreRepository, CinemaRepository cinemaRepository, AwsService awsService) {
-        this.modelMapper = modelMapper;
-        this.movieRepository = movieRepository;
-        this.genreRepository = genreRepository;
-        this.awsService = awsService;
-        this.cinemaRepository = cinemaRepository;
-    }
-
+    private final RedisTemplate<Object, Object> redisTemplate;
+    private final ObjectMapper redisObjectMapper;
 
     // random code
     public String randomCode() {
         return "PI" + LocalDateTime.now().getNano();
     }
 
+    public String generateKey(Long key) {
+        return "Movie:" + key;
+    }
+
+    public void clear() {
+        //xóa dữ liệu của user
+        Set<Object> keys = redisTemplate.keys("Movie:*");
+        if (keys != null) {
+            redisTemplate.delete(keys);
+        }
+    }
 
     @Override
     public void createMovie(MovieDto movieDTO) {
@@ -72,18 +80,33 @@ public class MovieServiceImpl implements MovieService {
         }
         movie.setCreatedDate(LocalDateTime.now());
         movieRepository.save(movie);
-        modelMapper.map(movie, MovieDto.class);
+        clear();
     }
 
     @Override
     public MovieDto getMovieById(Long id) {
-        Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + id, HttpStatus.NOT_FOUND));
-        Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
-        Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
-        MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
-        movieDTO.setCinemaIds(cinemaIds);
-        movieDTO.setGenreIds(genreIds);
-        return movieDTO;
+        String key = generateKey(id);
+        Object cachedDate = redisTemplate.opsForValue().get(key);
+        if (cachedDate == null) {
+            Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + id, HttpStatus.NOT_FOUND));
+            MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+            Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+            Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
+            movieDTO.setCinemaIds(cinemaIds);
+            movieDTO.setGenreIds(genreIds);
+
+            redisTemplate.opsForValue().set(key, movieDTO);
+            return movieDTO;
+        } else {
+            return redisObjectMapper.convertValue(cachedDate, MovieDto.class);
+//        Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + id, HttpStatus.NOT_FOUND))
+        }
+//        Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+//        Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
+//        MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+//        movieDTO.setCinemaIds(cinemaIds);
+//        movieDTO.setGenreIds(genreIds);
+//        return movieDTO;
 
     }
 
@@ -178,21 +201,54 @@ public class MovieServiceImpl implements MovieService {
         }
         movie.setCreatedDate(LocalDateTime.now());
         movieRepository.save(movie);
+        clear();
     }
 
     @Override
+    @Transactional
     public void deleteMovieById(Long id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new AppException("Không tìm thấy phim với id: " + id, HttpStatus.NOT_FOUND));
 
+        // Kiểm tra nếu có lịch chiếu
+        if (!movie.getShowTimes().isEmpty()) {
+            throw new AppException("Không thể xóa phim có lịch chiếu", HttpStatus.BAD_REQUEST);
+        }
+
+        // Nếu không có lịch chiếu, thì tiến hành xóa
         awsService.deleteImage(movie.getImageLink());
+
         // Xóa phim từ cơ sở dữ liệu
         movieRepository.delete(movie);
+
+        // Sau khi xóa thành công khỏi cơ sở dữ liệu, tiến hành xóa dữ liệu trên Redis
+        clear();
     }
+
 
     @Override
     public List<MovieDto> getAllMovies(Integer page, Integer size, String code, String name, Long genreId, Long cinemaId, String typeShow) {
+        String key  = "Movie:all";
         List<Movie> allMovies = new ArrayList<>();
+        List<MovieDto> movieDtos;
+        Object cachedData = redisTemplate.opsForValue().get(key);
+        if(cachedData==null){
+            allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+            movieDtos = allMovies.stream()
+                    .map(movie -> {
+                        MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+                        Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+                        Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
+                        movieDTO.setGenreIds(genreIds);
+                        movieDTO.setCinemaIds(cinemaIds);
+                        return movieDTO;
+                    }).collect(Collectors.toList());
+            redisTemplate.opsForValue().set(key, movieDtos);
+        }else{
+            List<Object> list = (List<Object>) cachedData;
+            movieDtos = list.stream().map(o -> redisObjectMapper.convertValue(o, MovieDto.class)).toList();
+        }
+
 
         // Lấy danh sách tất cả các phim
         if ("Upcoming".equalsIgnoreCase(typeShow)) {
@@ -200,6 +256,17 @@ public class MovieServiceImpl implements MovieService {
                     .stream()
                     .filter(movie -> movie.getShowTimes().stream().allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
                     .toList();
+            movieDtos = allMovies.stream()
+                    .map(movie -> {
+                        MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+                        Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+                        Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
+                        movieDTO.setGenreIds(genreIds);
+                        movieDTO.setCinemaIds(cinemaIds);
+                        return movieDTO;
+                    }).collect(Collectors.toList());
+
+
         } else if ("Showing".equalsIgnoreCase(typeShow)) {
             Pageable pageable = PageRequest.of(page, size);
             Page<Movie> allMoviesPage = movieRepository.findAll(pageable);
@@ -207,46 +274,61 @@ public class MovieServiceImpl implements MovieService {
                     .stream()
                     .filter(movie -> movie.getShowTimes().stream().anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
                     .toList();
-        } else {
-            allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+            movieDtos = allMovies.stream().map(movie -> {
+                MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+                Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+                Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
+                movieDTO.setGenreIds(genreIds);
+                movieDTO.setCinemaIds(cinemaIds);
+                return movieDTO;
+            }).collect(Collectors.toList());
+
         }
 
         // Lọc theo các tiêu chí khác nếu có
         if (code != null && !code.isEmpty()) {
-            allMovies = allMovies.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
+//            allMovies = allMovies.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
+            movieDtos = movieDtos.stream().filter(movie -> movie.getCode().equals(code)).collect(Collectors.toList());
         } else if (cinemaId != null && cinemaId != 0) {
             if (name != null && !name.isEmpty()) {
-                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
+//                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
+                movieDtos = movieDtos.stream().filter(movie -> movie.getCinemaIds().contains(cinemaId) && movie.getName().toLowerCase().contains(name.toLowerCase())).collect(Collectors.toList());
             } else if (genreId != null && genreId != 0) {
-                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
+//                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId)) && movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
+                movieDtos = movieDtos.stream().filter(movie -> movie.getCinemaIds().contains(cinemaId) && movie.getGenreIds().contains(genreId)).collect(Collectors.toList());
             } else {
-                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId))).collect(Collectors.toList());
+//                allMovies = allMovies.stream().filter(movie -> movie.getCinemas().stream().anyMatch(cinema -> cinema.getId().equals(cinemaId))).collect(Collectors.toList());
+                movieDtos = movieDtos.stream().filter(movie -> movie.getCinemaIds().contains(cinemaId)).collect(Collectors.toList());
             }
         } else if (genreId != null && genreId != 0) {
-            allMovies = allMovies.stream().filter(movie -> movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
+//            allMovies = allMovies.stream().filter(movie -> movie.getGenres().stream().anyMatch(genre -> genre.getId().equals(genreId))).collect(Collectors.toList());
+            movieDtos = movieDtos.stream().filter(movie -> movie.getGenreIds().contains(genreId)).collect(Collectors.toList());
         } else if (name != null && !name.isEmpty()) {
-            allMovies = allMovies.stream().filter(movie -> movie.getName().contains(name)).collect(Collectors.toList());
+//            allMovies = allMovies.stream().filter(movie -> movie.getName().contains(name)).collect(Collectors.toList());
+            movieDtos = movieDtos.stream().filter(movie -> movie.getName().contains(name)).collect(Collectors.toList());
         }
-
-        // Đếm số lượng phim
-        long countAll = allMovies.size();
-
-        // Phân trang
-        int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, allMovies.size());
-        List<MovieDto> movieDtos = allMovies.subList(fromIndex, toIndex).stream()
-                .map(movie -> {
-                    MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
-                    Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
-                    Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
-                    movieDTO.setGenreIds(genreIds);
-                    movieDTO.setCinemaIds(cinemaIds);
-                    return movieDTO;
-                }).collect(Collectors.toList());
-
-
-        // Trả về danh sách phim và số lượng phim
-        return movieDtos;
+    int fromIndex = page * size;
+    int toIndex = Math.min(fromIndex + size, movieDtos.size());
+    return movieDtos.subList(fromIndex, toIndex);
+//        // Đếm số lượng phim
+//        long countAll = allMovies.size();
+//
+//        // Phân trang
+//        int fromIndex = page * size;
+//        int toIndex = Math.min(fromIndex + size, allMovies.size());
+//        List<MovieDto> movieDtos = allMovies.subList(fromIndex, toIndex).stream()
+//                .map(movie -> {
+//                    MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
+//                    Set<Long> genreIds = movie.getGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+//                    Set<Long> cinemaIds = movie.getCinemas().stream().map(Cinema::getId).collect(Collectors.toSet());
+//                    movieDTO.setGenreIds(genreIds);
+//                    movieDTO.setCinemaIds(cinemaIds);
+//                    return movieDTO;
+//                }).collect(Collectors.toList());
+//
+//
+//        // Trả về danh sách phim và số lượng phim
+//        return movieDtos;
     }
 
     @Override
@@ -308,6 +390,7 @@ public class MovieServiceImpl implements MovieService {
                 .map(movie -> modelMapper.map(movie, MovieDto.class))
                 .collect(Collectors.toList());
     }
+
     //TODO: Lấy danh sách phim đang chiếu
     @Override
     public List<MovieDto> getMoviesShowing(Integer page, Integer size) {

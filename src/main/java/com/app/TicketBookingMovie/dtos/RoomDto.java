@@ -10,7 +10,7 @@ import java.util.Set;
  * DTO for {@link com.app.TicketBookingMovie.models.Room}
  */
 @Data
-public class RoomDto   {
+public class RoomDto    {
     private Long id;
     private String code;
     private String name;

@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class CinemaDto {
+public class CinemaDto   {
     private Long id;
     private String code;
     private String name;

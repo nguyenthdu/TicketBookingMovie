@@ -9,7 +9,7 @@ import java.util.Set;
  * DTO for {@link com.app.TicketBookingMovie.models.Ticket}
  */
 @Data
-public class TicketDto  {
+public class TicketDto {
     private Long id;
     private String code;
     private Long showTimeId;

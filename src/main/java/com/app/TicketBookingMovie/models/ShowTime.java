@@ -14,7 +14,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "show_time")
-public class ShowTime {
+public class ShowTime   {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,7 +22,7 @@ public class ShowTime {
     @Past
     private LocalDate showDate;
     private LocalTime showTime;
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     private Movie movie;
     @ManyToOne
     private Room room;

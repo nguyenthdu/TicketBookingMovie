@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-public class PriceDetailDto {
+public class PriceDetailDto   {
     private Long id;
     private BigDecimal price;
     private Long priceHeaderId;

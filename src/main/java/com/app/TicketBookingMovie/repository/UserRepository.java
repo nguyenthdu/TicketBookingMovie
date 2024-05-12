@@ -1,10 +1,13 @@
 package com.app.TicketBookingMovie.repository;
 
 import com.app.TicketBookingMovie.models.User;
+import com.app.TicketBookingMovie.models.enums.ERole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -27,4 +30,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRoleId(Long roleId);
     User findByEmailIgnoreCase(String emailId);
 
+    List<User> findByRoles_NameInOrderByCreatedDateDesc(Collection<ERole> roles_name);
 }

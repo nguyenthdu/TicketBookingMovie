@@ -11,8 +11,11 @@ import com.app.TicketBookingMovie.repository.RoomRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeSeatRepository;
 import com.app.TicketBookingMovie.services.ShowTimeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,6 +28,7 @@ import java.time.LocalTime;
 import java.util.*;
 
 @Service
+@AllArgsConstructor
 public class ShowTimeServiceImpl implements ShowTimeService {
 
 
@@ -33,13 +37,23 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     private final RoomRepository roomRepository;
     private final MovieRepository movieRepository;
     private final ModelMapper modelMapper;
+    private final RedisTemplate<Object, Object> redisTemplate;
+    private final ObjectMapper redisObjectMapper;
 
-    public ShowTimeServiceImpl(ShowTimeRepository showTimeRepository, ShowTimeSeatRepository showTimeSeatRepository, RoomRepository roomRepository, MovieRepository movieRepository, ModelMapper modelMapper) {
-        this.showTimeRepository = showTimeRepository;
-        this.showTimeSeatRepository = showTimeSeatRepository;
-        this.roomRepository = roomRepository;
-        this.movieRepository = movieRepository;
-        this.modelMapper = modelMapper;
+    public String generateKey(Long key) {
+        return "ShowTime:" + key;
+    }
+
+    public void clear() {
+        //xóa dữ liệu của user
+        Set<Object> keyShowTime = redisTemplate.keys("ShowTime:*");
+        Set<Object> keyShowTimeSeat = redisTemplate.keys("ShowTimeSeat:*");
+        if (keyShowTime != null) {
+            redisTemplate.delete(keyShowTime);
+        }
+        if (keyShowTimeSeat != null) {
+            redisTemplate.delete(keyShowTimeSeat);
+        }
     }
 
     @Transactional
@@ -108,6 +122,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
             showTimeRepository.save(newShowTime);
             createdShowTimes.add(modelMapper.map(newShowTime, ShowTimeDto.class));
         }
+        clear();
 
 
     }
@@ -115,11 +130,24 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     @Override
     public ShowTimeDto getShowTimeById(Long id) {
-        ShowTime showTime = showTimeRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
-        ShowTimeDto showTimeDto = modelMapper.map(showTime, ShowTimeDto.class);
-        showTimeDto.setCinemaName(showTime.getRoom().getCinema().getName());
-        return showTimeDto;
+        String key = generateKey(id);
+        Object cacheData = redisTemplate.opsForValue().get(key);
+        if (cacheData == null) {
+            ShowTime showTime = showTimeRepository.findById(id)
+                    .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
+            ShowTimeDto showTimeDto = modelMapper.map(showTime, ShowTimeDto.class);
+            showTimeDto.setCinemaName(showTime.getRoom().getCinema().getName());
+            redisTemplate.opsForValue().set(key, showTimeDto);
+            return showTimeDto;
+        } else {
+            //lấy name cinema
+            return redisObjectMapper.convertValue(cacheData, ShowTimeDto.class);
+        }
+//        ShowTime showTime = showTimeRepository.findById(id)
+//                .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
+//        ShowTimeDto showTimeDto = modelMapper.map(showTime, ShowTimeDto.class);
+//        showTimeDto.setCinemaName(showTime.getRoom().getCinema().getName());
+//        return showTimeDto;
     }
 
     @Override
@@ -131,10 +159,22 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     @Override
     public void updateShowTime(ShowTimeDto showTimeDto) {
+
         // Lấy thông tin lịch chiếu từ cơ sở dữ liệu
         ShowTime showTime = showTimeRepository.findById(showTimeDto.getId())
                 .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + showTimeDto.getId(), HttpStatus.NOT_FOUND));
-
+        if(showTimeDto.getShowTime()==null){
+          showTimeDto.setShowTime(showTime.getShowTime());
+        }
+        if(showTimeDto.getShowDate()==null ){
+            showTimeDto.setShowDate(showTime.getShowDate());
+        }
+        if(showTimeDto.getRoomId()==null){
+            showTimeDto.setRoomId(showTime.getRoom().getId());
+        }
+        if(showTimeDto.getMovieId()==null){
+            showTimeDto.setMovieId(showTime.getMovie().getId());
+        }
         // Kiểm tra nếu thời gian lịch chiếu đã qua, không thể cập nhật
         LocalDate currentDate = LocalDate.now();
         LocalTime currentTime = LocalTime.now();
@@ -166,9 +206,12 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                 throw new AppException("Không thể cập nhật lịch chiếu đang hoạt động.", HttpStatus.BAD_REQUEST);
             }
         }
+
+
         showTime.setCreatedDate(LocalDateTime.now());
         // Lưu lại cập nhật vào cơ sở dữ liệu
         showTimeRepository.save(showTime);
+        clear();
     }
     //kiểm tra lại danh sách ghế đã đặt
 
@@ -180,7 +223,8 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     public void updateShowTimeStatusAsync() {
         LocalDate currentDate = LocalDate.now(); // Ngày hiện tại
         LocalTime currentTime = LocalTime.now(); // Thời gian hiện tại
-        List<ShowTime> allShowTimes = showTimeRepository.findAll();
+        //lấy lịch chiếu có trạng thai true
+        List<ShowTime> allShowTimes = showTimeRepository.findAllByStatus(true);
         for (ShowTime showTime : allShowTimes) {
             LocalDate showDate = showTime.getShowDate();
             LocalTime showTimeStart = showTime.getShowTime();
@@ -194,6 +238,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
                     showTimeSeatRepository.deleteAllByShowTime(showTime);
                     showTime.setShowTimeSeat(null);
                 }
+                clear();
             }
             // Lưu lại trạng thái đã cập nhật vào cơ sở dữ liệu
             showTimeRepository.save(showTime);
@@ -202,34 +247,72 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     @Override
     public List<ShowTimeDto> getAllShowTimes(Integer page, Integer size, String code, Long cinemaId, Long movieId, LocalDate date, Long roomId) {
-        List<ShowTime> showTimes = showTimeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+        String key = "ShowTime:all";
+        List<ShowTime> showTimes = List.of();
+        List<ShowTimeDto> showTimeDtos = new ArrayList<>();
+        Object cachedData = redisTemplate.opsForValue().get(key);
+        if (cachedData == null) {
+            showTimes = showTimeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+            try {
+                showTimeDtos = showTimes.stream().map(showTime -> {
+                    ShowTimeDto showTimeDto = new ShowTimeDto();
+                    showTimeDto.setId(showTime.getId());
+                    showTimeDto.setCode(showTime.getCode());
+                    showTimeDto.setShowDate(showTime.getShowDate());
+                    showTimeDto.setShowTime(showTime.getShowTime());
+                    showTimeDto.setMovieId(showTime.getMovie().getId());
+                    showTimeDto.setMovieName(showTime.getMovie().getName());
+                    showTimeDto.setRoomId(showTime.getRoom().getId());
+                    showTimeDto.setRoomName(showTime.getRoom().getName());
+                    showTimeDto.setCinemaId(showTime.getRoom().getCinema().getId());
+                    showTimeDto.setCinemaName(showTime.getRoom().getCinema().getName());
+                    showTimeDto.setStatus(showTime.isStatus());
+                    showTimeDto.setSeatsBooked(showTime.getSeatsBooked());
+                    showTimeDto.setCreatedDate(showTime.getCreatedDate());
+
+                    return showTimeDto;
+                }).toList();
+                redisTemplate.opsForValue().set(key, showTimeDtos);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            // Chuyển đổi LinkedHashMap thành danh sách ShowTime
+            List<Object> showTimeObjects = (List<Object>) cachedData;
+            showTimeDtos = showTimeObjects.stream().map(obj -> redisObjectMapper.convertValue(obj, ShowTimeDto.class)).toList();
+        }
+        // Lọc theo code, cinemaId, movieId, date, roomId nếu có
         if (code != null && !code.isEmpty()) {
-            showTimes = showTimes.stream().filter(showTime -> showTime.getCode().equals(code)).toList();
+//            showTimes = showTimes.stream().filter(showTime -> showTime.getCode().equals(code)).toList();
+            showTimeDtos = showTimeDtos.stream().filter(showTimeDto -> showTimeDto.getCode().equals(code)).toList();
         } else if (movieId != null && movieId > 0 && cinemaId != null && cinemaId > 0) {
             if (roomId != null && roomId > 0 && date != null && !date.toString().isEmpty()) {
-                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId)
-                        && showTime.getRoom().getCinema().getId().equals(cinemaId) && showTime.getRoom().getId().equals(roomId)
-                        && showTime.getShowDate().equals(date)).toList();
+//                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId)
+//                        && showTime.getRoom().getCinema().getId().equals(cinemaId) && showTime.getRoom().getId().equals(roomId)
+//                        && showTime.getShowDate().equals(date)).toList();
+                showTimeDtos = showTimeDtos.stream().filter(showTimeDto -> showTimeDto.getMovieId().equals(movieId)
+                        && showTimeDto.getCinemaId().equals(cinemaId) && showTimeDto.getRoomId().equals(roomId)
+                        && showTimeDto.getShowDate().equals(date)).toList();
             } else if (roomId != null && roomId > 0) {
-                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId)
-                        && showTime.getRoom().getCinema().getId().equals(cinemaId)
-                        && showTime.getRoom().getId().equals(roomId)).toList();
+//                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId)
+//                        && showTime.getRoom().getCinema().getId().equals(cinemaId)
+//                        && showTime.getRoom().getId().equals(roomId)).toList();
+                showTimeDtos = showTimeDtos.stream().filter(showTimeDto -> showTimeDto.getMovieId().equals(movieId)
+                        && showTimeDto.getCinemaId().equals(cinemaId) && showTimeDto.getRoomId().equals(roomId)).toList();
+
             } else if (date != null && !date.toString().isEmpty()) {
-                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId) && showTime.getShowDate().equals(date)).toList();
+//                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId) && showTime.getShowDate().equals(date)).toList();
+                showTimeDtos = showTimeDtos.stream().filter(showTimeDto -> showTimeDto.getMovieId().equals(movieId) && showTimeDto.getCinemaId().equals(cinemaId) && showTimeDto.getShowDate().equals(date)).toList();
             } else {
-                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId)).toList();
+//                showTimes = showTimes.stream().filter(showTime -> showTime.getMovie().getId().equals(movieId) && showTime.getRoom().getCinema().getId().equals(cinemaId)).toList();
+                showTimeDtos = showTimeDtos.stream().filter(showTimeDto -> showTimeDto.getMovieId().equals(movieId) && showTimeDto.getCinemaId().equals(cinemaId)).toList();
             }
         }
         // // Paginate the sorted and filtered list
         int start = page * size;
-        int end = Math.min(start + size, showTimes.size());
-        List<ShowTime> pagedShowTimes = showTimes.subList(start, end);
-        //map dto
-        return pagedShowTimes.stream().map(showTime -> {
-            ShowTimeDto showTimeDto = modelMapper.map(showTime, ShowTimeDto.class);
-            showTimeDto.setCinemaName(showTime.getRoom().getCinema().getName());
-            return showTimeDto;
-        }).toList();
+        int end = Math.min(start + size, showTimeDtos.size());
+        return showTimeDtos.subList(start, end);
+
     }
 
     @Override
@@ -269,34 +352,44 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         }
         // Xóa lịch chiếu nếu chưa có vé đặt
         showTimeRepository.delete(showTime);
+        clear();
     }
 
     @Override
     public List<ShowTimeSeatDto> getShowTimeSeatById(Long id) {
-        ShowTime showTime = showTimeRepository.findById(id)
-                .orElseThrow(() -> new AppException("Không tìm thấy: " + id, HttpStatus.NOT_FOUND));
 
-        Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
+        String key = "ShowTimeSeat:" + id;
         List<ShowTimeSeatDto> showTimeSeatDtos = new ArrayList<>();
-        for (ShowTimeSeat showTimeSeat : showTimeSeats) {
-            ShowTimeSeatDto showTimeSeatDto = new ShowTimeSeatDto();
-            showTimeSeatDto.setId(showTimeSeat.getId());
-            showTimeSeatDto.setShowTimeId(showTimeSeat.getShowTime().getId());
-            showTimeSeatDto.setStatus(showTimeSeat.isStatus());
-            showTimeSeatDto.setSeat(modelMapper.map(showTimeSeat.getSeat(), SeatDto.class));
-            showTimeSeat.getSeat().getSeatType().getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
-                showTimeSeatDto.getSeat().setPrice(priceDetail.getPrice());
-            });
-            showTimeSeatDtos.add(showTimeSeatDto);
+        Object cachedData = redisTemplate.opsForValue().get(key);
+        if (cachedData == null) {
+            ShowTime showTime = showTimeRepository.findById(id)
+                    .orElseThrow(() -> new AppException("Không tìm thấy lịch chiếu với id: " + id, HttpStatus.NOT_FOUND));
+            Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
+            showTimeSeatDtos = showTimeSeats.stream().map(showTimeSeat -> {
+                ShowTimeSeatDto showTimeSeatDto = new ShowTimeSeatDto();
+                showTimeSeatDto.setId(showTimeSeat.getId());
+                showTimeSeatDto.setShowTimeId(showTimeSeat.getShowTime().getId());
+                showTimeSeatDto.setStatus(showTimeSeat.isStatus());
+                showTimeSeatDto.setSeat(modelMapper.map(showTimeSeat.getSeat(), SeatDto.class));
+                showTimeSeat.getSeat().getSeatType().getPriceDetails().stream().findFirst().ifPresent(priceDetail -> {
+                    showTimeSeatDto.getSeat().setPrice(priceDetail.getPrice());
+                });
+                return showTimeSeatDto;
+            }).toList();
+            redisTemplate.opsForValue().set(key, showTimeSeatDtos);
+        } else {
+            // Chuyển đổi LinkedHashMap thành danh sách ShowTimeSeat
+            List<Object> showTimeSeatObjects = (List<Object>) cachedData;
+            showTimeSeatDtos = showTimeSeatObjects.stream().map(obj -> redisObjectMapper.convertValue(obj, ShowTimeSeatDto.class)).toList();
         }
         return showTimeSeatDtos;
     }
 
     @Override
     public void updateSeatStatus(ShowTime showTime) {
-
         Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
         showTimeSeatRepository.saveAll(showTimeSeats);
+        clear();
 
     }
 
@@ -313,13 +406,14 @@ public class ShowTimeServiceImpl implements ShowTimeService {
     }
 
     @Override
-    public void updateStatusHoldSeat(Set<Long> seatIds,Long showTimeId, boolean status) {
+    public void updateStatusHoldSeat(Set<Long> seatIds, Long showTimeId, boolean status) {
         //tìm ShowTimeSeat theo showTimeId và seatId
         List<ShowTimeSeat> showTimeSeats = showTimeSeatRepository.findByShowTimeIdAndSeatIdIn(showTimeId, seatIds);
         for (ShowTimeSeat showTimeSeat : showTimeSeats) {
             showTimeSeat.setHold(status);
         }
         showTimeSeatRepository.saveAll(showTimeSeats);
+        clear();
     }
 
     @Override
@@ -329,18 +423,17 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         //mảng lưu tên những ghế đã được giữ
         List<String> msg = new ArrayList<>();
         for (ShowTimeSeat showTimeSeat : showTimeSeats) {
-            if(!showTimeSeat.isHold()){
+            if (!showTimeSeat.isHold()) {
                 msg.add(showTimeSeat.getSeat().getName());
             }
 
         }
-      if(!msg.isEmpty()){
+        if (!msg.isEmpty()) {
 //          các tên ghế cách nhau bởi dấu phẩy
-            return "Ghế "+ String.join(",", msg) + " đã được chọn!!!";
-      }
-      else{
-          return null;
-      }
+            return "Ghế " + String.join(",", msg) + " đã được chọn!!!";
+        } else {
+            return null;
+        }
     }
 
     public String randomCode() {

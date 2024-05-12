@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class PromotionFoodDetailDto  {
+public class PromotionFoodDetailDto   {
     private Long id;
    private Long foodRequired;//đồ ăn cần mua
     private int quantityRequired;//số lượng cần mua

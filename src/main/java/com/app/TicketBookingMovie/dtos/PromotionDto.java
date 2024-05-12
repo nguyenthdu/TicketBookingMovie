@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
-public class PromotionDto {
+public class PromotionDto   {
     private Long id;
     private String name;
     private String description;

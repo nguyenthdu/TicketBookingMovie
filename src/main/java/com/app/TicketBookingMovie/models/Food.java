@@ -2,6 +2,7 @@ package com.app.TicketBookingMovie.models;
 
 
 import com.app.TicketBookingMovie.models.enums.ESize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +14,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "food")
-public class Food {
+public class Food{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,6 +29,7 @@ public class Food {
     private CategoryFood categoryFood;
     @ManyToOne
     @JoinColumn(name = "cinema_id")
+    @JsonIgnore
     private Cinema cinema;
    @OneToMany(mappedBy = "food")
     private Set<PriceDetail> priceDetails;

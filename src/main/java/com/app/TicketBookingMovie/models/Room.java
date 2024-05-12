@@ -12,7 +12,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "room")
-public class Room {
+public class Room   {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -18,7 +17,7 @@ import java.util.Set;
 				@UniqueConstraint(columnNames = "code")
 		}
 )
-public class Movie implements Serializable{
+public class Movie  {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -54,7 +53,7 @@ public class Movie implements Serializable{
 	private String cast;
 	@NotEmpty
 	private String producer;
-	@OneToMany
+	@OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private Set<ShowTime> showTimes;
 	private boolean status;
 	private LocalDateTime createdDate= LocalDateTime.now();

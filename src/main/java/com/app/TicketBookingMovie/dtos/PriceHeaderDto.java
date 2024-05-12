@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
-public class PriceHeaderDto {
+public class PriceHeaderDto  {
     private Long id;
     private String code;
     private String name;

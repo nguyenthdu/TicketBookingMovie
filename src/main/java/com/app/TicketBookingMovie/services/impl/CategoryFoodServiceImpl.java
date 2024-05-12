@@ -5,6 +5,7 @@ import com.app.TicketBookingMovie.exception.AppException;
 import com.app.TicketBookingMovie.models.CategoryFood;
 import com.app.TicketBookingMovie.repository.CateogryFoodRepository;
 import com.app.TicketBookingMovie.services.CategoryFoodService;
+import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -14,14 +15,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class CategoryFoodServiceImpl implements CategoryFoodService {
     private final CateogryFoodRepository cateogryFoodRepository;
     private final ModelMapper modelMapper;
-
-    public CategoryFoodServiceImpl(CateogryFoodRepository cateogryFoodRepository, ModelMapper modelMapper) {
-        this.cateogryFoodRepository = cateogryFoodRepository;
-        this.modelMapper = modelMapper;
-    }
 
     public String randomCode() {
         return "DM"+ LocalDateTime.now().getNano();
@@ -36,15 +33,12 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
         categoryFood.setCode(randomCode());
         categoryFood.setCreatedDate(LocalDateTime.now());
         cateogryFoodRepository.save(categoryFood);
-        modelMapper.map(categoryFood, CategoryFoodDto.class);
-
     }
 
     @Override
     public CategoryFoodDto getCategoryFoodById(Long id) {
-       CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy loại đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
+        CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy loại đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
         return modelMapper.map(categoryFood, CategoryFoodDto.class);
-
     }
 
     @Override
@@ -66,7 +60,6 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
         }
         categoryFood.setCreatedDate(LocalDateTime.now());
         cateogryFoodRepository.save(categoryFood);
-
     }
 
     @Override
@@ -74,21 +67,32 @@ public class CategoryFoodServiceImpl implements CategoryFoodService {
         CategoryFood categoryFood = cateogryFoodRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy loại đồ ăn với id: " + id, HttpStatus.NOT_FOUND));
         cateogryFoodRepository.delete(categoryFood);
     }
-
     @Override
-    public List<CategoryFoodDto> getAllCategoryFood(int page, int size,String code, String name) {
+    public List<CategoryFoodDto> getAllCategoryFood(int page, int size, String code, String name) {
         List<CategoryFood> pageCategory  = cateogryFoodRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if(code!=null && !code.isEmpty()){
             pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getCode().equals(code)).toList();
         }
-       else if (name != null && !name.isEmpty()) {
+        else if (name != null && !name.isEmpty()) {
             pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getName().toLowerCase().contains(name.toLowerCase())).toList();
         }
         int fromIndex = page  * size;
         int toIndex = Math.min(fromIndex + size, pageCategory.size());
         return pageCategory.subList(fromIndex, toIndex).stream().map(categoryFood -> modelMapper.map(categoryFood, CategoryFoodDto.class)).toList();
-
     }
+//    public List<CategoryFoodDto> getAllCategoryFoodFromDatabase(int page, int size,String code, String name) {
+//        List<CategoryFood> pageCategory  = cateogryFoodRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+//        if(code!=null && !code.isEmpty()){
+//            pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getCode().equals(code)).toList();
+//        }
+//       else if (name != null && !name.isEmpty()) {
+//            pageCategory = pageCategory.stream().filter(categoryFood -> categoryFood.getName().toLowerCase().contains(name.toLowerCase())).toList();
+//        }
+//        int fromIndex = page  * size;
+//        int toIndex = Math.min(fromIndex + size, pageCategory.size());
+//        return pageCategory.subList(fromIndex, toIndex).stream().map(categoryFood -> modelMapper.map(categoryFood, CategoryFoodDto.class)).toList();
+//
+//    }
 
     @Override
     public long countAllCategoryFood(String code, String name) {

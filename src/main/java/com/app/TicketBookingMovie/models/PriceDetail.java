@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(name = "price_detail")
-public class PriceDetail {
+public class PriceDetail   {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,10 +21,13 @@ public class PriceDetail {
     @Enumerated(EnumType.STRING)
     private EDetailType type; //  'FOOD', 'ROOM' or 'TYPE_SEAT'
     @ManyToOne
+    @JsonIgnore
     private Food food;
     @ManyToOne
+    @JsonIgnore
     private Room room;
     @ManyToOne
+    @JsonIgnore
     private TypeSeat typeSeat;
     @JsonIgnore
     @ManyToOne
