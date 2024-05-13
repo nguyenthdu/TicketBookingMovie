@@ -16,16 +16,16 @@ jobs:
       - name: Build Docker image
         run: docker-compose build
       - name: Tag Docker image
-        run: docker tag springmovieapp thanh369/springmovieapp
+        run: docker tag springmovieapp ${{ secrets.DOCKER_USERNAME }}/springmovieapp
       - name: Push Docker image to Docker Hub
-        run: docker push thanh369/springmovieapp
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/springmovieapp
   deploy:
     needs: build
     runs-on: [springmovie-ec2]
     steps:
       - name: Pull image from docker hub
-        run: docker pull thanh369/springmovieapp
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/springmovieapp
       - name: Delete old container
         run: docker rm -f springmovieapp
       - name: Run new container
-        run: docker run -d -p 8080:8080 --name springmovieapp thanh369/springmovieapp
+        run: docker run -d -p 8080:8080 --name springmovieapp ${{ secrets.DOCKER_USERNAME }}/springmovieapp

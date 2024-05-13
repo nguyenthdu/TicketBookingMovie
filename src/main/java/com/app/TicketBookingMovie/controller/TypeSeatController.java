@@ -14,7 +14,6 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("api/typeSeat")
-@PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
 public class TypeSeatController {
     private final TypeSeatService typeSeatService;
 
@@ -27,26 +26,27 @@ public class TypeSeatController {
         typeSeatService.createTypeSeat();
     }
 
-
     @GetMapping("/{id}")
     public ResponseEntity<TypeSeatDto> getTypeSeatById(@PathVariable Long id) {
         return ResponseEntity.ok(typeSeatService.getTypeSeatById(id));
     }
 
-//    @PutMapping
-//    public ResponseEntity<MessageResponse> updateTypeSeatById(
-//            @RequestParam("id") Long id,
-//            @RequestParam("price") double price) {
-//        TypeSeatDto typeSeatDto = new TypeSeatDto();
-//        typeSeatDto.setId(id);
-////        typeSeatDto.setPrice(price);
-//        try {
-//            typeSeatService.updateTypeSeatById(typeSeatDto);
-//            return ResponseEntity.ok(new MessageResponse("Cập nhật loại ghế thành công.", HttpStatus.OK.value(), Instant.now().toString()));
-//        } catch (AppException e) {
-//            return ResponseEntity.ok(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
-//        }
-//    }
+    // @PutMapping
+    // public ResponseEntity<MessageResponse> updateTypeSeatById(
+    // @RequestParam("id") Long id,
+    // @RequestParam("price") double price) {
+    // TypeSeatDto typeSeatDto = new TypeSeatDto();
+    // typeSeatDto.setId(id);
+    //// typeSeatDto.setPrice(price);
+    // try {
+    // typeSeatService.updateTypeSeatById(typeSeatDto);
+    // return ResponseEntity.ok(new MessageResponse("Cập nhật loại ghế thành công.",
+    // HttpStatus.OK.value(), Instant.now().toString()));
+    // } catch (AppException e) {
+    // return ResponseEntity.ok(new MessageResponse(e.getMessage(), e.getStatus(),
+    // e.getTimestamp()));
+    // }
+    // }
 
     @GetMapping
     public ResponseEntity<Set<TypeSeatDto>> getAllTypeSeats() {
