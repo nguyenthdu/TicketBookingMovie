@@ -3,7 +3,7 @@ version: "3.8"
 services:
   #TODO: Spring boot app
   spring-boot-app:
-    container_name: spring-boot-app-movie
+    container_name: springmovieapp
     build: .
     ports:
       - 8080:8080
