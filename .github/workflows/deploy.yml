@@ -16,9 +16,9 @@ jobs:
       - name: Build Docker image
         run: docker-compose build
       - name: Tag Docker image
-        run: docker tag springmovieapp:latest ${{ secrets.DOCKER_USERNAME }}/springmovieapp
+        run: docker tag springmovieapp ${{ secrets.DOCKER_USERNAME }}/springmovieapp
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/springmovieapp
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/springmovieapp:latest
   deploy:
     needs: build
     runs-on: [springmovie-ec2]
