@@ -46,9 +46,11 @@ public class PromotionController {
         promotionDto.setStatus(status);
         try {
             promotionService.createPromotion(promotionDto);
-            return ResponseEntity.ok(new MessageResponse("Tạo chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo chương trình khuyến mãi thành công",
+                    HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(new MessageResponse(e.getMessage(), 400, LocalDateTime.now().toString()));
+            return ResponseEntity.status(400)
+                    .body(new MessageResponse(e.getMessage(), 400, LocalDateTime.now().toString()));
         }
     }
 
@@ -64,7 +66,7 @@ public class PromotionController {
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
-            @RequestParam(value = "endDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
             @RequestParam("status") boolean status) {
         PromotionDto promotionDto = new PromotionDto();
         promotionDto.setId(id);
@@ -75,9 +77,11 @@ public class PromotionController {
         promotionDto.setStatus(status);
         try {
             promotionService.updatePromotion(promotionDto);
-            return ResponseEntity.ok(new MessageResponse("Cập nhật chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật chương trình khuyến mãi thành công",
+                    HttpStatus.OK.value(), Instant.now().toString()));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(new MessageResponse(e.getMessage(), 400, LocalDateTime.now().toString()));
+            return ResponseEntity.status(400)
+                    .body(new MessageResponse(e.getMessage(), 400, LocalDateTime.now().toString()));
         }
     }
 
@@ -85,7 +89,8 @@ public class PromotionController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deletePromotion(@PathVariable Long id) {
         promotionService.deletePromotion(id);
-        return ResponseEntity.ok(new MessageResponse("Xóa chương trình khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        return ResponseEntity.ok(new MessageResponse("Xóa chương trình khuyến mãi thành công", HttpStatus.OK.value(),
+                Instant.now().toString()));
     }
 
     @GetMapping
@@ -104,18 +109,18 @@ public class PromotionController {
         return ResponseEntity.ok(pageResponse);
     }
 
-
     @PostMapping("/line")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> createPromotionLine(@RequestBody PromotionLineDto promotionLineDto) {
         try {
             promotionLineService.createPromotionLine(promotionLineDto);
-            return ResponseEntity.ok(new MessageResponse("Tạo hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo hoạt động khuyến mãi thành công", HttpStatus.OK.value(),
+                    Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
-
 
     @GetMapping("/line/{id}")
     public ResponseEntity<PromotionLineDto> getPromotionLineById(@PathVariable Long id) {
@@ -132,8 +137,10 @@ public class PromotionController {
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
             @RequestParam(value = "typePromotion", required = false) String typePromotion) {
         PageResponse<PromotionLineDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(promotionLineService.getAllPromotionLineFromPromotionId(page, size, promotionId, code, startDate, endDate, typePromotion));
-        pageResponse.setTotalElements(promotionLineService.countAllPromotionLineFromPromotionId(promotionId, code, startDate, endDate, typePromotion));
+        pageResponse.setContent(promotionLineService.getAllPromotionLineFromPromotionId(page, size, promotionId, code,
+                startDate, endDate, typePromotion));
+        pageResponse.setTotalElements(promotionLineService.countAllPromotionLineFromPromotionId(promotionId, code,
+                startDate, endDate, typePromotion));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
@@ -148,6 +155,7 @@ public class PromotionController {
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "image", required = false) String image,
+            @RequestParam(value = "quantity", required = false) int quantity,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime endDate,
             @RequestParam(value = "status", required = false) boolean status
@@ -161,11 +169,14 @@ public class PromotionController {
         promotionLineDto.setStartDate(startDate);
         promotionLineDto.setEndDate(endDate);
         promotionLineDto.setStatus(status);
+        promotionLineDto.setQuantity(quantity);
         try {
             promotionLineService.updatePromotionLine(promotionLineDto);
-            return ResponseEntity.ok(new MessageResponse("Cập nhật hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật hoạt động khuyến mãi thành công",
+                    HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -173,23 +184,26 @@ public class PromotionController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deletePromotionLine(@PathVariable Long id) {
         promotionLineService.deletePromotionLine(id);
-        return ResponseEntity.ok(new MessageResponse("Xóa hoạt động khuyến mãi thành công", HttpStatus.OK.value(), Instant.now().toString()));
+        return ResponseEntity.ok(new MessageResponse("Xóa hoạt động khuyến mãi thành công", HttpStatus.OK.value(),
+                Instant.now().toString()));
     }
 
     // lấy danh sách promtion line đang hoạt động phù hợp với giá trị hóa đơn
     @GetMapping("/line_discount/active")
-    public ResponseEntity<PromotionLineDto> showPromotionLineDiscountMatchInvoice(@RequestParam("totalPrice") BigDecimal totalPrice) {
+    public ResponseEntity<PromotionLineDto> showPromotionLineDiscountMatchInvoice(
+            @RequestParam("totalPrice") BigDecimal totalPrice) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineDiscountMatchInvoice(totalPrice));
     }
 
     @GetMapping("/line_food/active")
-    public ResponseEntity<PromotionLineDto> showPromotionLineFoodMatchInvoice(@RequestParam("foodId") List<Long> foodId, @RequestParam("cinemaId")Long cinemaId) {
+    public ResponseEntity<PromotionLineDto> showPromotionLineFoodMatchInvoice(@RequestParam("foodId") List<Long> foodId,
+            @RequestParam("cinemaId") Long cinemaId) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineFoodMatchInvoice(foodId, cinemaId));
     }
 
     @GetMapping("/line_ticket/active")
-    public ResponseEntity<PromotionLineDto> showPromotionLineTicketMatchInvoice(@RequestParam("seatId") List<Long> seatId
-            , @RequestParam("showTimeId") Long showTimeId) {
+    public ResponseEntity<PromotionLineDto> showPromotionLineTicketMatchInvoice(
+            @RequestParam("seatId") List<Long> seatId, @RequestParam("showTimeId") Long showTimeId) {
         return ResponseEntity.ok(promotionLineService.showPromotionLineTicketMatchInvoice(seatId, showTimeId));
     }
 
