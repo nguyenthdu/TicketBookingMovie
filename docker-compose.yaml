@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  #TODO: Spring boot app
+  spring-boot-app:
+    container_name: spring-boot-app-movie
+    build: .
+    ports:
+      - 8080:8080
+    environment:
+      # - DATABASE_URL=jdbc:mysql://mysql-movie-container:3306/ticketbookingmovie_db?allowPublicKeyRetrieval=true
+      - DATABASE_URL=jdbc:mysql://moviedb.c104egicofgh.ap-southeast-1.rds.amazonaws.com:3306/moviedb?allowPublicKeyRetrieval=true
+      - DATABASE_USERNAME=thanhdu
+      - DATABASE_PASSWORD=password
+      - JWT_SECRET_KEY=================================================================
+      - JWT_EXPIRATION=86400000
+      - ACCESS_KEY_ID=AKIAVLYFHQ62PPNLH2QZ
+      - SECRET_ACCESS_KEY=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
+      - REGION=ap-southeast-1
+      - S3_BUCKET_NAME_MOVIE=imagemovie
+      - EMAIL_PORT=587
+      - EMAIL=trandu1345@gmail.com
+      - PASSEMAIL=jofp tuth enwp ymkg
+      - REDIS_HOST=redis-12179.c241.us-east-1-4.ec2.redns.redis-cloud.com
+      - REDIS_PORT=12179
+      - REDIS_USERNAME=default
+      - REDIS_PASSWORD=Q6pE048A6Z2MHDFbfBtBmspN6sN1oGDU
