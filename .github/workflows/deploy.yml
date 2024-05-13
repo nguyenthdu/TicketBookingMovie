@@ -24,7 +24,7 @@ jobs:
     runs-on: [springmovie-ec2]
     steps:
       - name: Pull image from docker hub
-        run: docker pull thanh369/springmovieappp
+        run: docker pull thanh369/springmovieappp:latest
       - name: Delete old container
         run: docker rm -f springmovieapp
       - name: Run new container
