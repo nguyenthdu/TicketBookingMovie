@@ -4,6 +4,7 @@ services:
   #TODO: Spring boot app
   springmovieapp:
     container_name: springmovieapp
+    image: springmovieapp
     build: .
     ports:
       - 8080:8080
