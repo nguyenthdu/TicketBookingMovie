@@ -9,4 +9,6 @@ public interface TicketService {
     List<Ticket> createTickets(Long showTimeId, Set<Long> seatIds);
 
     Ticket findById(Long typeSeatFreeId);
+
+    Ticket findByShowTime(Long showTimeId);
 }

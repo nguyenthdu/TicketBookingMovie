@@ -26,12 +26,11 @@ public class TicketServiceImpl implements TicketService {
 
     private final SeatRepository seatRepository;
 
-
-    public TicketServiceImpl(TicketRepository ticketRepository, ShowTimeRepository showTimeRepository, SeatRepository seatRepository) {
+    public TicketServiceImpl(TicketRepository ticketRepository, ShowTimeRepository showTimeRepository,
+            SeatRepository seatRepository) {
         this.ticketRepository = ticketRepository;
         this.showTimeRepository = showTimeRepository;
         this.seatRepository = seatRepository;
-
 
     }
 
@@ -53,11 +52,13 @@ public class TicketServiceImpl implements TicketService {
         if (!showTime.isStatus()) {
             throw new AppException("Trạng thái của lịch chiếu không hoạt động!!!", HttpStatus.BAD_REQUEST);
         }
-        //nếu như trên 8 ghế thì không cho đặt
+        // nếu như trên 8 ghế thì không cho đặt
         if (seatIds.size() > 8) {
             throw new AppException("Chỉ có thể chọn tối đa 8 ghế", HttpStatus.BAD_REQUEST);
         }
-        //Bước 3:kiểm tra xem danh sách id ghế nhập vào có tồn tại trong danh sách ghế của Showtim đó hay không, nếu có thì kiểm tra tiếp trạng thái của nó trong ShowTimeSeat
+        // Bước 3:kiểm tra xem danh sách id ghế nhập vào có tồn tại trong danh sách ghế
+        // của Showtim đó hay không, nếu có thì kiểm tra tiếp trạng thái của nó trong
+        // ShowTimeSeat
         Set<ShowTimeSeat> showTimeSeats = showTime.getShowTimeSeat();
         List<Seat> seats = new ArrayList<>();
         for (Long seatId : seatIds) {
@@ -68,12 +69,13 @@ public class TicketServiceImpl implements TicketService {
                     .anyMatch(showTimeSeat -> showTimeSeat.getSeat().getId().equals(seatId));
 
             if (!isExist) {
-                throw new AppException("Ghế " + seat.getCode() + " không nằm trong lịch chiếu này", HttpStatus.BAD_REQUEST);
+                throw new AppException("Ghế " + seat.getCode() + " không nằm trong lịch chiếu này",
+                        HttpStatus.BAD_REQUEST);
             }
 
             seats.add(seat);
         }
-        //Bước 4: kiểm tra trạng thái của ghế trong ShowTimeSeat
+        // Bước 4: kiểm tra trạng thái của ghế trong ShowTimeSeat
         for (Seat seat : seats) {
             boolean isBooked = showTimeSeats.stream()
                     .filter(showTimeSeat -> showTimeSeat.getSeat().getId().equals(seat.getId()))
@@ -87,9 +89,9 @@ public class TicketServiceImpl implements TicketService {
         }
         int totalSeatsBooked = showTime.getSeatsBooked() + seats.size();
         if (totalSeatsBooked > showTime.getRoom().getTotalSeats()) {
-            throw new AppException("Tất cả ghế trong lịch chiếu này đã được đặt, vui lòng chọn lịch chiếu khác", HttpStatus.BAD_REQUEST);
+            throw new AppException("Tất cả ghế trong lịch chiếu này đã được đặt, vui lòng chọn lịch chiếu khác",
+                    HttpStatus.BAD_REQUEST);
         }
-
 
         // Bước 4: Xử lý vé tạo vé với mỗi ghế được thêm vào
         List<Ticket> createdTickets = new ArrayList<>();
@@ -126,5 +128,10 @@ public class TicketServiceImpl implements TicketService {
     private String randomCode() {
         // TODO: Implement logic to generate unique code for ticket
         return "VE" + LocalDateTime.now().getNano();
+    }
+
+    @Override
+    public Ticket findByShowTime(Long showTimeId) {
+        return ticketRepository.findByShowTimeId(showTimeId);
     }
 }

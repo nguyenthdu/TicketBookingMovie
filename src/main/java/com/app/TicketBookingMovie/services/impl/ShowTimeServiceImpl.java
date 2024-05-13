@@ -10,6 +10,7 @@ import com.app.TicketBookingMovie.repository.RoomRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeRepository;
 import com.app.TicketBookingMovie.repository.ShowTimeSeatRepository;
 import com.app.TicketBookingMovie.services.ShowTimeService;
+import com.app.TicketBookingMovie.services.TicketService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -32,6 +33,7 @@ public class ShowTimeServiceImpl implements ShowTimeService {
 
     private final ShowTimeRepository showTimeRepository;
     private final ShowTimeSeatRepository showTimeSeatRepository;
+    private final TicketService ticketService;
     private final RoomRepository roomRepository;
     private final MovieRepository movieRepository;
     private final ModelMapper modelMapper;
@@ -373,6 +375,12 @@ public class ShowTimeServiceImpl implements ShowTimeService {
         if (showTime.isStatus()) {
             throw new AppException("Không thể xóa lịch chiếu đang hoạt động!!!", HttpStatus.BAD_REQUEST);
         }
+        // không thể xóa lịch chiếu có Ticket
+        Ticket ticket = ticketService.findByShowTime(showTime.getId());
+        if (ticket != null) {
+            throw new AppException("Không thể xóa lịch chiếu đã có vé đặt!!!", HttpStatus.BAD_REQUEST);
+        }
+
         // Xóa lịch chiếu nếu chưa có vé đặt
         showTimeRepository.delete(showTime);
         clear();

@@ -1,0 +1,29 @@
+name: Deploy to AWS ECS
+on:
+  push:
+    branches: [master]
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: [ubuntu-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to docker hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build docker image
+        run: docker-compose build
+      - name: Push docker image to docker hub
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/springmovieapp:latest
+  deploy:
+    needs: build
+    runs-on: [springmovie-ec2]
+    steps:
+      - name: Pull image from docker hub
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/springmovieapp:latest
+      - name: Delete old container
+        run: docker rm -f springmovieapp
+      - name: Run new container
+        run: docker run -d -p 8080:8080 --name springmovieapp ${{ secrets.DOCKER_USERNAME }}/springmovieapp:latest
