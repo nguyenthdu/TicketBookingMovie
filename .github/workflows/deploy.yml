@@ -26,6 +26,6 @@ jobs:
       - name: Pull image from docker hub
         run: docker pull ${{ secrets.DOCKER_USERNAME }}/springmovieapp
       - name: Delete old container
-        run: docker rm -f springmovieapp
+        run: docker rm -f ${{ secrets.DOCKER_USERNAME }}/springmovieapp
       - name: Run new container
         run: docker run -d -p 8080:8080 --name springmovieapp ${{ secrets.DOCKER_USERNAME }}/springmovieapp
