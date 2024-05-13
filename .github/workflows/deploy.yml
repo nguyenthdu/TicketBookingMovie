@@ -11,11 +11,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Login to docker hub
+      - name: Login to Docker Hub
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build docker image
-        run:  docker-compose up -d springmovieapp
-      - name: Push docker image to docker hub
+      - name: Build Docker image
+        run: docker-compose build
+      - name: Tag Docker image
+        run: docker tag springmovieapp ${{ secrets.DOCKER_USERNAME }}/springmovieapp
+      - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.DOCKER_USERNAME }}/springmovieapp
   deploy:
     needs: build
