@@ -9,6 +9,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+
 @Data
 public class PromotionLineDto implements Serializable {
     private Long id;
@@ -16,23 +17,14 @@ public class PromotionLineDto implements Serializable {
     private String name;
     private String image;
     private String description;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime startDate;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime endDate;
-    private String  typePromotion;
-    private Long  promotionId;
+    private String typePromotion;
+    private Long promotionId;
     private PromotionDiscountDetailDto promotionDiscountDetailDto;
     private PromotionFoodDetailDto promotionFoodDetailDto;
     private PromotionTicketDetailDto promotionTicketDetailDto;
     private int quantity;
     private boolean status;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime createdAt;
 }

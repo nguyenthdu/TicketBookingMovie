@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.config.payments;
 
-
 import jakarta.servlet.http.HttpServletRequest;
 
 import javax.crypto.Mac;
@@ -13,8 +12,9 @@ import java.util.*;
 
 public class VNPayConfig {
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:3000/api/invoice/vnpay-payment-return";
-//public static String vnp_ReturnUrl = "http://localhost:8080/api/invoice/vnpay-payment-return";
+    public static String vnp_ReturnUrl = "https://inifinitycine.id.vn/api/invoice/vnpay-payment-return";
+    // public static String vnp_ReturnUrl =
+    // "http://localhost:8080/api/invoice/vnpay-payment-return";
 
     public static String vnp_TmnCode = "THLXOJZP";
     public static String secretKey = "VVMTJILHCMDSYIJGWIQLITTJRVZBIACQ";
@@ -56,7 +56,7 @@ public class VNPayConfig {
         return digest;
     }
 
-    //Util for VNPAY
+    // Util for VNPAY
     public static String hashAllFields(Map fields) {
         List fieldNames = new ArrayList(fields.keySet());
         Collections.sort(fieldNames);
@@ -74,7 +74,7 @@ public class VNPayConfig {
                 sb.append("&");
             }
         }
-        return hmacSHA512(secretKey,sb.toString());
+        return hmacSHA512(secretKey, sb.toString());
     }
 
     public static String hmacSHA512(final String key, final String data) {
