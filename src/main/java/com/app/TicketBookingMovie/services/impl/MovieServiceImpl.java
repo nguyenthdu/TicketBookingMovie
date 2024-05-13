@@ -254,7 +254,11 @@ public class MovieServiceImpl implements MovieService {
         if ("Upcoming".equalsIgnoreCase(typeShow)) {
             allMovies = movieRepository.findAll(Sort.by(Sort.Direction.DESC, "releaseDate"))
                     .stream()
-                    .filter(movie -> movie.getShowTimes().stream().allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())))
+                    .filter(movie -> movie.getShowTimes().stream().allMatch(showTime -> showTime.getShowDate().isAfter(LocalDate.now())
+                    && showTime.isStatus()
+                    )
+                    && movie.isStatus()
+                    )
                     .toList();
             movieDtos = allMovies.stream()
                     .map(movie -> {
@@ -272,7 +276,11 @@ public class MovieServiceImpl implements MovieService {
             Page<Movie> allMoviesPage = movieRepository.findAll(pageable);
             allMovies = allMoviesPage.getContent()
                     .stream()
-                    .filter(movie -> movie.getShowTimes().stream().anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
+//                    .filter(movie -> movie.getShowTimes().stream().anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now())))
+                    //phim đang chiếu là những phim có lịch chiếu đang hoạt động có ít nhất 1 showtime đã qua và ít nhất 1 showtime bằng ngày hiện tại hoặc sau ngày hiện tại và phim đó đang hoạt động
+                    .filter(movie -> movie.getShowTimes().stream().anyMatch(showTime -> showTime.getShowDate().isEqual(LocalDate.now()) || showTime.getShowDate().isBefore(LocalDate.now()) && showTime.isStatus())
+                            && movie.isStatus()
+                    )
                     .toList();
             movieDtos = allMovies.stream().map(movie -> {
                 MovieDto movieDTO = modelMapper.map(movie, MovieDto.class);
