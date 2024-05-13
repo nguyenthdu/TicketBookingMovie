@@ -16,13 +16,13 @@ jobs:
       - name: Build docker image
         run:  docker-compose up -d springmovieapp
       - name: Push docker image to docker hub
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/springmovieapp:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/springmovieapp
   deploy:
     needs: build
     runs-on: [springmovie-ec2]
     steps:
       - name: Pull image from docker hub
-        run: docker pull ${{ secrets.DOCKER_USERNAME }}/springmovieapp:latest
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/springmovieapp
       - name: Delete old container
         run: docker rm -f springmovieapp
       - name: Run new container
