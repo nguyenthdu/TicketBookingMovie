@@ -18,13 +18,13 @@ jobs:
       - name: Tag Docker image
         run: docker tag springmovieapp thanh369/springmovieapp
       - name: Push Docker image to Docker Hub
-        run: docker push thanh369/springmovieapp:latest
+        run: docker push thanh369/springmovieapp
   deploy:
     needs: build
     runs-on: [springmovie-ec2]
     steps:
       - name: Pull image from docker hub
-        run: docker pull thanh369/springmovieappp:latest
+        run: docker pull thanh369/springmovieappp
       - name: Delete old container
         run: docker rm -f springmovieapp
       - name: Run new container
