@@ -37,7 +37,7 @@ jobs:
     runs-on: [springmovie-ec2]
     steps:
       - name: Delete old container
-        run: docker rm -f ${{ secrets.DOCKER_USERNAME }}/springmovieapp
+        run: docker rm -f springmovieapp
       - name: Pull image from docker hub
         run: docker pull ${{ secrets.DOCKER_USERNAME }}/springmovieapp
       - name: Run new container
