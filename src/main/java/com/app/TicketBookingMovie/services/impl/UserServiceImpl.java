@@ -34,12 +34,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
 @Service
 @AllArgsConstructor
 public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
-    //TODO:  keyword final, bạn đảm bảo rằng field userRepository không thể được thay đổi sau khi đối tượng UserServiceImpl được tạo. Điều này tăng cường độ tin cậy và giúp code dễ hiểu hơn.
+    // TODO: keyword final, bạn đảm bảo rằng field userRepository không thể được
+    // thay đổi sau khi đối tượng UserServiceImpl được tạo. Điều này tăng cường độ
+    // tin cậy và giúp code dễ hiểu hơn.
     private final ModelMapper modelMapper;
     private final RoleRepository roleRepository;
     // Inject the PasswordEncoder in the constructor
@@ -53,11 +54,19 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Autowired
     EmailService emailService;
 
-  /*TODO: constructor injection tốt hơn
-  * Testability (Khả năng test): Constructor injection giúp bạn dễ dàng kiểm soát các dependency được sử dụng trong unit test. Bạn chỉ cần tạo một mock object cho UserRepository và truyền trực tiếp vào constructor của UserServiceImpl.
-	Explicit Dependencies (Sự rõ ràng): Constructor injection làm cho dependencies của một class trở nên rõ ràng. Bất kỳ ai nhìn vào constructor cũng đều có thể hiểu được những dependency mà class cần để hoạt động.
-	Immutability (Tính bất biến): Bằng cách sử dụng keyword final, bạn đảm bảo rằng field userRepository không thể được thay đổi sau khi đối tượng UserServiceImpl được tạo. Điều này tăng cường độ tin cậy và giúp code dễ hiểu hơn.
-   */
+    /*
+     * TODO: constructor injection tốt hơn
+     * Testability (Khả năng test): Constructor injection giúp bạn dễ dàng kiểm soát
+     * các dependency được sử dụng trong unit test. Bạn chỉ cần tạo một mock object
+     * cho UserRepository và truyền trực tiếp vào constructor của UserServiceImpl.
+     * Explicit Dependencies (Sự rõ ràng): Constructor injection làm cho
+     * dependencies của một class trở nên rõ ràng. Bất kỳ ai nhìn vào constructor
+     * cũng đều có thể hiểu được những dependency mà class cần để hoạt động.
+     * Immutability (Tính bất biến): Bằng cách sử dụng keyword final, bạn đảm bảo
+     * rằng field userRepository không thể được thay đổi sau khi đối tượng
+     * UserServiceImpl được tạo. Điều này tăng cường độ tin cậy và giúp code dễ hiểu
+     * hơn.
+     */
     public String randomCode() {
         return "KH" + LocalDateTime.now().getNano();
     }
@@ -71,8 +80,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     public void clear() {
-        //xóa dữ liệu của user
-       Set<Object> keys = redisTemplate.keys("User:*");
+        // xóa dữ liệu của user
+        Set<Object> keys = redisTemplate.keys("User:*");
         if (keys != null) {
             redisTemplate.delete(keys);
         }
@@ -81,44 +90,49 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với id: " + email));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với id: " + email));
         return UserDetailsImpl.build(user);
     }
 
     @Override
     public User getCurrentUser(String email) {
-        return userRepository.findByEmail(email).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + email, HttpStatus.NOT_FOUND));
+        return userRepository.findByEmail(email).orElseThrow(
+                () -> new AppException("Không tìm thấy người dùng với id: " + email, HttpStatus.NOT_FOUND));
 
     }
 
     @Override
     public User findById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
+        return userRepository.findById(id)
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
     }
-
 
     @Override
     public UserDto getUserById(Long id) {
         String key = generateKey(id);
         Object cachedData = redisTemplate.opsForValue().get(key);
         if (cachedData == null) {
-            User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
-          UserDto userDto = modelMapper.map(user, UserDto.class);
-          redisTemplate.opsForValue().set(key, userDto);
+            User user = userRepository.findById(id).orElseThrow(
+                    () -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
+            UserDto userDto = modelMapper.map(user, UserDto.class);
+            redisTemplate.opsForValue().set(key, userDto);
             return userDto;
         } else {
-            return  redisObjectMapper.convertValue(cachedData, UserDto.class);
+            return redisObjectMapper.convertValue(cachedData, UserDto.class);
         }
-//        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
-//        return modelMapper.map(user, UserDto.class);
+        // User user = userRepository.findById(id).orElseThrow(() -> new
+        // AppException("Không tìm thấy người dùng với id: " + id,
+        // HttpStatus.NOT_FOUND));
+        // return modelMapper.map(user, UserDto.class);
     }
-
 
     @Override
     public void deleteUser(Long id) {
-        //xoa sẽ chuyển trạng thái user thành false
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
-        //khong the xoa user voi role la admin
+        // xoa sẽ chuyển trạng thái user thành false
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
+        // khong the xoa user voi role la admin
         if (user.getRoles().stream().anyMatch(role -> role.getName().equals(ERole.ROLE_ADMIN))) {
             throw new AppException("Không thể xóa người dùng với quyền admin!", HttpStatus.BAD_REQUEST);
         }
@@ -129,7 +143,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public void updateUser(Long id, UserDto userDTO) {
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng với id: " + id, HttpStatus.NOT_FOUND));
         if (userRepository.existsByPhone(userDTO.getPhone()) && !user.getPhone().equals(userDTO.getPhone())) {
             throw new AppException("Số điện thoại đã tồn tại!", HttpStatus.BAD_REQUEST);
         }
@@ -163,8 +178,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         User user = new User();
         user.setCode(randomCode());
         LocalDateTime now = LocalDateTime.now();
-        user.setUsername("Khách hàng_" + now.getDayOfMonth() + now.getMonthValue() + now.getYear() + "_" + now.getHour() + now.getMinute() + now.getSecond());
-        Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
+        user.setUsername("Khách hàng_" + now.getDayOfMonth() + now.getMonthValue() + now.getYear() + "_" + now.getHour()
+                + now.getMinute() + now.getSecond());
+        Role role = roleRepository.findByName(ERole.ROLE_USER)
+                .orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(null);
         String email = "guest" + now.getNano() + "@gmail.com";
         user.setEmail(email);
@@ -186,14 +203,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setEmail(userDto.getEmail());
         user.setPassword(passwordConfig.passwordEncoder()
                 .encode("cinema123456"));
-        Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
+        Role role = roleRepository.findByName(ERole.ROLE_USER)
+                .orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
         user.setCreatedDate(LocalDateTime.now());
         user.setEnabled(true);
         userRepository.save(user);
     }
 
-    //TODO: create user
+    // TODO: create user
     @Override
     public void createUser(SignupRequest signupRequest) {
         if (userRepository.existsByEmail(signupRequest.getEmail())) {
@@ -209,15 +227,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setGender(signupRequest.isGender());
         user.setBirthday(signupRequest.getBirthday());
         user.setPhone(signupRequest.getPhone());
-        Role role = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
+        Role role = roleRepository.findByName(ERole.ROLE_USER)
+                .orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
-//        user.setCreatedDate(LocalDateTime.now());
+        // user.setCreatedDate(LocalDateTime.now());
         user.setEnabled(false);
         user.setCreatedDate(LocalDateTime.now());
         user.setPassword(passwordConfig.passwordEncoder()
                 .encode(signupRequest.getPassword()));
         userRepository.save(user);
-//verify email
+        // verify email
         ConfirmationToken confirmationToken = new ConfirmationToken(user);
 
         confirmationTokenRepository.save(confirmationToken);
@@ -226,13 +245,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         mailMessage.setTo(user.getEmail());
         mailMessage.setSubject("Đăng ký thành công!");
         mailMessage.setText("Bấm vào đây để xác nhận email: "
-                + "http://localhost:8080/api/users/confirm-account?token=" + confirmationToken.getConfirmationToken());
+                + "http://inifinitycine.id.vn:8080/api/users/confirm-account?token="
+                + confirmationToken.getConfirmationToken());
         emailService.sendEmail(mailMessage);
 
         System.out.println("Confirmation Token: " + confirmationToken.getConfirmationToken());
         clear();
     }
-
 
     @Override
     public void createMor(SignupRequest signupRequest) {
@@ -249,7 +268,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setGender(signupRequest.isGender());
         LocalDate birthday = LocalDate.parse("2000-01-01");
         user.setBirthday(birthday);
-        Role role = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
+        Role role = roleRepository.findByName(ERole.ROLE_MODERATOR)
+                .orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
         user.setRoles(Set.of(role));
         user.setPhone(signupRequest.getPhone());
         user.setEnabled(true);
@@ -278,7 +298,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public void createAdmin() {
         User user = new User();
         if (!userRepository.existsByEmail("admin@gmail.com")) {
-            Role role = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
+            Role role = roleRepository.findByName(ERole.ROLE_ADMIN)
+                    .orElseThrow(() -> new AppException("Error: Role is not found.", HttpStatus.NOT_FOUND));
             user.setRoles(Set.of(role));
             user.setUsername("admin");
             user.setEmail("admin@gmail.com");
@@ -287,7 +308,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             user.setBirthday(birthday);
             user.setPhone("0120000001");
             user.setCode("ADMIN123456789");
-//            user.setCreatedDate(LocalDateTime.now());
+            // user.setCreatedDate(LocalDateTime.now());
             user.setEnabled(true);
             user.setPassword(passwordConfig.passwordEncoder()
                     .encode("admin123456"));
@@ -308,15 +329,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
      */
     @Override
     public List<UserDto> getAllUsersPage(Integer page,
-                                         Integer size, String code, String username,
-                                         String phone, String email, Long roleId) {
+            Integer size, String code, String username,
+            String phone, String email, Long roleId) {
         String key = "User:all";
         List<User> users;
         List<UserDto> userDtos;
         Object cachedData = redisTemplate.opsForValue().get(key);
         if (cachedData == null) {
-//            users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
-            users = userRepository.findByRoles_NameInOrderByCreatedDateDesc(Set.of(ERole.ROLE_USER, ERole.ROLE_MODERATOR));
+            // users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+            users = userRepository
+                    .findByRoles_NameInOrderByCreatedDateDesc(Set.of(ERole.ROLE_USER, ERole.ROLE_MODERATOR));
             userDtos = users.stream()
                     .map(user -> modelMapper.map(user, UserDto.class))
                     .collect(Collectors.toList());
@@ -328,46 +350,48 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
 
         if (code != null && !code.isEmpty()) {
-//            users = users.stream()
-//                    .filter(user -> user.getCode().equals(code))
-//                    .collect(Collectors.toList());
+            // users = users.stream()
+            // .filter(user -> user.getCode().equals(code))
+            // .collect(Collectors.toList());
             userDtos = userDtos.stream()
                     .filter(user -> user.getCode().equals(code))
                     .collect(Collectors.toList());
         } else if (username != null && !username.isEmpty()) {
-//            users = users.stream()
-//                    .filter(user -> user.getUsername().toLowerCase().contains(username.toLowerCase()))
-//                    .collect(Collectors.toList());
+            // users = users.stream()
+            // .filter(user ->
+            // user.getUsername().toLowerCase().contains(username.toLowerCase()))
+            // .collect(Collectors.toList());
             userDtos = userDtos.stream()
                     .filter(user -> user.getUsername().toLowerCase().contains(username.toLowerCase()))
                     .collect(Collectors.toList());
         } else if (phone != null && !phone.isEmpty()) {
-//            users = users.stream()
-//                    .filter(user -> user.getPhone() != null && user.getPhone().equals(phone))
-//                    .collect(Collectors.toList());
+            // users = users.stream()
+            // .filter(user -> user.getPhone() != null && user.getPhone().equals(phone))
+            // .collect(Collectors.toList());
             userDtos = userDtos.stream()
                     .filter(user -> user.getPhone() != null && user.getPhone().equals(phone))
                     .collect(Collectors.toList());
         } else if (email != null && !email.isEmpty()) {
-//            users = users.stream()
-//                    .filter(user -> user.getEmail() != null && user.getEmail().equals(email))
-//                    .collect(Collectors.toList());
+            // users = users.stream()
+            // .filter(user -> user.getEmail() != null && user.getEmail().equals(email))
+            // .collect(Collectors.toList());
             userDtos = userDtos.stream()
                     .filter(user -> user.getEmail() != null && user.getEmail().equals(email))
                     .collect(Collectors.toList());
         } else if (roleId != null && roleId > 0) {
-//            users = users.stream()
-//                    .filter(user -> user.getRoles().stream().anyMatch(role -> role.getId().equals(roleId)))
-//                    .collect(Collectors.toList());
+            // users = users.stream()
+            // .filter(user -> user.getRoles().stream().anyMatch(role ->
+            // role.getId().equals(roleId)))
+            // .collect(Collectors.toList());
             userDtos = userDtos.stream()
                     .filter(user -> user.getRoles().stream().anyMatch(role -> role.getId().equals(roleId)))
                     .collect(Collectors.toList());
         }
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, userDtos.size());
-//        return users.subList(fromIndex, toIndex).stream()
-//                .map(user -> modelMapper.map(user, UserDto.class))
-//                .collect(Collectors.toList());
+        // return users.subList(fromIndex, toIndex).stream()
+        // .map(user -> modelMapper.map(user, UserDto.class))
+        // .collect(Collectors.toList());
 
         return userDtos.subList(fromIndex, toIndex);
     }
@@ -391,14 +415,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public void updatePassword(Long id, String passwordOld, String passwordNew, String confirmPassword) {
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException("Không tìm thấy người dùng" + id, HttpStatus.NOT_FOUND));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng" + id, HttpStatus.NOT_FOUND));
         if (!passwordConfig.passwordEncoder().matches(passwordOld, user.getPassword())) {
             throw new AppException("Mật khẩu không đúng!", HttpStatus.BAD_REQUEST);
         }
         if (!passwordNew.equals(confirmPassword)) {
             throw new AppException("Mật khẩu không khớp!", HttpStatus.BAD_REQUEST);
         }
-        //mật khẩu mới không được trùng với mật khẩu cũ
+        // mật khẩu mới không được trùng với mật khẩu cũ
         if (passwordConfig.passwordEncoder().matches(passwordNew, user.getPassword())) {
             throw new AppException("Mật khẩu mới không được trùng với mật khẩu cũ!", HttpStatus.BAD_REQUEST);
         }
@@ -420,7 +445,4 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return ResponseEntity.badRequest().body("Lỗi không thể xác nhận email.");
     }
 
-
 }
-
-
