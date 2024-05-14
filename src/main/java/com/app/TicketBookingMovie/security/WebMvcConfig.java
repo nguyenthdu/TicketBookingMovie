@@ -13,9 +13,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                .allowedHeaders("Authorization", "Content-Type") // Adjust as needed
+                .allowedHeaders("*")
                 .allowCredentials(true)
-                .allowedOrigins("https://infinitycine.id.vn") // Replace with your frontend domain
+                .allowedOriginPatterns("*")
                 .maxAge(MAX_AGE_SECS);
     }
 }
