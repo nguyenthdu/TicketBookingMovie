@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.security;
 
-
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -14,9 +13,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
+                .allowedHeaders("Authorization", "Content-Type") // Adjust as needed
                 .allowCredentials(true)
-                .allowedOriginPatterns("*")
+                .allowedOrigins("https://infinitycine.id.vn") // Replace with your frontend domain
                 .maxAge(MAX_AGE_SECS);
     }
 }

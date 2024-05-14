@@ -12,11 +12,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-
-import java.util.Arrays;
 
 @Configuration
 @EnableMethodSecurity
@@ -54,42 +49,24 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
 	}
 
 	@Bean
-	public CorsFilter corsFilter() {
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		CorsConfiguration config = new CorsConfiguration();
-		config.setAllowCredentials(true);
-		config.addAllowedOrigin("https://infinitycine.id.vn"); // Thêm tên miền frontend của bạn ở đây
-		config.addAllowedHeader("*");
-		config.addAllowedMethod("*");
-		source.registerCorsConfiguration("/**", config);
-		return new CorsFilter(source);
-	}
-
-	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.cors(cors -> cors.configurationSource(request -> {
-			CorsConfiguration configuration = new CorsConfiguration();
-			configuration.setAllowedOrigins(Arrays.asList("https://infinitycine.id.vn"));
-			configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-			configuration.setAllowedHeaders(Arrays.asList("*"));
-			return configuration;
-		}))
-				.csrf(csrf -> csrf.disable())
+		http.csrf(csrf -> csrf.disable())
 				.exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/test/**", "/api/users/**", "/api/genre/**", "/api/movie/**",
-								"/api/address/**", "/api/cinema/**", "/api/seat/**", "/api/categoryFood/**",
+								"/api/address/**", "/api/cinema/**", "/api/seat/**", "api/categoryFood/**",
 								"/api/food/**",
-								"/api/typeSeat/**", "/api/room/**", "/api/showtime/**", "/api/ticket/**",
+								"/api/typeSeat/**", "api/room/**", "/api/showtime/**", "/api/ticket/**",
 								"/api/promotion/**",
 								"/api/price/**", "/api/invoice/**", "/api/aws/**", "/api/statistical/**")
 						.permitAll()
-						.anyRequest().authenticated());
+						.anyRequest().authenticated())
+				.authenticationProvider(authenticationProvider());
 
-		http.authenticationProvider(authenticationProvider());
 		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
+
 	}
 }
