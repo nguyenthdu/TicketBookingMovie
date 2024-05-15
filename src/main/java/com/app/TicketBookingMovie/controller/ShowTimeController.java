@@ -1,6 +1,5 @@
 package com.app.TicketBookingMovie.controller;
 
-
 import com.app.TicketBookingMovie.dtos.ShowTimeDto;
 import com.app.TicketBookingMovie.dtos.ShowTimeSeatDto;
 import com.app.TicketBookingMovie.exception.AppException;
@@ -33,24 +32,28 @@ public class ShowTimeController {
     public ResponseEntity<MessageResponse> createShowTime(@RequestBody Set<ShowTimeDto> showTimeDtos) {
         try {
             showTimeService.createShowTime(showTimeDtos);
-            return ResponseEntity.ok(new MessageResponse("Tạo lịch chiếu thành công.", HttpStatus.CREATED.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Tạo lịch chiếu thành công.", HttpStatus.CREATED.value(),
+                    Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<ShowTimeDto> getShowTimeById(@PathVariable Long id) {
         ShowTimeDto showTimeDto = showTimeService.getShowTimeById(id);
         return ResponseEntity.ok(showTimeDto);
     }
+
     @GetMapping
     public ResponseEntity<PageResponse<ShowTimeDto>> getAllShowTimes(@RequestParam(defaultValue = "0") Integer page,
-                                                                     @RequestParam(defaultValue = "10") Integer size,
-                                                                     @RequestParam(required = false) String code,
-                                                                     @RequestParam("movieId") Long movieId,
-                                                                     @RequestParam("cinemaId") Long cinemaId,
-                                                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-                                                                     @RequestParam(required = false) Long roomId) {
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String code,
+            @RequestParam(value = "movieId", required = false) Long movieId,
+            @RequestParam("cinemaId") Long cinemaId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) Long roomId) {
         PageResponse<ShowTimeDto> pageResponse = new PageResponse<>();
         pageResponse.setContent(showTimeService.getAllShowTimes(page, size, code, cinemaId, movieId, date, roomId));
         pageResponse.setTotalElements(showTimeService.countAllShowTimes(code, cinemaId, movieId, date, roomId));
@@ -64,11 +67,11 @@ public class ShowTimeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> updateShowTime(
             @RequestParam("id") Long id,
-            @RequestParam(value = "showDate",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate showDate,
-            @RequestParam(value = "showTime",required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime showTime,
-            @RequestParam(value = "movieId",required = false) Long movieId,
-            @RequestParam(value = "roomId",required = false) Long roomId,
-            @RequestParam(value = "status",required = false) boolean status) {
+            @RequestParam(value = "showDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate showDate,
+            @RequestParam(value = "showTime", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime showTime,
+            @RequestParam(value = "movieId", required = false) Long movieId,
+            @RequestParam(value = "roomId", required = false) Long roomId,
+            @RequestParam(value = "status", required = false) boolean status) {
         ShowTimeDto showTimeDto = new ShowTimeDto();
         showTimeDto.setId(id);
         showTimeDto.setShowDate(showDate);
@@ -79,9 +82,11 @@ public class ShowTimeController {
 
         try {
             showTimeService.updateShowTime(showTimeDto);
-            return ResponseEntity.ok(new MessageResponse("Cập nhật lịch chiếu thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật lịch chiếu thành công", HttpStatus.OK.value(),
+                    Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -90,9 +95,11 @@ public class ShowTimeController {
     public ResponseEntity<MessageResponse> deleteShowTime(@PathVariable Long id) {
         try {
             showTimeService.deleteShowTime(id);
-            return ResponseEntity.ok(new MessageResponse("Xóa lịch chiếu thành công", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(
+                    new MessageResponse("Xóa lịch chiếu thành công", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -103,25 +110,29 @@ public class ShowTimeController {
     }
 
     @GetMapping("/dates")
-    public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@RequestParam Long movieId, @RequestParam Long cinemaId) {
+    public ResponseEntity<Set<LocalDate>> getShowDatesByMovieId(@RequestParam Long movieId,
+            @RequestParam Long cinemaId) {
         Set<LocalDate> showDates = showTimeService.getShowDatesByMovieId(movieId, cinemaId);
         return ResponseEntity.ok(showDates);
     }
 
     @PostMapping("/seat")
     public ResponseEntity<MessageResponse> updateStatusHoldSeat(@RequestParam Set<Long> seatIds,
-                                                                @RequestParam Long showTimeId,
-                                                                @RequestParam boolean status) {
+            @RequestParam Long showTimeId,
+            @RequestParam boolean status) {
         try {
             showTimeService.updateStatusHoldSeat(seatIds, showTimeId, status);
-            return ResponseEntity.ok(new MessageResponse("Cập nhật trạng thái giữ ghế thành công!!!", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật trạng thái giữ ghế thành công!!!",
+                    HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
     @GetMapping("/seat")
-    public ResponseEntity<MessageResponse> checkSeatStatus(@RequestParam Set<Long> seatIds, @RequestParam Long showTimeId) {
+    public ResponseEntity<MessageResponse> checkSeatStatus(@RequestParam Set<Long> seatIds,
+            @RequestParam Long showTimeId) {
         String message = showTimeService.checkSeatStatus(seatIds, showTimeId);
         return ResponseEntity.ok(new MessageResponse(message, HttpStatus.OK.value(), Instant.now().toString()));
     }
