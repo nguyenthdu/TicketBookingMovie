@@ -19,6 +19,8 @@ public class PromotionLine {
     private String code;
     private String name;
     private String image;
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;

@@ -21,6 +21,8 @@ public class ReturnInvoice implements Serializable {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
     private String code;
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String reason;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     @JsonSerialize(using = LocalDateTimeSerializer.class)

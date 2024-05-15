@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-
 @Service
 public class VNPAYServiceImpl implements VNPAYService {
     private final InvoiceService invoiceService;
@@ -25,15 +24,15 @@ public class VNPAYServiceImpl implements VNPAYService {
     }
 
     @Override
-    public String createOrder(HttpServletRequest request, int amount, Long showTimeId, Set<Long> seatIds, List<Long> foodIds, String emailUser, Long staffId) {
-        //Các bạn có thể tham khảo tài liệu hướng dẫn và điều chỉnh các tham số
+    public String createOrder(HttpServletRequest request, int amount, Long showTimeId, Set<Long> seatIds,
+            List<Long> foodIds, String emailUser, Long staffId) {
+        // Các bạn có thể tham khảo tài liệu hướng dẫn và điều chỉnh các tham số
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
         String vnp_TxnRef = VNPayConfig.getRandomNumber(8);
         String vnp_IpAddr = VNPayConfig.getIpAddress(request);
         String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
         String orderType = "order-type";
-
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
@@ -42,17 +41,16 @@ public class VNPAYServiceImpl implements VNPAYService {
         vnp_Params.put("vnp_Amount", String.valueOf(amount * 100));
         vnp_Params.put("vnp_CurrCode", "VND");
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-        //lưu các thông tin vào orderInfo
+        // lưu các thông tin vào orderInfo
         StringBuilder orderInfo = new StringBuilder();
         orderInfo.append(showTimeId).append(";");
         for (Long seatId : seatIds) {
             orderInfo.append(seatId).append(",");
         }
         orderInfo.append(";");
-        if(foodIds.isEmpty()){
+        if (foodIds.isEmpty()) {
             orderInfo.append(" ,");
-        }
-        else{
+        } else {
             for (Long foodId : foodIds) {
                 orderInfo.append(foodId).append(",");
             }
@@ -64,13 +62,11 @@ public class VNPAYServiceImpl implements VNPAYService {
         vnp_Params.put("vnp_OrderInfo", orderInfo.toString());
         vnp_Params.put("vnp_OrderType", orderType);
 
-
         String locate = "vn";
         vnp_Params.put("vnp_Locale", locate);
 
         vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_ReturnUrl);
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
-
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -90,12 +86,12 @@ public class VNPAYServiceImpl implements VNPAYService {
             String fieldName = (String) itr.next();
             String fieldValue = (String) vnp_Params.get(fieldName);
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                //Build hash data
+                // Build hash data
                 hashData.append(fieldName);
                 hashData.append('=');
                 try {
                     hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    //Build query
+                    // Build query
                     query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()));
                     query.append('=');
                     query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
@@ -118,7 +114,7 @@ public class VNPAYServiceImpl implements VNPAYService {
 
     public int orderReturn(HttpServletRequest request) {
         Map fields = new HashMap();
-        for (Enumeration params = request.getParameterNames(); params.hasMoreElements(); ) {
+        for (Enumeration params = request.getParameterNames(); params.hasMoreElements();) {
             String fieldName = null;
             String fieldValue = null;
             try {
@@ -140,7 +136,7 @@ public class VNPAYServiceImpl implements VNPAYService {
             fields.remove("vnp_SecureHash");
         }
         String signValue = VNPayConfig.hashAllFields(fields);
-        //lấy thông tin từ request để tạo hóa đơn
+        // lấy thông tin từ request để tạo hóa đơn
         Long showTimeId = Long.parseLong(request.getParameter("vnp_OrderInfo").split(";")[0]);
         Set<Long> seatIds = new HashSet<>();
         String[] seatIdStr = request.getParameter("vnp_OrderInfo").split(";")[1].split(",");
@@ -150,7 +146,7 @@ public class VNPAYServiceImpl implements VNPAYService {
         List<Long> foodIds = new ArrayList<>();
         String[] foodIdStr = request.getParameter("vnp_OrderInfo").split(";")[2].split(",");
         for (String s : foodIdStr) {
-            if(!s.equals(" ")) {
+            if (!s.equals(" ")) {
                 foodIds.add(Long.parseLong(s));
             }
         }

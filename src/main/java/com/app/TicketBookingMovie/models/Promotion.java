@@ -16,6 +16,8 @@ public class Promotion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;

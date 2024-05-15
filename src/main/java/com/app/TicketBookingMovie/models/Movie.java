@@ -12,12 +12,10 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "movie",
-		uniqueConstraints = {
-				@UniqueConstraint(columnNames = "code")
-		}
-)
-public class Movie  {
+@Table(name = "movie", uniqueConstraints = {
+		@UniqueConstraint(columnNames = "code")
+})
+public class Movie {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -28,20 +26,17 @@ public class Movie  {
 	private String imageLink;
 	@NotEmpty
 	private String trailerLink;
-	@NotEmpty
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String description;
 	@NotEmpty
 	private int durationMinutes;
-	@ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-	@JoinTable(name = "movie_genre",
-			joinColumns = @JoinColumn(name = "movie_id"),
-			inverseJoinColumns = @JoinColumn(name = "genre_id"))
+	@ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+	@JoinTable(name = "movie_genre", joinColumns = @JoinColumn(name = "movie_id"), inverseJoinColumns = @JoinColumn(name = "genre_id"))
 	private Set<Genre> genres;
-	//many to many cinema
-	@ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-	@JoinTable(name = "movie_cinema",
-			joinColumns = @JoinColumn(name = "movie_id"),
-			inverseJoinColumns = @JoinColumn(name = "cinema_id"))
+	// many to many cinema
+	@ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+	@JoinTable(name = "movie_cinema", joinColumns = @JoinColumn(name = "movie_id"), inverseJoinColumns = @JoinColumn(name = "cinema_id"))
 	private Set<Cinema> cinemas;
 	@NotEmpty
 	private LocalDate releaseDate;
@@ -56,7 +51,8 @@ public class Movie  {
 	@OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private Set<ShowTime> showTimes;
 	private boolean status;
-	private LocalDateTime createdDate= LocalDateTime.now();
+	private LocalDateTime createdDate = LocalDateTime.now();
+
 	public Movie() {
 	}
 
