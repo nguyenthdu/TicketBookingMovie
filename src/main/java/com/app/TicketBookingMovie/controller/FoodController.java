@@ -42,9 +42,11 @@ public class FoodController {
         foodDto.setStatus(status);
         try {
             foodService.createFood(foodDto);
-            return ResponseEntity.ok(new MessageResponse("Tạo đồ ăn thành công.", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity
+                    .ok(new MessageResponse("Tạo đồ ăn thành công.", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -76,9 +78,11 @@ public class FoodController {
 
         try {
             foodService.updateFood(foodDto);
-            return ResponseEntity.ok(new MessageResponse("Cập nhật thành công " + foodDto.getName(), HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity.ok(new MessageResponse("Cập nhật thành công " + foodDto.getName(),
+                    HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -87,9 +91,11 @@ public class FoodController {
     public ResponseEntity<MessageResponse> deleteFood(@PathVariable Long id) {
         try {
             foodService.deleteFoodById(id);
-            return ResponseEntity.ok(new MessageResponse("Xóa thành công!!", HttpStatus.OK.value(), Instant.now().toString()));
+            return ResponseEntity
+                    .ok(new MessageResponse("Xóa thành công!!", HttpStatus.OK.value(), Instant.now().toString()));
         } catch (AppException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse(e.getMessage(), e.getStatus(), e.getTimestamp()));
         }
     }
 
@@ -100,11 +106,11 @@ public class FoodController {
             @RequestParam(value = "code", required = false) String code,
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @RequestParam(value = "cinemaId") Long cinemaId,
+            @RequestParam(value = "cinemaId", required = false) Long cinemaId,
             @RequestParam(value = "sizeFood", required = false) String sizeFood) {
         PageResponse<FoodDto> pageResponse = new PageResponse<>();
-        pageResponse.setContent(foodService.getAllFood(page, size,cinemaId, code, name, categoryId, sizeFood));
-        pageResponse.setTotalElements(foodService.countAllFood(cinemaId,code, name, categoryId, sizeFood));
+        pageResponse.setContent(foodService.getAllFood(page, size, cinemaId, code, name, categoryId, sizeFood));
+        pageResponse.setTotalElements(foodService.countAllFood(cinemaId, code, name, categoryId, sizeFood));
         pageResponse.setTotalPages((int) Math.ceil((double) pageResponse.getTotalElements() / size));
         pageResponse.setCurrentPage(page);
         pageResponse.setPageSize(size);
