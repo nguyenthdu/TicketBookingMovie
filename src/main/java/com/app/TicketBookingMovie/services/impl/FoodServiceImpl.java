@@ -29,10 +29,10 @@ public class FoodServiceImpl implements FoodService {
     private final CinemaService cinemaService;
 
     public FoodServiceImpl(ModelMapper modelMapper,
-                           FoodRepository foodRepository,
-                           CategoryFoodService categoryFoodService,
-                           AwsService awsService,
-                           CinemaService cinemaService) {
+            FoodRepository foodRepository,
+            CategoryFoodService categoryFoodService,
+            AwsService awsService,
+            CinemaService cinemaService) {
         this.modelMapper = modelMapper;
         this.foodRepository = foodRepository;
         this.categoryFoodService = categoryFoodService;
@@ -44,13 +44,13 @@ public class FoodServiceImpl implements FoodService {
         return "DA" + LocalDateTime.now().getNano();
     }
 
-
     @Override
     public void createFood(FoodDto foodDto) {
-        //nếu tên food trong 1 cinema đã tồn tại
+        // nếu tên food trong 1 cinema đã tồn tại
         Cinema cinema = cinemaService.findById(foodDto.getCinemaId());
         if (foodRepository.findByNameAndCinemaId(foodDto.getName(), foodDto.getCinemaId()).isPresent()) {
-            throw new AppException("Tên " + foodDto.getName() + "đã tồn tại trong rạp " + cinema.getName() + "!!!", HttpStatus.BAD_REQUEST);
+            throw new AppException("Tên " + foodDto.getName() + "đã tồn tại trong rạp " + cinema.getName() + "!!!",
+                    HttpStatus.BAD_REQUEST);
         }
         Food food = new Food();
         getSize(foodDto, food);
@@ -61,9 +61,11 @@ public class FoodServiceImpl implements FoodService {
         food.setQuantity(foodDto.getQuantity());
         food.setCreatedDate(LocalDateTime.now());
         food.setCategoryFood(categoryFoodService.findCategoryFoodById(foodDto.getCategoryId()));
-        //lấy danh sách rạp
-        if(!cinema.isStatus() && !food.isStatus()){
-            throw new AppException("Không thể đặt trạng thái của đồ ăn hoạt động khi trạng thái của rạp không hoạt động!!!", HttpStatus.BAD_REQUEST);
+        // lấy danh sách rạp
+        if (!cinema.isStatus() && !food.isStatus()) {
+            throw new AppException(
+                    "Không thể đặt trạng thái của đồ ăn hoạt động khi trạng thái của rạp không hoạt động!!!",
+                    HttpStatus.BAD_REQUEST);
         }
         food.setCinema(cinemaService.findById(foodDto.getCinemaId()));
         food.setCreatedDate(LocalDateTime.now());
@@ -84,20 +86,22 @@ public class FoodServiceImpl implements FoodService {
         }
     }
 
-//    //get price food
-//    public BigDecimal getPriceFood(Food food) {
-//        List<PriceDetail> currentPriceDetails = priceDetailService.priceActive();
-//        Optional<PriceDetail> foodPriceDetailOptional = currentPriceDetails.stream()
-//                .filter(detail -> detail.getType() == EDetailType.FOOD && Objects.equals(detail.getFood().getId(), food.getId()))
-//                .findFirst();
-//        return foodPriceDetailOptional.map(PriceDetail::getPrice).orElse(BigDecimal.ZERO);
-//    }
+    // //get price food
+    // public BigDecimal getPriceFood(Food food) {
+    // List<PriceDetail> currentPriceDetails = priceDetailService.priceActive();
+    // Optional<PriceDetail> foodPriceDetailOptional = currentPriceDetails.stream()
+    // .filter(detail -> detail.getType() == EDetailType.FOOD &&
+    // Objects.equals(detail.getFood().getId(), food.getId()))
+    // .findFirst();
+    // return
+    // foodPriceDetailOptional.map(PriceDetail::getPrice).orElse(BigDecimal.ZERO);
+    // }
 
     @Override
     public FoodDto getFoodById(Long id) {
         Food food = foodRepository.findById(id)
                 .orElseThrow(() -> new AppException("Không tìm đồ ăn với id: : " + id, HttpStatus.NOT_FOUND));
-        //xử lý in ra tên category
+        // xử lý in ra tên category
 
         return convertFoodDto(food);
 
@@ -114,10 +118,13 @@ public class FoodServiceImpl implements FoodService {
     public void updateFood(FoodDto foodDto) {
         Cinema cinema = cinemaService.findById(foodDto.getCinemaId());
         Food food = foodRepository.findById(foodDto.getId())
-                .orElseThrow(() -> new AppException("Không tìm đồ ăn với id: " + foodDto.getId(), HttpStatus.NOT_FOUND));
-        if (!foodDto.getName().isEmpty() && !foodDto.getName().isBlank() && !foodDto.getName().equalsIgnoreCase(food.getName())) {
+                .orElseThrow(
+                        () -> new AppException("Không tìm đồ ăn với id: " + foodDto.getId(), HttpStatus.NOT_FOUND));
+        if (!foodDto.getName().isEmpty() && !foodDto.getName().isBlank()
+                && !foodDto.getName().equalsIgnoreCase(food.getName())) {
             if (foodRepository.findByNameAndCinemaId(foodDto.getName(), foodDto.getCinemaId()).isPresent()) {
-                throw new AppException("Tên " + foodDto.getName() + "đã tồn tại trong rạp " + cinema.getName(), HttpStatus.BAD_REQUEST);
+                throw new AppException("Tên " + foodDto.getName() + "đã tồn tại trong rạp " + cinema.getName(),
+                        HttpStatus.BAD_REQUEST);
             }
             food.setName(foodDto.getName());
         } else {
@@ -145,7 +152,8 @@ public class FoodServiceImpl implements FoodService {
         } else {
             food.setQuantity(food.getQuantity());
         }
-        if (!foodDto.getImage().isEmpty() && !foodDto.getImage().isBlank() && !foodDto.getImage().equalsIgnoreCase(food.getImage())) {
+        if (!foodDto.getImage().isEmpty() && !foodDto.getImage().isBlank()
+                && !foodDto.getImage().equalsIgnoreCase(food.getImage())) {
             awsService.deleteImage(food.getImage());
             food.setImage(foodDto.getImage());
         } else {
@@ -159,9 +167,10 @@ public class FoodServiceImpl implements FoodService {
 
     @Override
     public void updateQuantityFood(Long foodId, Long cinemaId, int quantity) {
-       //tìm đồ ăn trong rạp
+        // tìm đồ ăn trong rạp
         Food food = foodRepository.findByIdAndCinemaId(foodId, cinemaId)
-                .orElseThrow(() -> new AppException("Không tìm thấy đồ ăn với id: " + foodId + " và rạp: " + cinemaId, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy đồ ăn với id: " + foodId + " và rạp: " + cinemaId,
+                        HttpStatus.NOT_FOUND));
         food.setQuantity(food.getQuantity() + quantity);
         foodRepository.save(food);
     }
@@ -174,23 +183,31 @@ public class FoodServiceImpl implements FoodService {
         foodRepository.deleteById(id);
     }
 
-
     @Override
-    public List<FoodDto> getAllFood(Integer page, Integer size, Long cinemaId, String code, String name, Long categoryId, String sizeFood) {
+    public List<FoodDto> getAllFood(Integer page, Integer size, Long cinemaId, String code, String name,
+            Long categoryId, String sizeFood) {
 
         List<Food> pageFood = foodRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
         if (cinemaId != null) {
             if (code != null && !code.isEmpty()) {
-                pageFood =  pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getCode().contains(code)).toList();
+                pageFood = pageFood.stream()
+                        .filter(food -> food.getCinema().getId().equals(cinemaId) && food.getCode().contains(code))
+                        .toList();
             } else if (name != null && !name.isEmpty()) {
-                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getName().toLowerCase().contains(name.toLowerCase())).toList();
+                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId)
+                        && food.getName().toLowerCase().contains(name.toLowerCase())).toList();
             } else if (categoryId != null) {
-                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getCategoryFood().getId().equals(categoryId)).toList();
+                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId)
+                        && food.getCategoryFood().getId().equals(categoryId)).toList();
             } else if (sizeFood != null && !sizeFood.isEmpty()) {
-                pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId) && food.getSize().name().equals(sizeFood)).toList();
+                pageFood = pageFood.stream().filter(
+                        food -> food.getCinema().getId().equals(cinemaId) && food.getSize().name().equals(sizeFood))
+                        .toList();
             } else {
                 pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId)).toList();
             }
+        } else {
+            pageFood = pageFood.stream().filter(Food::isStatus).toList();
         }
 
         int fromIndex = page * size;
