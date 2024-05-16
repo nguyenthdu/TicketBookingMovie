@@ -66,7 +66,7 @@ public class VNPAYServiceImpl implements VNPAYService {
         vnp_Params.put("vnp_Locale", locate);
 
         vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_ReturnUrl);
-        vnp_Params.put("vnp_IpAddr", "127.0.0.1");
+        vnp_Params.put("vnp_IpAddr", "13.212.15.8");
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
