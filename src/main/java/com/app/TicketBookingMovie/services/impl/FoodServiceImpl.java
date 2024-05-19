@@ -207,7 +207,7 @@ public class FoodServiceImpl implements FoodService {
                 pageFood = pageFood.stream().filter(food -> food.getCinema().getId().equals(cinemaId)).toList();
             }
         } else {
-            pageFood = pageFood.stream().filter(Food::isStatus).toList();
+            pageFood = pageFood.stream().toList();
         }
 
         int fromIndex = page * size;
