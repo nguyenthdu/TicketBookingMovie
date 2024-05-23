@@ -258,7 +258,7 @@ public class UserController {
     // update password
     @PostMapping("/password")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR') or hasRole('USER')")
-    public ResponseEntity<?> updateUserPassword(@PathVariable Long id, @RequestParam String oldPassword,
+    public ResponseEntity<?> updateUserPassword(@RequestParam Long id, @RequestParam String oldPassword,
             @RequestParam String newPassword, @RequestParam String confirmPassword) {
         try {
             userService.updatePassword(id, oldPassword, newPassword, confirmPassword);
