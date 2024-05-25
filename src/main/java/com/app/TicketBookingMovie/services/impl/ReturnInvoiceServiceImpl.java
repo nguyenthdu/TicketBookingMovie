@@ -30,7 +30,8 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
     private final FoodService foodService;
     private final ShowTimeService showTimeService;
 
-    public ReturnInvoiceServiceImpl(ReturnInvoiceRepository returnInvoiceRepository, InvoiceService invoiceService, ModelMapper modelMapper, FoodService foodService, ShowTimeService showTimeService) {
+    public ReturnInvoiceServiceImpl(ReturnInvoiceRepository returnInvoiceRepository, InvoiceService invoiceService,
+            ModelMapper modelMapper, FoodService foodService, ShowTimeService showTimeService) {
         this.returnInvoiceRepository = returnInvoiceRepository;
         this.invoiceService = invoiceService;
         this.modelMapper = modelMapper;
@@ -52,7 +53,6 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
             throw new IllegalArgumentException("invoiceId không được null");
         }
 
-
         Invoice invoice = invoiceService.findById(invoiceId);
         if (!invoice.isStatus()) {
             throw new AppException("Hóa đơn đã hủy trước đó", HttpStatus.BAD_REQUEST);
@@ -62,14 +62,14 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
         LocalTime showTime = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowTime();
         LocalDateTime showTimeStart = LocalDateTime.of(showDate, showTime);
 
-
         // Kiểm tra xem lịch chiếu đã bắt đầu hay chưa
         if (currentTime.isBefore(showTimeStart)) {
             // Tính khoảng thời gian giữa thời điểm hiện tại và thời gian bắt đầu lịch chiếu
             Duration duration = Duration.between(currentTime, showTimeStart);
             long hoursUntilShowTime = duration.toHours();
 
-            // Kiểm tra xem thời gian hủy vé có hợp lệ hay không (trước 2 giờ trước khi bắt đầu)
+            // Kiểm tra xem thời gian hủy vé có hợp lệ hay không (trước 2 giờ trước khi bắt
+            // đầu)
             if (hoursUntilShowTime >= 2) {
                 // Hoàn trả số lượng đồ ăn và slot của ghế trong lịch chiếu đã đặt
                 refundFoodAndSeats(invoice);
@@ -84,10 +84,18 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
                 returnInvoiceRepository.save(returnInvoice);
                 // Lưu cập nhật hóa đơn
                 invoiceService.updateStatusInvoice(invoiceId, false);
-                //xóa hóa đơn khỏi chương trình khuyến mãi đã áp dụng
+                // xóa hóa đơn khỏi chương trình khuyến mãi đã áp dụng
                 deletePromotionLine(invoice);
+                // lấy sanh sách ghế từ invoice
+                Set<Long> seats = invoice.getInvoiceTicketDetails().stream()
+                        .map(invoiceTicketDetail -> invoiceTicketDetail.getTicket().getSeat().getId())
+                        .collect(Collectors.toSet());
+                // lấy id lịch chiếu từ invoice
+                Long showTimeId = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getId();
+                showTimeService.updateStatusHoldSeat(seats, showTimeId, false);
             } else {
-                throw new AppException("Không thể hủy hóa đơn vì đã ít hơn 2 giờ trước khi bắt đầu lịch chiếu", HttpStatus.BAD_REQUEST);
+                throw new AppException("Không thể hủy hóa đơn vì đã ít hơn 2 giờ trước khi bắt đầu lịch chiếu",
+                        HttpStatus.BAD_REQUEST);
             }
         } else {
             throw new AppException("Không thể hủy hóa đơn vì lịch chiếu đã bắt đầu", HttpStatus.BAD_REQUEST);
@@ -113,16 +121,24 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
     }
 
     @Override
-    public List<ReturnInvoiceDto> getAllReturnInvoice(Integer page, Integer size, String code, String userCode, LocalDate startDate, LocalDate endDate) {
-        List<ReturnInvoice> pageReturnInvoice = returnInvoiceRepository.findAll(Sort.by(Sort.Direction.DESC, "cancelDate"));
+    public List<ReturnInvoiceDto> getAllReturnInvoice(Integer page, Integer size, String code, String userCode,
+            LocalDate startDate, LocalDate endDate) {
+        List<ReturnInvoice> pageReturnInvoice = returnInvoiceRepository
+                .findAll(Sort.by(Sort.Direction.DESC, "cancelDate"));
         if (!code.isEmpty() && !code.isBlank()) {
-            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getCode().equals(code)).collect(Collectors.toList());
-        } else if (!userCode.isEmpty() && !userCode.isBlank()){
-            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getInvoice().getUser().getCode().equals(userCode)).collect(Collectors.toList());
+            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getCode().equals(code))
+                    .collect(Collectors.toList());
+        } else if (!userCode.isEmpty() && !userCode.isBlank()) {
+            pageReturnInvoice = pageReturnInvoice.stream()
+                    .filter(returnInvoice -> returnInvoice.getInvoice().getUser().getCode().equals(userCode))
+                    .collect(Collectors.toList());
         } else if (startDate != null && endDate != null) {
-            pageReturnInvoice = pageReturnInvoice.stream().filter(returnInvoice -> returnInvoice.getCancelDate().isAfter(startDate.atStartOfDay()) && returnInvoice.getCancelDate().isBefore(endDate.atStartOfDay().plusDays(1))).collect(Collectors.toList());
+            pageReturnInvoice = pageReturnInvoice.stream()
+                    .filter(returnInvoice -> returnInvoice.getCancelDate().isAfter(startDate.atStartOfDay())
+                            && returnInvoice.getCancelDate().isBefore(endDate.atStartOfDay().plusDays(1)))
+                    .collect(Collectors.toList());
         }
-        int fromIndex = page* size;
+        int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, pageReturnInvoice.size());
         return pageReturnInvoice.subList(fromIndex, toIndex).stream().map(returnInvoice -> {
             ReturnInvoiceDto returnInvoiceDto = new ReturnInvoiceDto();
@@ -134,7 +150,8 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
             returnInvoiceDto.setInvoiceDate(returnInvoice.getInvoice().getCreatedDate());
             returnInvoiceDto.setUserCode(returnInvoice.getInvoice().getUser().getCode());
             returnInvoiceDto.setUserName(returnInvoice.getInvoice().getUser().getUsername());
-            returnInvoiceDto.setQuantity(returnInvoice.getInvoice().getInvoiceTicketDetails().size() + returnInvoice.getInvoice().getInvoiceFoodDetails().size());
+            returnInvoiceDto.setQuantity(returnInvoice.getInvoice().getInvoiceTicketDetails().size()
+                    + returnInvoice.getInvoice().getInvoiceFoodDetails().size());
             returnInvoiceDto.setTotal(returnInvoice.getInvoice().getTotalPrice());
             return returnInvoiceDto;
         }).collect(Collectors.toList());
@@ -147,7 +164,8 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
         } else if (userCode != null) {
             return returnInvoiceRepository.countByUserCode(userCode);
         } else if (startDate != null && endDate != null) {
-            return returnInvoiceRepository.countByCancelDateBetween(startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
+            return returnInvoiceRepository.countByCancelDateBetween(startDate.atStartOfDay(),
+                    endDate.atStartOfDay().plusDays(1));
         } else {
             return returnInvoiceRepository.count();
         }
@@ -157,18 +175,22 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
         // Hoàn trả số lượng đồ ăn
         List<InvoiceFoodDetail> foodDetails = invoice.getInvoiceFoodDetails();
         for (InvoiceFoodDetail foodDetail : foodDetails) {
-            foodService.updateQuantityFood(foodDetail.getFood().getId(), foodDetail.getFood().getCinema().getId(), foodDetail.getQuantity());
+            foodService.updateQuantityFood(foodDetail.getFood().getId(), foodDetail.getFood().getCinema().getId(),
+                    foodDetail.getQuantity());
         }
 
         // Lấy danh sách ghế đã đặt trong lịch chiếu
-        Set<Seat> seats = invoice.getInvoiceTicketDetails().stream().map(invoiceTicketDetail -> invoiceTicketDetail.getTicket().getSeat()).collect(Collectors.toSet());
-        //lấy danh sách ghế đã đặt trong lịch chiếu
-        List<ShowTimeSeat> showTimeSeats = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime().getShowTimeSeat().stream().filter(showTimeSeat -> seats.contains(showTimeSeat.getSeat())).collect(Collectors.toList());
+        Set<Seat> seats = invoice.getInvoiceTicketDetails().stream()
+                .map(invoiceTicketDetail -> invoiceTicketDetail.getTicket().getSeat()).collect(Collectors.toSet());
+        // lấy danh sách ghế đã đặt trong lịch chiếu
+        List<ShowTimeSeat> showTimeSeats = invoice.getInvoiceTicketDetails().get(0).getTicket().getShowTime()
+                .getShowTimeSeat().stream().filter(showTimeSeat -> seats.contains(showTimeSeat.getSeat()))
+                .collect(Collectors.toList());
 
-// Cập nhật trạng thái của ghế
+        // Cập nhật trạng thái của ghế
         for (ShowTimeSeat showTimeSeat : showTimeSeats) {
             showTimeSeat.setStatus(true);
-            //cập nhập lại số lượng ghế đã đặt
+            // cập nhập lại số lượng ghế đã đặt
             ShowTime showTime = showTimeSeat.getShowTime();
             showTime.setSeatsBooked(showTime.getSeatsBooked() - 1);
         }
@@ -178,10 +200,12 @@ public class ReturnInvoiceServiceImpl implements ReturnInvoviceService {
         showTimeService.updateSeatStatus(showTime);
     }
 
-    //khi hủy thành công thì xóa hóa đơn khỏi chương trình khuyến mãi đã áp dung
+    // khi hủy thành công thì xóa hóa đơn khỏi chương trình khuyến mãi đã áp dung
     public void deletePromotionLine(Invoice invoice) {
-        //kiểm tra xem hóa đơn có chương trình khuyến mãi nào không, nếu có thì mới gọi phương thức xóa
+        // kiểm tra xem hóa đơn có chương trình khuyến mãi nào không, nếu có thì mới gọi
+        // phương thức xóa
         if (!invoice.getPromotionLines().isEmpty())
-            invoiceService.removePromotionLineFromInvoice(invoice.getId(), invoice.getPromotionLines().stream().findFirst().get().getId());
+            invoiceService.removePromotionLineFromInvoice(invoice.getId(),
+                    invoice.getPromotionLines().stream().findFirst().get().getId());
     }
 }
