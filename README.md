@@ -22,5 +22,7 @@ Description: InfinityCinema is a multi-platform movie ticket booking system that
 ![INDUSTRIAL UNIVERSITY OF HO CHI MINH CITY FACULTY OF INFORMATION TECHNOLOGY (3)](https://github.com/nguyenthdu/TicketBookingMovie/assets/110290495/7cf0b741-3844-4b5c-a2f7-ad1feb674999)
 ![INDUSTRIAL UNIVERSITY OF HO CHI MINH CITY FACULTY OF INFORMATION TECHNOLOGY (1)](https://github.com/nguyenthdu/TicketBookingMovie/assets/110290495/fc1f54d4-7162-4974-9b7d-4e78410fec31)
 ![INDUSTRIAL UNIVERSITY OF HO CHI MINH CITY FACULTY OF INFORMATION TECHNOLOGY (2)](https://github.com/nguyenthdu/TicketBookingMovie/assets/110290495/14092132-82be-48a3-8da7-cd5db8412c2c)
+![ClassDiagramTicketBookingMovie drawio](https://github.com/user-attachments/assets/f6d4b60a-50d5-4fac-852d-f8944bc9fb14)
+![image](https://github.com/user-attachments/assets/fc5f7330-760c-4b9e-bf72-89c74f57c88a)
 
 
