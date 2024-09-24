@@ -1,16 +1,14 @@
 ### TicketBookingMovie
 ### Frontend website: https://github.com/NguyenXuanAn5161/Movie-ticket-booking-website
 ### Mobile: https://github.com/nguyenthdu/TicketBookingMovie-Mobile 
-### Published on Young Scientists Conference 2024: https://ysc.iuh.edu.vn/vi/
 Description: InfinityCinema is a multi-platform movie ticket booking system that provides a comprehensive cinema management solution for both customers and staff.
 ### Main Features:
 - For Customers: Search for movies, view showtimes, book tickets online, make online payments, order food and beverages.
 - For Staff: Manage movies, pricing, promotions, tickets, seating, customer information, view statistics, generate reports.
 ### Highlights:
-- Handles multiple ticket booking requests concurrently.
-- Real-time seat selection display.
-- User-friendly and intuitive management interface.
-- Real-time report generation.
+- Revenue reporting by cinema, movie, customer, staff, and cancellation statistics.
+- Multiple promotion types, including discounts on tickets, food, and special offers.
+- Dynamic pricing management based on time periods, allowing flexible pricing strategies.
 - Automated CI/CD: GitHub Actions automatically build and push images to Docker Hub, AWS EC2 automatically pulls and deploys the latest images.
 - Utilizes AWS EC2 for servers, AWS S3 for file storage, AWS RDS for databases, and Redis for caching, ensuring scalable and high-performance systems.
 ### Technologies Used:
